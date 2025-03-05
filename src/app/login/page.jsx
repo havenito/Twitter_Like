@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faLock, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import Notification from '../components/Notification';
+import { motion } from 'framer-motion';
+import { usePathname } from 'next/navigation';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -17,6 +19,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,6 +60,29 @@ export default function LoginPage() {
     setShowPassword(!showPassword);
   };
 
+  const pageVariants = {
+    initial: {
+      opacity: 0,
+      y: 50
+    },
+    animate: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    },
+    exit: {
+      opacity: 0,
+      y: -50,
+      transition: {
+        duration: 0.4,
+        ease: "easeIn"
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#222222]">
       {showNotification && (
@@ -67,7 +93,14 @@ export default function LoginPage() {
         />
       )}
       
-      <div className="w-full max-w-md bg-[#333333] p-8 rounded-lg shadow-lg">
+      <motion.div
+        key={pathname}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        variants={pageVariants}
+        className="w-full max-w-md bg-[#333333] p-8 rounded-lg shadow-lg"
+      >
         <div className="flex justify-center mb-6">
           <Image 
             src="/minouverselogo.png" 
@@ -89,7 +122,11 @@ export default function LoginPage() {
         )}
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+          >
             <label htmlFor="email" className="block text-[#90EE90] mb-1">
               Email
             </label>
@@ -107,9 +144,13 @@ export default function LoginPage() {
                 required
               />
             </div>
-          </div>
+          </motion.div>
           
-          <div>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+          >
             <label htmlFor="password" className="block text-[#90EE90] mb-1">
               Mot de passe
             </label>
@@ -135,26 +176,36 @@ export default function LoginPage() {
                 <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
               </button>
             </div>
-          </div>
+          </motion.div>
           
-          <button
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
             type="submit"
             disabled={loading}
             className="w-full px-4 py-2 bg-[#90EE90] text-black font-medium rounded-full hover:bg-[#7CD37C] transition-colors disabled:opacity-50"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
           >
             {loading ? 'Connexion en cours...' : 'Se connecter'}
-          </button>
+          </motion.button>
         </form>
         
-        <div className="mt-6 text-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.4 }}
+          className="mt-6 text-center"
+        >
           <p className="text-gray-400">
             Pas encore de compte ?{' '}
             <Link href="/register" className="text-[#90EE90] hover:underline">
               S'inscrire
             </Link>
           </p>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

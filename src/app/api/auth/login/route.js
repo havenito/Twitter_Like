@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 // J'ai mis ici un utilisateur codé en dur pour tester le login
 const hardcodedUser = {
   email: 'alex.drain0908@gmail.com',
-  password: 'zizilong'
+  password: '1234'
 };
 
 export async function POST(req) {
@@ -21,7 +21,6 @@ export async function POST(req) {
         message: 'Connexion réussie',
         user: {
           email: hardcodedUser.email,
-          name: 'Alexandre Drain'
         },
         token
       });

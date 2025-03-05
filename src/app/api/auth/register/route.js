@@ -6,7 +6,7 @@ const expectedUser = {
   lastName: 'Drain',
   email: 'alex.drain0908@gmail.com',
   username: 'Drac0niX',
-  password: 'zizilong',
+  password: '1234',
   isPublic: true
 };
 
@@ -42,7 +42,7 @@ export async function POST(req) {
         token: 'simulated-registration-token-' + Date.now()
       }, { status: 201 });
     } else {
-      let errorMsg = 'Les informations fournies ne correspondent pas à celles attendues.';
+      let errorMsg = 'Une erreur est survenue lors de l\'inscription';
       return NextResponse.json({ error: errorMsg }, { status: 400 });
     }
     

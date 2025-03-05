@@ -2,11 +2,12 @@
 
 import React, { useState, useRef } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faLock, faEnvelope, faSignature, faCamera, faGlobe, faLock as faLockSolid, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import Notification from '../components/Notification';
+import { motion } from 'framer-motion';
 
 export default function RegisterPage() {
   const [firstName, setFirstName] = useState('');
@@ -24,6 +25,7 @@ export default function RegisterPage() {
   const fileInputRef = useRef(null);
 
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -47,6 +49,7 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
     
+    // Validation
     if (!firstName || !lastName || !email || !username || !password) {
       setError('Veuillez remplir tous les champs obligatoires.');
       setLoading(false);
@@ -61,6 +64,7 @@ export default function RegisterPage() {
       formData.append('username', username);
       formData.append('password', password);
       
+      // Utiliser l'image de profil par défaut si aucune n'est sélectionnée
       if (profileImage) {
         formData.append('profileImage', profileImage);
         formData.append('useDefaultImage', 'false');
@@ -95,6 +99,44 @@ export default function RegisterPage() {
     }
   };
 
+  const pageVariants = {
+    initial: {
+      opacity: 0,
+      y: 50
+    },
+    animate: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    },
+    exit: {
+      opacity: 0,
+      y: -50,
+      transition: {
+        duration: 0.4,
+        ease: "easeIn"
+      }
+    }
+  };
+
+  const formFields = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const fieldVariant = {
+    hidden: { opacity: 0, x: -20 },
+    show: { opacity: 1, x: 0 }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#222222] py-12">
       {showNotification && (
@@ -105,8 +147,20 @@ export default function RegisterPage() {
         />
       )}
       
-      <div className="w-full max-w-md bg-[#333333] p-8 rounded-lg shadow-lg">
-        <div className="flex justify-center mb-6">
+      <motion.div
+        key={pathname}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        variants={pageVariants}
+        className="w-full max-w-md bg-[#333333] p-8 rounded-lg shadow-lg"
+      >
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="flex justify-center mb-6"
+        >
           <Image 
             src="/minouverselogo.png" 
             alt="Minouverse Logo" 
@@ -114,20 +168,38 @@ export default function RegisterPage() {
             height={80} 
             className="object-contain"
           />
-        </div>
+        </motion.div>
         
-        <h1 className="text-2xl font-bold text-center text-[#90EE90] mb-6">
+        <motion.h1
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+          className="text-2xl font-bold text-center text-[#90EE90] mb-6"
+        >
           Inscription à Minouverse
-        </h1>
+        </motion.h1>
         
         {error && (
-          <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-2 rounded mb-4">
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-2 rounded mb-4"
+          >
             {error}
-          </div>
+          </motion.div>
         )}
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex flex-col items-center mb-4">
+        <motion.form 
+          variants={formFields}
+          initial="hidden"
+          animate="show"
+          onSubmit={handleSubmit} 
+          className="space-y-4"
+        >
+          <motion.div 
+            variants={fieldVariant}
+            className="flex flex-col items-center mb-4"
+          >
             <div 
               className="w-24 h-24 rounded-full bg-[#444444] mb-2 flex items-center justify-center overflow-hidden cursor-pointer border-2 border-[#90EE90] hover:opacity-80 transition-opacity"
               onClick={() => fileInputRef.current.click()}
@@ -155,9 +227,12 @@ export default function RegisterPage() {
               onChange={handleImageChange}
               className="hidden"
             />
-          </div>
+          </motion.div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <motion.div 
+            variants={fieldVariant}
+            className="grid grid-cols-2 gap-4"
+          >
             <div>
               <label htmlFor="firstName" className="block text-[#90EE90] mb-1">
                 Prénom
@@ -197,9 +272,9 @@ export default function RegisterPage() {
                 />
               </div>
             </div>
-          </div>
+          </motion.div>
           
-          <div>
+          <motion.div variants={fieldVariant}>
             <label htmlFor="email" className="block text-[#90EE90] mb-1">
               Email
             </label>
@@ -217,9 +292,9 @@ export default function RegisterPage() {
                 required
               />
             </div>
-          </div>
+          </motion.div>
           
-          <div>
+          <motion.div variants={fieldVariant}>
             <label htmlFor="username" className="block text-[#90EE90] mb-1">
               Pseudo
             </label>
@@ -237,9 +312,9 @@ export default function RegisterPage() {
                 required
               />
             </div>
-          </div>
+          </motion.div>
           
-          <div>
+          <motion.div variants={fieldVariant}>
             <label htmlFor="password" className="block text-[#90EE90] mb-1">
               Mot de passe
             </label>
@@ -265,9 +340,9 @@ export default function RegisterPage() {
                 <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
               </button>
             </div>
-          </div>
+          </motion.div>
           
-          <div className="pt-2">
+          <motion.div variants={fieldVariant} className="pt-2">
             <label className="block text-[#90EE90] mb-3">
               Confidentialité du compte
             </label>
@@ -300,26 +375,34 @@ export default function RegisterPage() {
                 ? 'Tout le monde peut voir votre profil et vos publications.'
                 : 'Seuls vos abonnés peuvent voir votre profil et vos publications.'}
             </p>
-          </div>
+          </motion.div>
           
-          <button
+          <motion.button
+            variants={fieldVariant}
             type="submit"
             disabled={loading}
             className="w-full px-4 py-2 bg-[#90EE90] text-black font-medium rounded-full hover:bg-[#7CD37C] transition-colors disabled:opacity-50 mt-4"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
           >
             {loading ? 'Inscription en cours...' : 'S\'inscrire'}
-          </button>
-        </form>
+          </motion.button>
+        </motion.form>
         
-        <div className="mt-6 text-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.4 }}
+          className="mt-6 text-center"
+        >
           <p className="text-gray-400">
             Déjà inscrit ?{' '}
             <Link href="/login" className="text-[#90EE90] hover:underline">
               Se connecter
             </Link>
           </p>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
