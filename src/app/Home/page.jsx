@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -18,10 +18,52 @@ import {
   faChevronLeft,
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function HomePage() {
   const pathname = usePathname();
+
+  // Gestion des slides
+  const slides = [
+    {
+      id: 1,
+      title: "Découvrez nos abonnements",
+      description: "Choisissez un abonnement adapté à vos besoins et profitez de fonctionnalités exclusives.",
+      buttonText: "Voir les abonnements",
+      link: "/subscriptions",
+    },
+    {
+      id: 2,
+      title: "Participez à des événements",
+      description: "Rejoignez des événements uniques et connectez-vous avec la communauté.",
+      buttonText: "Voir les événements",
+      link: "/events",
+    },
+    {
+      id: 3,
+      title: "Créez et répondez à des sondages",
+      description: "Exprimez vos opinions et découvrez ce que pense la communauté.",
+      buttonText: "Voir les sondages",
+      link: "/polls",
+    },
+    {
+      id: 4,
+      title: "Partagez vos idées",
+      description: "Publiez vos créations et inspirez les autres membres de la communauté.",
+      buttonText: "Poster maintenant",
+      link: "/create",
+    },
+  ];
+
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const handleNext = () => {
+    setCurrentSlide((prev) => (prev + 1) % slides.length);
+  };
+
+  const handlePrev = () => {
+    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1e1e1e] to-[#121212] text-white flex flex-col">
@@ -113,26 +155,48 @@ export default function HomePage() {
 
         {/* Zone centrale */}
         <section className="flex-1 flex flex-col items-center justify-center p-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="w-full max-w-xl bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-lg p-8 text-center shadow-2xl"
-          >
-            <div className="flex justify-between items-center mb-6">
-              <FontAwesomeIcon icon={faChevronLeft} className="text-[#90EE90] text-2xl cursor-pointer" />
-              <FontAwesomeIcon icon={faChevronRight} className="text-[#90EE90] text-2xl cursor-pointer" />
+          <div className="relative w-full max-w-5xl h-[500px]">
+            <AnimatePresence>
+              {slides.map((slide, index) =>
+                index === currentSlide ? (
+                  <motion.div
+                    key={slide.id}
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -50 }}
+                    transition={{ duration: 0.5 }}
+                    className="absolute w-full h-full bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-lg p-12 text-center shadow-2xl flex flex-col items-center justify-center"
+                  >
+                    <h1 className="text-5xl font-extrabold text-[#90EE90] mb-6">
+                      {slide.title}
+                    </h1>
+                    <p className="text-xl text-gray-400 mb-8">
+                      {slide.description}
+                    </p>
+                    <Link href={slide.link}>
+                      <button className="bg-[#90EE90] px-10 py-4 rounded-full text-black font-semibold hover:bg-[#7CD37C] shadow-lg transition-all duration-300">
+                        {slide.buttonText}
+                      </button>
+                    </Link>
+                  </motion.div>
+                ) : null
+              )}
+            </AnimatePresence>
+            <div className="absolute top-1/2 left-6 transform -translate-y-1/2 cursor-pointer">
+              <FontAwesomeIcon
+                icon={faChevronLeft}
+                className="text-[#90EE90] text-4xl"
+                onClick={handlePrev}
+              />
             </div>
-            <h1 className="text-4xl font-extrabold text-[#90EE90] mb-4">
-              Bienvenue sur Minouverse !
-            </h1>
-            <p className="text-lg text-gray-400 mb-6">
-              Découvrez un univers unique et profitez de nos fonctionnalités exclusives.
-            </p>
-            <button className="bg-[#90EE90] px-8 py-3 rounded-full text-black font-semibold hover:bg-[#7CD37C] shadow-lg transition-all duration-300">
-              Essai gratuit pendant 7 jours
-            </button>
-          </motion.div>
+            <div className="absolute top-1/2 right-6 transform -translate-y-1/2 cursor-pointer">
+              <FontAwesomeIcon
+                icon={faChevronRight}
+                className="text-[#90EE90] text-4xl"
+                onClick={handleNext}
+              />
+            </div>
+          </div>
         </section>
       </main>
 
