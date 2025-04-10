@@ -2,12 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCrown } from "@fortawesome/free-solid-svg-icons";
 
 const Header = () => {
-  const [activeTab, setActiveTab] = useState('pour-vous');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const checkAuthStatus = () => {
@@ -18,61 +21,82 @@ const Header = () => {
     checkAuthStatus();
   }, []);
 
-  const handleAuthClick = () => {
-    if (isAuthenticated) {
-      localStorage.removeItem('userToken');
-      setIsAuthenticated(false);
-      router.push('/login');
-    } else {
-      router.push('/login');
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('userToken');
+    setIsAuthenticated(false);
+    router.push('/');
   };
 
   return (
-    <header className="fixed top-0 ml-64 w-[calc(100%-16rem)] bg-[#333333] h-16 border-b border-black z-20 flex items-center">
-      <div className="flex justify-between items-center w-full px-8">
-        <div className="flex-1 flex justify-end">
-          <button 
-            onClick={() => setActiveTab('pour-vous')}
-            className={`px-8 py-2 mr-8 text-lg font-medium text-[#90EE90] transition-all ${
-              activeTab === 'pour-vous' 
-                ? 'border-b-4 border-[#90EE90]' 
-                : 'hover:text-white'
+    <header className="fixed top-0 left-0 right-0 flex items-center justify-between px-8 py-6 bg-[#1b1b1b] border-b border-[#333] z-20">
+      {/* Section gauche - Avantages */}
+      <div className="flex items-center">
+        <Link href="/advantages">
+          <button
+            className={`text-sm font-semibold px-5 py-2 rounded-full transition-all duration-300 ${
+              pathname === "/advantages"
+                ? "text-[#90EE90] bg-[#333] shadow-md"
+                : "text-gray-300 hover:text-[#90EE90] hover:bg-[#333]"
+            }`}
+          >
+            <FontAwesomeIcon icon={faCrown} className="mr-2" />
+            Avantages
+          </button>
+        </Link>
+      </div>
+      
+      {/* Section centrale - Pour vous + Logo + Abonnements */}
+      <div className="flex items-center justify-center space-x-6 absolute left-1/2 transform -translate-x-1/2">
+        <Link href="/foryou">
+          <button
+            className={`text-sm font-semibold px-5 py-2 rounded-full transition-all duration-300 ${
+              pathname === "/foryou"
+                ? "text-[#90EE90] bg-[#333] shadow-md"
+                : "text-gray-300 hover:text-[#90EE90] hover:bg-[#333]"
             }`}
           >
             Pour Vous
           </button>
-        </div>
+        </Link>
         
-        <div className="flex justify-center mx-4">
-          <Image 
-            src="/minouverselogo.png" 
-            alt="Minouverse Logo" 
-            width={50} 
-            height={50} 
-            className="object-contain"
-          />
-        </div>
+        <Image src="/minouverselogo.png" alt="Logo" width={50} height={50} className="rounded-full mx-4" />
         
-        <div className="flex-1 flex items-center">
-          <button 
-            onClick={() => setActiveTab('abonnements')}
-            className={`px-8 py-2 ml-8 text-lg font-medium text-[#90EE90] transition-all ${
-              activeTab === 'abonnements' 
-                ? 'border-b-4 border-[#90EE90]' 
-                : 'hover:text-white'
+        <Link href="/subscriptions">
+          <button
+            className={`text-sm font-semibold px-5 py-2 rounded-full transition-all duration-300 ${
+              pathname === "/subscriptions"
+                ? "text-[#90EE90] bg-[#333] shadow-md"
+                : "text-gray-300 hover:text-[#90EE90] hover:bg-[#333]"
             }`}
           >
             Abonnements
           </button>
-          
+        </Link>
+      </div>
+      
+      {/* Section droite - Authentification */}
+      <div className="flex gap-4">
+        {isAuthenticated ? (
           <button 
-            onClick={handleAuthClick}
-            className="ml-auto px-6 py-2 rounded-full bg-[#90EE90] text-black font-medium transition-all duration-500 hover:bg-[#7796B6]/20 hover:text-white"
+            onClick={handleLogout}
+            className="bg-[#90EE90] text-black px-5 py-2 rounded-full hover:bg-[#7CD37C] transition-all duration-300"
           >
-            {isAuthenticated ? 'Se déconnecter' : 'Se connecter'}
+            Se déconnecter
           </button>
-        </div>
+        ) : (
+          <>
+            <Link href="/register">
+              <button className="bg-[#333] text-gray-300 px-5 py-2 rounded-full hover:bg-[#444] hover:text-white transition-all duration-300">
+                Inscription
+              </button>
+            </Link>
+            <Link href="/login">
+              <button className="bg-[#90EE90] text-black px-5 py-2 rounded-full hover:bg-[#7CD37C] transition-all duration-300">
+                Connexion
+              </button>
+            </Link>
+          </>
+        )}
       </div>
     </header>
   );

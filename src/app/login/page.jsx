@@ -46,7 +46,7 @@ export default function LoginPage() {
       
       // Redirection vers la page d'accueil après un court délai
       setTimeout(() => {
-        router.push('/');
+        router.push('/home');
       }, 1500);
     } catch (error) {
       setPassword('');

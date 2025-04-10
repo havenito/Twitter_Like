@@ -15,7 +15,7 @@ export default function ClientLayout({ children }) {
   
   const isAuthPage = pathname === '/login' || pathname === '/register';
   
-  const publicRoutes = ['/login', '/register'];
+  const publicRoutes = ['/login', '/register', '/', '/Home'];
   const isPublicRoute = publicRoutes.includes(pathname);
 
   // Premier useEffect pour la vérification initiale de l'authentification
@@ -34,7 +34,7 @@ export default function ClientLayout({ children }) {
     };
 
     initAuth();
-  }, []); // Exécuté uniquement au montage du composant
+  }, []);
 
   // Second useEffect pour la redirection basée sur l'authentification
   useEffect(() => {
@@ -75,15 +75,25 @@ export default function ClientLayout({ children }) {
 
   // Affichage normal avec layout pour les utilisateurs authentifiés
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <div className="flex flex-col flex-1">
-        <Header />
-        <main className="flex-1 bg-[#222222] overflow-y-auto pt-16">
-          {children}
-        </main>
-        <Footer />
+    <div className="min-h-screen bg-gradient-to-br from-[#1e1e1e] to-[#121212] text-white flex flex-col">
+      {/* Header fixé au sommet */}
+      <Header />
+      
+      {/* Contenu principal avec padding pour le header */}
+      <div className="flex flex-1 pt-[76px]">
+        {/* Sidebar */}
+        <Sidebar />
+        
+        {/* Zone centrale pour le contenu avec marge à gauche pour compenser la sidebar fixe */}
+        <div className="ml-64 w-full">
+          <section className="flex-1 flex flex-col items-center justify-center p-10">
+            {children}
+          </section>
+        </div>
       </div>
+      
+      {/* Footer qui s'affiche sous le contenu principal */}
+      <Footer />
     </div>
   );
 }
