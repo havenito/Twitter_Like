@@ -4,8 +4,6 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCrown } from "@fortawesome/free-solid-svg-icons";
 
 const HomeHeader = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -33,14 +31,12 @@ const HomeHeader = () => {
 
   return (
     <header className="flex items-center justify-between px-8 py-6 bg-[#1b1b1b] border-b border-[#333] z-20">
-      {/* Section centrale - Logo uniquement */}
       <div className="flex items-center justify-center">
         <Link href="/">
           <Image src="/minouverselogo.png" alt="Logo" width={60} height={60} className="rounded-full" />
         </Link>
       </div>
       
-      {/* Section droite - Authentification */}
       <div className="flex gap-4">
         {isAuthenticated ? (
           <>

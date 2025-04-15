@@ -9,28 +9,27 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Données des slides intégrées directement dans le composant
 const homeSlides = [
   {
     id: 1,
-    title: "Bienvenue sur Minouverse",
-    description: "La plateforme sociale dédiée aux amoureux des chats",
+    title: "Fil d'actualité personnalisé",
+    description: "Suivez les personnes et les sujets qui vous intéressent.",
     buttonText: "S'inscrire",
     link: "/register"
   },
   {
     id: 2,
-    title: "Partagez vos moments félins",
-    description: "Publiez des photos, vidéos et histoires avec votre communauté",
-    buttonText: "Découvrir",
+    title: "Messages directs",
+    description: "Communiquez en privé avec vos amis et vos abonnés.",
+    buttonText: "Se connecter",
     link: "/login"
   },
   {
     id: 3,
-    title: "Rejoignez la communauté",
-    description: "Connectez-vous avec d'autres passionnés de chats",
-    buttonText: "En savoir plus",
-    link: "/about"
+    title: "Sondage et événements",
+    description: "Créez des sondages et participez à des événements avec la communauté.",
+    buttonText: "S'inscrire",
+    link: "/register"
   }
 ];
 
