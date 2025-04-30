@@ -90,7 +90,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#222222]">
+    <div className="min-h-screen flex items-center justify-center bg-[#222222] px-4">
       {showNotification && (
         <Notification 
           message="Connexion réussie" 

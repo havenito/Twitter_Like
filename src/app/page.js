@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, useScroll, useTransform } from 'framer-motion'; 
-import HomeHeader from "../components/Landing/HomeHeader";
+import LandingHeader from "../components/Landing/LandingHeader";
 import Footer from "../components/Footer";
 import ParallaxIntro from "../components/Landing/ParallaxIntro";
 import HeroSection from "../components/Landing/HeroSection";
@@ -66,7 +66,7 @@ export default function Home() {
       />
 
       <div className="relative z-40"> 
-        <HomeHeader />
+        <LandingHeader />
         <main className="flex-1 flex flex-col items-center">
           <HeroSection />
           <FeaturesSection />

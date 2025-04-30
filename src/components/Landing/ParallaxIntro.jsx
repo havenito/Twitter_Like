@@ -25,7 +25,7 @@ const ParallaxIntro = () => {
         style={{ y: yLayer1, zIndex: 10 }} 
       >
         <motion.h1 
-          className="text-6xl md:text-8xl font-bold text-gray-600 opacity-50"
+          className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-gray-600 opacity-50"
           initial={textAppearAnimation.initial}
           animate={textAppearAnimation.animate}
           transition={{ ...textAppearAnimation.transition, delay: 0.4 }} 
@@ -39,7 +39,7 @@ const ParallaxIntro = () => {
         style={{ y: yLayer2, zIndex: 20 }} 
       >
         <motion.h2 
-          className="text-4xl md:text-6xl font-semibold text-gray-400 opacity-70"
+          className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-gray-400 opacity-70"
           initial={textAppearAnimation.initial}
           animate={textAppearAnimation.animate}
           transition={{ ...textAppearAnimation.transition, delay: 0.2 }}
@@ -53,7 +53,7 @@ const ParallaxIntro = () => {
         style={{ y: yLayer3, zIndex: 30 }} 
       >
         <motion.h1 
-          className="text-7xl md:text-9xl font-extrabold text-[#90EE90]"
+          className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-extrabold text-[#90EE90]"
           initial={textAppearAnimation.initial}
           animate={textAppearAnimation.animate}
           transition={{ ...textAppearAnimation.transition, delay: 0 }} 

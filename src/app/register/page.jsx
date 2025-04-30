@@ -143,7 +143,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#222222] py-12">
+    <div className="min-h-screen flex items-center justify-center bg-[#222222] py-12 px-4">
       {showNotification && (
         <Notification 
           message="Création du compte réussie! Redirection vers la page de connexion..." 

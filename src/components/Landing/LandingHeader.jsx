@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-const HomeHeader = () => {
+const LandingHeader = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
 
@@ -71,4 +71,4 @@ const HomeHeader = () => {
   );
 };
 
-export default HomeHeader;
+export default LandingHeader;
