@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Sidebar from '../ui/Layout/Sidebar/Sidebar';
-import Header from '../ui/Layout/Header/Header';
-import Footer from '../ui/Layout/Footer/Footer';
+import Sidebar from '../../components/Home/Sidebar/Sidebar';
+import Header from '../../components/Home/Header/Header';
+import Footer from '../../components/Footer';
 
 export default function HomePage() {
   const router = useRouter();

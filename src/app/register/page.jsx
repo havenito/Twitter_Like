@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faLock, faEnvelope, faSignature, faCamera, faGlobe, faLock as faLockSolid, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
-import Notification from '../components/Notification';
+import Notification from '../../components/Notification';
 import { motion } from 'framer-motion';
 
 export default function RegisterPage() {
@@ -49,7 +49,6 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
     
-    // Validation
     if (!firstName || !lastName || !email || !username || !password) {
       setError('Veuillez remplir tous les champs obligatoires.');
       setLoading(false);
@@ -85,7 +84,6 @@ export default function RegisterPage() {
         throw new Error(data.error || 'Échec de l\'inscription');
       }
       
-      // Afficher la notification de succès
       setShowNotification(true);
       
       // Redirection vers la page de connexion après un court délai
@@ -97,6 +95,13 @@ export default function RegisterPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Variantes personnalisées
+  const centeredNotificationVariants = {
+    initial: { opacity: 0, x:-285, y: -50, scale: 0.3 }, 
+    animate: { opacity: 1, x:-285, y: 0, scale: 1 },    
+    exit: { opacity: 0, x:-285, y: -20, scale: 0.5, transition: { duration: 0.4 } }
   };
 
   const pageVariants = {
@@ -144,6 +149,7 @@ export default function RegisterPage() {
           message="Création du compte réussie! Redirection vers la page de connexion..." 
           type="success" 
           onClose={() => setShowNotification(false)}
+          variants={centeredNotificationVariants} 
         />
       )}
       

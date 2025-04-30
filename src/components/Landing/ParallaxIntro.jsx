@@ -44,7 +44,7 @@ const ParallaxIntro = () => {
           animate={textAppearAnimation.animate}
           transition={{ ...textAppearAnimation.transition, delay: 0.2 }}
         >
-          Le réseau félin
+          Minouverse
         </motion.h2>
       </motion.div>
 

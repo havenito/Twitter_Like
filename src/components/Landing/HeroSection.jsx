@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import Carousel from "../../components/HomePage/Caroussel";
+import Carousel from "./Caroussel";
 
 const HeroSection = () => {
   return (

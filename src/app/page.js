@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, useScroll, useTransform } from 'framer-motion'; 
-import HomeHeader from "./components/HomePage/HomeHeader";
-import Footer from "./ui/Layout/Footer/Footer";
-import ParallaxIntro from "./components/HomePage/ParallaxIntro";
-import HeroSection from "./components/HomePage/HeroSection";
-import FeaturesSection from "./components/HomePage/FeaturesSection";
-import FeedPreview from "./components/HomePage/FeedPreview";
-import TrendingSection from "./components/HomePage/TrendingSection";
-import CTASection from "./components/HomePage/CTASection";
+import HomeHeader from "../components/Landing/HomeHeader";
+import Footer from "../components/Footer";
+import ParallaxIntro from "../components/Landing/ParallaxIntro";
+import HeroSection from "../components/Landing/HeroSection";
+import FeaturesSection from "../components/Landing/FeaturesSection";
+import FeedPreview from "../components/Landing/FeedPreview";
+import TrendingSection from "../components/Landing/TrendingSection";
+import CTASection from "../components/Landing/CTASection";
 
 export default function Home() {
   const { scrollY } = useScroll(); 

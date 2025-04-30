@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faLock, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
-import Notification from '../components/Notification';
+import Notification from '../../components/Notification';
 import { motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 
@@ -41,7 +41,6 @@ export default function LoginPage() {
       
       localStorage.setItem('userToken', data.token);
       
-      // Afficher la notification de succès
       setShowNotification(true);
       
       // Redirection vers la page d'accueil après un court délai
@@ -58,6 +57,13 @@ export default function LoginPage() {
 
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
+  };
+
+  // Variantes pour la notification
+  const centeredNotificationVariants = {
+    initial: { opacity: 0, x:-100, y: -50, scale: 0.3 }, 
+    animate: { opacity: 1, x:-100, y: 0, scale: 1 },   
+    exit: { opacity: 0, x:-100, y: -20, scale: 0.5, transition: { duration: 0.4 } } 
   };
 
   const pageVariants = {
@@ -90,6 +96,7 @@ export default function LoginPage() {
           message="Connexion réussie" 
           type="success" 
           onClose={() => setShowNotification(false)}
+          variants={centeredNotificationVariants} 
         />
       )}
       
