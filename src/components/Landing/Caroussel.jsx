@@ -55,7 +55,7 @@ export default function Carousel({ slides = homeSlides }) {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
               transition={{ duration: 0.5 }}
-              className="absolute w-full h-full bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-lg p-12 text-center shadow-2xl flex flex-col items-center justify-center"
+              className="absolute w-full h-full bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-lg p-12 text-center shadow-xl flex flex-col items-center justify-center"
             >
               <h1 className="text-5xl font-extrabold text-[#90EE90] mb-6">
                 {slide.title}
@@ -72,14 +72,14 @@ export default function Carousel({ slides = homeSlides }) {
           ) : null
         )}
       </AnimatePresence>
-      <div className="absolute top-1/2 left-6 transform -translate-y-1/2 cursor-pointer">
+      <div className="absolute top-[58%] sm:top-1/2 left-6 transform -translate-y-1/2 cursor-pointer">
         <FontAwesomeIcon
           icon={faChevronLeft}
           className="text-[#90EE90] text-4xl"
           onClick={handlePrev}
         />
       </div>
-      <div className="absolute top-1/2 right-6 transform -translate-y-1/2 cursor-pointer">
+      <div className="absolute top-[58%] sm:top-1/2 right-6 transform -translate-y-1/2 cursor-pointer">
         <FontAwesomeIcon
           icon={faChevronRight}
           className="text-[#90EE90] text-4xl"
