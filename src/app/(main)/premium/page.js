@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import Card from '../../../components/Home/Premium/Card';
+import Card from '../../../components/Main/Premium/Card';
 import { motion } from 'framer-motion';
 import Link from 'next/link'; 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; 

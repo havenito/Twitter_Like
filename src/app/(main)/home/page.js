@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Sidebar from '../../../components/Home/Sidebar/Sidebar';
+import Sidebar from '../../../components/Main/Sidebar/Sidebar';
 // Header and Footer are now handled by layout.js
 // import Header from '../../components/Home/Header/Header'; 
 // import Footer from '../../components/Footer';
