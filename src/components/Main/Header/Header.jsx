@@ -22,9 +22,11 @@ const Header = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('userToken');
-    setIsAuthenticated(false);
-    router.push('/');
+    if (window.confirm("Êtes-vous sûr de vouloir vous déconnecter ?")) {
+      localStorage.removeItem('userToken');
+      setIsAuthenticated(false);
+      router.push('/');
+    }
   };
 
   return (
