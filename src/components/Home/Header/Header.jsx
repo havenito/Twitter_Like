@@ -30,10 +30,10 @@ const Header = () => {
   return (
     <header className="fixed top-0 left-0 right-0 flex items-center justify-between px-8 py-6 bg-[#1b1b1b] border-b border-[#333] z-20">
       <div className="flex items-center">
-        <Link href="/advantages">
+        <Link href="/premium">
           <button
             className={`text-sm font-semibold px-5 py-2 rounded-full transition-all duration-300 ${
-              pathname === "/advantages"
+              pathname === "/premium"
                 ? "text-[#90EE90] bg-[#333] shadow-md"
                 : "text-gray-300 hover:text-[#90EE90] hover:bg-[#333]"
             }`}
