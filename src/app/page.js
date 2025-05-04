@@ -24,12 +24,11 @@ export default function Home() {
     }
   }, []);
 
-  // opacité du parallax
   const parallaxOpacity = useTransform(
     scrollY,
     [
-      windowHeight * 0.95, // Commence à disparaître juste avant la fin du 1er écran
-      windowHeight * 1   // Complètement disparu pendant le fondu noir
+      windowHeight * 0.95, // Commence à disparaître à 95vh
+      windowHeight * 1   // Disparaît complètement à 100vh
     ],
     [1, 0] 
   );
@@ -38,10 +37,10 @@ export default function Home() {
   const fadeOpacity = useTransform(
     scrollY,
     [
-      windowHeight * 0.30, // Début apparition fondu noir (plus tôt)
-      windowHeight * 0.55, // Complètement noir (fin du 1er écran)
-      windowHeight * 1, // Reste noir jusque là (dans la zone tampon)
-      windowHeight * 1.40  // Fin disparition fondu noir (début contenu suivant)
+      windowHeight * 0.30, // Début apparition fondu noir à 30vh
+      windowHeight * 0.55, // Complètement noir à 55vh
+      windowHeight * 1, // Reste noir jusqu'à 100vh
+      windowHeight * 1.40  // Disparaît complètement à 140vh
     ],
     [0, 1, 1, 0] 
   );
