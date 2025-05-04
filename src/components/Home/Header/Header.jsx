@@ -57,7 +57,9 @@ const Header = () => {
           </button>
         </Link>
         
-        <Image src="/minouverselogo.png" alt="Logo" width={50} height={50} className="rounded-full mx-4" />
+        <Link href={"/home"}>
+          <Image src="/minouverselogo.png" alt="Logo" width={50} height={50} className="rounded-full mx-4" />
+        </Link>
         
         <Link href="/subscriptions">
           <button
