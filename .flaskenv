@@ -1,4 +1,0 @@
-FLASK_APP=app.py
-FLASK_ENV=development
-DATABASE_URL=postgresql://eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1Ymp6Y25tcXl2ZWhmdG1vaWVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMTAzMTUsImV4cCI6MjA1OTY4NjMxNX0.B8CPZq8TWGySAPAlVwuUUpeoFnmjBv3AwT9kjhULu58:Enzolise1976...@aws-0-eu-west-3.pooler.supabase.com:6543/postgres
-FLASK_DEBUG=1
