@@ -54,19 +54,42 @@ def create_user():
     private = data.get('private', False)
     pseudo = data.get('pseudo')
 
-    if not email or not password:
-        return jsonify({'error': 'Email et mot de passe manquant'}), 400
-    
+    if not all([email, password, first_name, last_name, pseudo]):
+        return jsonify({'error': 'Tous les champs obligatoires (email, mot de passe, prénom, nom, pseudo) doivent être fournis'}), 400
+        
     try:
-        # Hash the password before storing it
+        # Vérifier si l'email existe déjà
+        existing_user_by_email = User.query.filter_by(email=email).first()
+        if existing_user_by_email:
+            return jsonify({'error': 'Cet email est déjà utilisé'}), 409
+
+        # Vérifier si le pseudo existe déjà
+        existing_user_by_pseudo = User.query.filter_by(pseudo=pseudo).first()
+        if existing_user_by_pseudo:
+            return jsonify({'error': 'Ce pseudo est déjà utilisé'}), 409
+
+        # Hasher le mot de passe avant de le stocker
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        new_user = User(email=email, password=password, roles=roles, first_name=first_name, last_name=last_name, profile_picture=profile_picture, is_accepted=is_accepted, private=private, pseudo=pseudo)
+        
+        new_user = User(
+            email=email, 
+            password=hashed_password, # Utiliser le mot de passe haché
+            roles=roles, 
+            first_name=first_name, 
+            last_name=last_name, 
+            profile_picture=profile_picture, 
+            is_accepted=is_accepted, 
+            private=private, 
+            pseudo=pseudo
+        )
         db.session.add(new_user)
         db.session.commit()
-        return jsonify({'message': 'Utilisateur créé avec succès'}), 201
+        return jsonify({'message': 'Utilisateur créé avec succès', 'user_id': new_user.id}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': f'Erreur lors de la création de l\'utilisateur: {str(e)}'}), 500
+        app.logger.error(f"Erreur lors de la création de l'utilisateur: {str(e)}")
+        return jsonify({'error': 'Une erreur interne est survenue lors de la création de l\'utilisateur.'}), 500
+
 
 # Ajouter la route de login
 @app.route('/api/login', methods=['POST'])
