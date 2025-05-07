@@ -1,53 +1,53 @@
 from flask import Blueprint, request, jsonify
-from models import db, User
+from models import db, Post
 
-user_api = Blueprint('user_api', __name__)
+post_api = Blueprint('post_api', __name__)
 
-@user_api.route('/users', methods=['GET'])
-def get_users():
-    users = User.query.all()
-    return jsonify([user.to_dict() for user in users])
+@post_api.route('/posts', methods=['GET'])
+def get_posts():
+    posts = Post.query.all()
+    return jsonify([post.to_dict() for post in posts])
 
-@user_api.route('/users/<int:id>', methods=['GET'])
-def get_user(id):
-    user = User.query.get_or_404(id)
-    return jsonify(user.to_dict())
+@post_api.route('/posts/<int:id>', methods=['GET'])
+def get_post(id):
+    post = Post.query.get_or_404(id)
+    return jsonify(post.to_dict())
 
-@user_api.route('/users', methods=['POST'])
-def create_user():
+@post_api.route('/posts', methods=['POST'])
+def create_post():
     data = request.get_json()
-    new_user = User(
-        email=data['email'],
-        password=data['password'],
-        roles=data['roles'],
-        first_name=data['first_name'],
-        last_name=data['last_name'],
-        profile_picture=data['profile_picture'],
-        is_accepted=data['is_accepted'],
-        private=data['private']
+    new_post = Post(
+        title=data['title'],
+        content=data['content'],
+        published_at=data['published_at'],
+        media_url=data['media_url'],
+        media_type=data['media_type'],
+        post_id=data.get('post_id'),  # Optional field
+        user_id=data['user_id'],
+        category_id=data['category_id']
     )
-    db.session.add(new_user)
+    db.session.add(new_post)
     db.session.commit()
-    return jsonify(new_user.to_dict()), 201
+    return jsonify(new_post.to_dict()), 201
 
-@user_api.route('/users/<int:id>', methods=['PUT'])
-def update_user(id):
+@post_api.route('/posts/<int:id>', methods=['PUT'])
+def update_post(id):
     data = request.get_json()
-    user = User.query.get_or_404(id)
-    user.email = data['email']
-    user.password = data['password']
-    user.roles = data['roles']
-    user.first_name = data['first_name']
-    user.last_name = data['last_name']
-    user.profile_picture = data['profile_picture']
-    user.is_accepted = data['is_accepted']
-    user.private = data['private']
+    post = Post.query.get_or_404(id)
+    post.title = data['title']
+    post.content = data['content']
+    post.published_at = data['published_at']
+    post.media_url = data['media_url']
+    post.media_type = data['media_type']
+    post.post_id = data.get('post_id')
+    post.user_id = data['user_id']
+    post.category_id = data['category_id']
     db.session.commit()
-    return jsonify(user.to_dict())
+    return jsonify(post.to_dict())
 
-@user_api.route('/users/<int:id>', methods=['DELETE'])
-def delete_user(id):
-    user = User.query.get_or_404(id)
-    db.session.delete(user)
+@post_api.route('/posts/<int:id>', methods=['DELETE'])
+def delete_post(id):
+    post = Post.query.get_or_404(id)
+    db.session.delete(post)
     db.session.commit()
     return '', 204

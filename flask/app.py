@@ -1,28 +1,16 @@
-from flask import Flask, jsonify
-from flask_cors import CORS
-import psycopg2
+from flask import Flask
+from config import Config
+from models import db
+from routes import api
 
 app = Flask(__name__)
-CORS(app)
+app.config.from_object(Config)
 
-# Configuration de la base de données
-conn = psycopg2.connect(
-    dbname="twitterlike",
-    user="admin",
-    password="secret", 
-    host="10.1.4.103",
-    port="5433"
-)
+db.init_app(app)
 
-@app.route('/api/data', methods=['GET'])
-def get_data():
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM comments;")  # Remplacez par le nom de votre table
-    rows = cur.fetchall()
-    cur.close()
-
-    data = [{"id": row[0], "name": row[1]} for row in rows]  # Ajustez selon votre schéma
-    return jsonify(data)
+app.register_blueprint(api)
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)

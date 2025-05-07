@@ -3,8 +3,8 @@ from models import db, Category
 
 category_api = Blueprint('category_api', __name__)
 
-@category_api.route('/category', methods=['GET'])
-def get_category():
+@category_api.route('/categories', methods=['GET'])
+def get_categories():
     categories = Category.query.all()
     return jsonify([category.to_dict() for category in categories])
 
@@ -16,11 +16,7 @@ def get_category(id):
 @category_api.route('/categories', methods=['POST'])
 def create_category():
     data = request.get_json()
-    new_category = Category(
-        name=data['name'],
-        nb_publications=data['nb_publications'],
-        description=data['description']
-    )
+    new_category = Category(name=data['name'], nb_publications=data['nb_publications'], description=data['description'])
     db.session.add(new_category)
     db.session.commit()
     return jsonify(new_category.to_dict()), 201
@@ -36,7 +32,7 @@ def update_category(id):
     return jsonify(category.to_dict())
 
 @category_api.route('/categories/<int:id>', methods=['DELETE'])
-def delete_user(id):
+def delete_category(id):
     category = Category.query.get_or_404(id)
     db.session.delete(category)
     db.session.commit()
