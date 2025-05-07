@@ -13,10 +13,10 @@ export default function RegisterPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
+  const [pseudo, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [profileImage, setProfileImage] = useState(null);
+  const [profile_picture, setProfileImage] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [isPublic, setIsPublic] = useState(true);
   const [error, setError] = useState('');
@@ -49,7 +49,7 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
     
-    if (!firstName || !lastName || !email || !username || !password) {
+    if (!firstName || !lastName || !email || !pseudo || !password) {
       setError('Veuillez remplir tous les champs obligatoires.');
       setLoading(false);
       return;
@@ -60,12 +60,12 @@ export default function RegisterPage() {
       formData.append('firstName', firstName);
       formData.append('lastName', lastName);
       formData.append('email', email);
-      formData.append('username', username);
+      formData.append('pseudo', pseudo);
       formData.append('password', password);
       
       // Utiliser l'image de profil par défaut si aucune n'est sélectionnée
-      if (profileImage) {
-        formData.append('profileImage', profileImage);
+      if (profile_picture) {
+        formData.append('profile_picture', profile_picture);
         formData.append('useDefaultImage', 'false');
       } else {
         formData.append('useDefaultImage', 'true');
@@ -301,7 +301,7 @@ export default function RegisterPage() {
           </motion.div>
           
           <motion.div variants={fieldVariant}>
-            <label htmlFor="username" className="block text-[#90EE90] mb-1">
+            <label htmlFor="pseudo" className="block text-[#90EE90] mb-1">
               Pseudo
             </label>
             <div className="relative">
@@ -309,9 +309,9 @@ export default function RegisterPage() {
                 <FontAwesomeIcon icon={faUser} />
               </span>
               <input
-                id="username"
+                id="pseudo"
                 type="text"
-                value={username}
+                value={pseudo}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Choisissez un pseudo unique"
                 className="w-full pl-10 pr-3 py-2 bg-[#444444] text-white rounded border border-[#555555] focus:outline-none focus:ring-2 focus:ring-[#90EE90]"
