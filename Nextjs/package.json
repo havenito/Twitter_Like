@@ -13,14 +13,17 @@
     "@fortawesome/free-regular-svg-icons": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
+    "@supabase/supabase-js": "^2.49.4",
     "framer-motion": "^12.4.10",
     "next": "^15.2.5",
+    "next-auth": "^4.24.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/react": "19.1.4",
     "eslint": "^9",
     "eslint-config-next": "15.1.7",
     "postcss": "^8",

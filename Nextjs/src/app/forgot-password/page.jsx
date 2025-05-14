@@ -43,7 +43,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#222222] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#120e0e] px-4">
       {showNotification && (
         <Notification
           message={message}

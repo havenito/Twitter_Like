@@ -53,7 +53,6 @@ class User(db.Model):
     updated_at      = db.Column(db.DateTime, nullable=False,
                                 default=db.func.current_timestamp(),
                                 onupdate=db.func.current_timestamp())
-    is_accepted     = db.Column(db.Boolean, nullable=False, default=True)
     private         = db.Column(db.Boolean, default=False)
     pseudo          = db.Column(db.String(50), nullable=True)
 
@@ -84,7 +83,6 @@ def create_user():
     pseudo     = data.get('pseudo', '').strip()
     roles      = data.get('roles', 'user')
     picture    = data.get('profile_picture')
-    accepted   = data.get('is_accepted', True)
     private    = data.get('private', False)
 
     if not all([email, password, first_name, last_name, pseudo]):
@@ -99,7 +97,6 @@ def create_user():
     hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
     user = User(email=email, password=hashed_pw, roles=roles,
                 first_name=first_name, last_name=last_name,
-                profile_picture=picture, is_accepted=accepted,
                 private=private, pseudo=pseudo)
     try:
         db.session.add(user)
