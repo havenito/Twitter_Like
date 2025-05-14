@@ -2,10 +2,6 @@ from flask import Flask
 from config import Config
 from models import db
 from routes import api
-from dotenv import load_dotenv
-
-
-
 
 app = Flask(__name__)
 app.config.from_object(Config)
