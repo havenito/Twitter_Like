@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faLock, faEnvelope, faSignature, faCamera, faGlobe, faLock as faLockSolid, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import { faUser, faLock, faEnvelope, faSignature, faCamera, faGlobe, faLock as faLockSolid, faEye, faEyeSlash, faCheckCircle, faTimesCircle } from "@fortawesome/free-solid-svg-icons"; // Ajout de faCheckCircle et faTimesCircle
 import Notification from '../../components/Notification';
 import { motion } from 'framer-motion';
 
@@ -15,7 +15,13 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [pseudo, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [passwordCriteria, setPasswordCriteria] = useState({
+    minLength: false,
+    hasUppercase: false,
+    hasSpecialChar: false,
+  });
   const [profile_picture, setProfileImage] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [isPublic, setIsPublic] = useState(true);
@@ -44,13 +50,59 @@ export default function RegisterPage() {
     setShowPassword(!showPassword);
   };
 
+  // Fonctions pour vérifier chaque critère du mot de passe
+  const checkMinLength = (pass) => pass.length >= 8;
+  const checkHasUppercase = (pass) => /[A-Z]/.test(pass);
+  const checkHasNumber = (pass) => /\d/.test(pass);
+  const checkHasSpecialChar = (pass) => /[!@#$%^&*(),.?":{}|<>_-]/.test(pass);
+
+  const handlePasswordChange = (e) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    setPasswordCriteria({
+      minLength: checkMinLength(newPassword),
+      hasUppercase: checkHasUppercase(newPassword),
+      hasNumber: checkHasNumber(newPassword),
+      hasSpecialChar: checkHasSpecialChar(newPassword),
+    });
+  };
+
+  const validatePassword = (password) => {
+    if (!checkMinLength(password)) {
+      return "Le mot de passe doit contenir au moins 8 caractères.";
+    }
+    if (!checkHasUppercase(password)) {
+      return "Le mot de passe doit contenir au moins une lettre majuscule.";
+    }
+    if (!checkHasNumber(password)) {
+      return "Le mot de passe doit contenir au moins un chiffre.";
+    }
+    if (!checkHasSpecialChar(password)) {
+      return "Le mot de passe doit contenir au moins un caractère spécial.";
+    }
+    return null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     
-    if (!firstName || !lastName || !email || !pseudo || !password) {
+    if (!firstName || !lastName || !email || !pseudo || !password || !confirmPassword) {
       setError('Veuillez remplir tous les champs obligatoires.');
+      setLoading(false);
+      return;
+    }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
+      setLoading(false);
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas.');
       setLoading(false);
       return;
     }
@@ -211,7 +263,7 @@ export default function RegisterPage() {
               onClick={() => fileInputRef.current.click()}
             >
               {previewImage ? (
-                <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
+                <Image src={previewImage} alt="Preview" className="w-full h-full object-cover" />
               ) : (
                 <FontAwesomeIcon icon={faCamera} className="text-[#90EE90] text-2xl" />
               )}
@@ -332,7 +384,7 @@ export default function RegisterPage() {
                 id="password"
                 type={showPassword ? "text" : "password"}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={handlePasswordChange} 
                 placeholder="Créez un mot de passe"
                 className="w-full pl-10 pr-10 py-2 bg-[#444444] text-white rounded border border-[#555555] focus:outline-none focus:ring-2 focus:ring-[#90EE90]"
                 required
@@ -345,6 +397,44 @@ export default function RegisterPage() {
               >
                 <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
               </button>
+            </div>
+            <div className="mt-2 space-y-1 pt-1 text-xs">
+              <p className={`flex items-center ${passwordCriteria.minLength ? 'text-green-400' : 'text-gray-400'}`}>
+                <FontAwesomeIcon icon={passwordCriteria.minLength ? faCheckCircle : faTimesCircle} className="mr-2" />
+                Au moins 8 caractères.
+              </p>
+              <p className={`flex items-center ${passwordCriteria.hasUppercase ? 'text-green-400' : 'text-gray-400'}`}>
+                <FontAwesomeIcon icon={passwordCriteria.hasUppercase ? faCheckCircle : faTimesCircle} className="mr-2" />
+                Au moins une lettre majuscule (A-Z).
+              </p>
+              <p className={`flex items-center ${passwordCriteria.hasNumber ? 'text-green-400' : 'text-gray-400'}`}>
+                <FontAwesomeIcon icon={passwordCriteria.hasNumber ? faCheckCircle : faTimesCircle} className="mr-2" />
+                Au moins un chiffre (0-9).
+              </p>
+              <p className={`flex items-center ${passwordCriteria.hasSpecialChar ? 'text-green-400' : 'text-gray-400'}`}>
+                <FontAwesomeIcon icon={passwordCriteria.hasSpecialChar ? faCheckCircle : faTimesCircle} className="mr-2" />
+                Au moins un caractère spécial (!@#$...).
+              </p>
+            </div>
+          </motion.div>
+
+          <motion.div variants={fieldVariant}>
+            <label htmlFor="confirmPassword" className="block text-[#90EE90] mb-1">
+              Confirmer le mot de passe
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                <FontAwesomeIcon icon={faLock} />
+              </span>
+              <input
+                id="confirmPassword"
+                type={showPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirmez votre mot de passe"
+                className="w-full pl-10 pr-10 py-2 bg-[#444444] text-white rounded border border-[#555555] focus:outline-none focus:ring-2 focus:ring-[#90EE90]"
+                required
+              />
             </div>
           </motion.div>
           
