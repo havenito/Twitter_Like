@@ -10,7 +10,6 @@ class User(db.Model):
     profile_picture = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
-    is_accepted = db.Column(db.Boolean, nullable=False, default=False)
     private = db.Column(db.Boolean, default=False)
     pseudo = db.Column(db.String(50), nullable=True)
     
