@@ -27,10 +27,13 @@ export default function LoginPage() {
     setError('');
     
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password: password.trim()
+        }),
       });
       
       const data = await response.json();
@@ -42,8 +45,6 @@ export default function LoginPage() {
       localStorage.setItem('userToken', data.token);
       
       setShowNotification(true);
-      
-      // Redirection vers la page d'accueil après un court délai
       setTimeout(() => {
         router.push('/home');
       }, 1500);
@@ -59,34 +60,16 @@ export default function LoginPage() {
     setShowPassword(!showPassword);
   };
 
-  // Variantes pour la notification
   const centeredNotificationVariants = {
-    initial: { opacity: 0, x:-100, y: -50, scale: 0.3 }, 
-    animate: { opacity: 1, x:-100, y: 0, scale: 1 },   
-    exit: { opacity: 0, x:-100, y: -20, scale: 0.5, transition: { duration: 0.4 } } 
+    initial: { opacity: 0, x: -100, y: -50, scale: 0.3 },
+    animate: { opacity: 1, x: -100, y: 0, scale: 1 },
+    exit: { opacity: 0, x: -100, y: -20, scale: 0.5, transition: { duration: 0.4 } }
   };
 
   const pageVariants = {
-    initial: {
-      opacity: 0,
-      y: 50
-    },
-    animate: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut"
-      }
-    },
-    exit: {
-      opacity: 0,
-      y: -50,
-      transition: {
-        duration: 0.4,
-        ease: "easeIn"
-      }
-    }
+    initial: { opacity: 0, y: 50 },
+    animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+    exit:    { opacity: 0, y: -50, transition: { duration: 0.4, ease: "easeIn" } }
   };
 
   return (
@@ -134,9 +117,7 @@ export default function LoginPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1, duration: 0.4 }}
           >
-            <label htmlFor="email" className="block text-[#90EE90] mb-1">
-              Email
-            </label>
+            <label htmlFor="email" className="block text-[#90EE90] mb-1">Email</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                 <FontAwesomeIcon icon={faUser} />
@@ -145,7 +126,7 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 placeholder="Entrez votre email"
                 className="w-full pl-10 pr-3 py-2 bg-[#444444] text-white rounded border border-[#555555] focus:outline-none focus:ring-2 focus:ring-[#90EE90]"
                 required
@@ -158,9 +139,7 @@ export default function LoginPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, duration: 0.4 }}
           >
-            <label htmlFor="password" className="block text-[#90EE90] mb-1">
-              Mot de passe
-            </label>
+            <label htmlFor="password" className="block text-[#90EE90] mb-1">Mot de passe</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                 <FontAwesomeIcon icon={faLock} />
@@ -169,16 +148,16 @@ export default function LoginPage() {
                 id="password"
                 type={showPassword ? "text" : "password"}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 placeholder="Entrez votre mot de passe"
                 className="w-full pl-10 pr-10 py-2 bg-[#444444] text-white rounded border border-[#555555] focus:outline-none focus:ring-2 focus:ring-[#90EE90]"
                 required
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#90EE90] focus:outline-none"
                 onClick={toggleShowPassword}
-                tabIndex="-1" 
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#90EE90] focus:outline-none"
+                tabIndex="-1"
               >
                 <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
               </button>
@@ -197,6 +176,13 @@ export default function LoginPage() {
           >
             {loading ? 'Connexion en cours...' : 'Se connecter'}
           </motion.button>
+          
+          {/* Lien Mot de passe oublié */}
+          <div className="text-right mt-2">
+            <Link href="/forgot-password" className="text-sm text-[#90EE90] hover:underline">
+              Mot de passe oublié ?
+            </Link>
+          </div>
         </form>
         
         <motion.div
