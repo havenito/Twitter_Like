@@ -158,3 +158,26 @@ def delete_post(post_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Failed to delete post: {str(e)}'}), 500
+
+@posts_bp.route('/api/posts', methods=['GET'])
+def get_all_posts():
+    try:
+        # Récupérer tous les posts, triés par date de publication (du plus récent au plus ancien)
+        posts = Post.query.order_by(Post.published_at.desc()).all()
+        result = []
+        
+        for post in posts:
+            result.append({
+                'id': post.id,
+                'title': post.title,
+                'content': post.content,
+                'published_at': post.published_at,
+                'media_url': post.media_url,
+                'media_type': post.media_type,
+                'user_id': post.user_id,
+                'category_id': post.category_id
+            })
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': f'Failed to fetch posts: {str(e)}'}), 500
