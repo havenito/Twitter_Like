@@ -5,6 +5,7 @@ from flask import request
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
 import os
+import re
 
 # Ajoutez ces importations
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
@@ -31,7 +32,6 @@ class User(db.Model):
     profile_picture = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
-    is_accepted = db.Column(db.Boolean, nullable=False, default=False)
     private = db.Column(db.Boolean, default=False)
     pseudo = db.Column(db.String(50), nullable=True)
 
@@ -40,6 +40,17 @@ def __repr__(self):
 
 with app.app_context():
     db.create_all()
+
+def validate_password(password):
+    if len(password) < 8:
+        return "Le mot de passe doit contenir au moins 8 caractères."
+    if not re.search(r'[A-Z]', password):
+        return "Le mot de passe doit contenir au moins une lettre majuscule."
+    if not re.search(r'[0-9]', password):
+        return "Le mot de passe doit contenir au moins un chiffre."
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>_-]', password):
+        return "Le mot de passe doit contenir au moins un caractère spécial."
+    return None
 
 @app.route('/api/users', methods=['POST'])
 def create_user():
@@ -50,7 +61,6 @@ def create_user():
     first_name = data.get('first_name')
     last_name = data.get('last_name')
     profile_picture = data.get('profile_picture')
-    is_accepted = data.get('is_accepted', False)
     private = data.get('private', False)
     pseudo = data.get('pseudo')
 
@@ -58,6 +68,11 @@ def create_user():
         return jsonify({'error': 'Tous les champs obligatoires (email, mot de passe, prénom, nom, pseudo) doivent être fournis'}), 400
         
     try:
+        #Vérifier que le mot de passe respecte les critères
+        password_error = validate_password(password)
+        if password_error:
+            return jsonify({'error': password_error}), 400
+        
         # Vérifier si l'email existe déjà
         existing_user_by_email = User.query.filter_by(email=email).first()
         if existing_user_by_email:
@@ -78,7 +93,6 @@ def create_user():
             first_name=first_name, 
             last_name=last_name, 
             profile_picture=profile_picture, 
-            is_accepted=is_accepted, 
             private=private, 
             pseudo=pseudo
         )
@@ -106,10 +120,6 @@ def login():
     
     if not user or not bcrypt.check_password_hash(user.password, password):
         return jsonify({'error': 'Email ou mot de passe incorrect'}), 401
-    
-    # Vérifier si l'utilisateur est accepté (si nécessaire)
-    if not user.is_accepted:
-        return jsonify({'error': 'Votre compte n\'a pas encore été approuvé'}), 403
     
     # Créer le token JWT
     access_token = create_access_token(
