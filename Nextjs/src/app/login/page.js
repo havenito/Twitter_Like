@@ -185,6 +185,19 @@ export default function LoginPage() {
             </div>
           </motion.div>
           
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.25, duration: 0.4 }}
+            className='!mt-1'
+          >
+            <div className="text-right"> 
+              <Link href="/forgot-password" className="text-sm text-[#90EE90] hover:underline">
+                Mot de passe oublié ?
+              </Link>
+            </div>
+          </motion.div>
+
           <motion.button
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
