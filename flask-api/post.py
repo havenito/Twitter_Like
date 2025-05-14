@@ -93,6 +93,100 @@ def create_post():
         db.session.rollback()
         return jsonify({'error': f'Failed to create post: {str(e)}'}), 500
 
+@app.route('/api/update_post/<int:post_id>', methods=['PUT', 'POST'])
+def update_post(post_id):
+    try:
+        # Find the post by ID
+        post = Post.query.get(post_id)
+        if not post:
+            return jsonify({'error': 'Post not found'}), 404
+            
+        # Update basic fields if provided
+        if 'title' in request.form:
+            post.title = request.form['title']
+        
+        if 'content' in request.form:
+            post.content = request.form['content']
+            
+        if 'category_id' in request.form:
+            post.category_id = request.form['category_id']
+            
+        # Handle file update if present
+        if 'file' in request.files:
+            file = request.files['file']
+            if file.filename:  # Check if a new file was actually provided
+                file_type = file.content_type
+                response = cloudinary.uploader.upload(file, resource_type='auto')
+                url = response['secure_url']
+                
+                # Update media info
+                post.media_url = url
+                
+                if file_type.startswith('image'):
+                    post.media_type = 'image'
+                elif file_type.startswith('video'):
+                    post.media_type = 'video'
+                elif file_type.startswith('image/gif'):
+                    post.media_type = 'gif'
+                else:
+                    return jsonify({'error': 'Unsupported file type'}), 400
+                    
+        # Handle media removal if requested
+        if request.form.get('remove_media') == 'true':
+            post.media_url = None
+            post.media_type = None
+        
+        # Commit changes
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Post updated successfully',
+            'post': {
+                'id': post.id,
+                'title': post.title,
+                'content': post.content,
+                'media_url': post.media_url,
+                'media_type': post.media_type
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to update post: {str(e)}'}), 500
+
+@app.route('/api/posts/<int:post_id>', methods=['GET'])
+def get_post(post_id):
+    post = Post.query.get(post_id)
+    if not post:
+        return jsonify({'error': 'Post not found'}), 404
+        
+    return jsonify({
+        'id': post.id,
+        'title': post.title,
+        'content': post.content,
+        'published_at': post.published_at,
+        'media_url': post.media_url,
+        'media_type': post.media_type,
+        'user_id': post.user_id,
+        'category_id': post.category_id
+    })
+
+@app.route('/api/posts/<int:post_id>', methods=['DELETE'])
+def delete_post(post_id):
+    try:
+        post = Post.query.get(post_id)
+        if not post:
+            return jsonify({'error': 'Post not found'}), 404
+            
+        db.session.delete(post)
+        db.session.commit()
+        
+        return jsonify({'message': 'Post deleted successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to delete post: {str(e)}'}), 500
+
 # Create tables before running
 with app.app_context():
     db.create_all()
