@@ -1,149 +1,37 @@
-from flask import Flask, jsonify
+from flask import Flask
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
-from flask import request
-from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
-import os
-import re
+from flask_bcrypt import Bcrypt
 
-# Ajoutez ces importations
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
-from datetime import timedelta
+from config import Config
+from models import db
+from routes.auth import auth_bp, bcrypt
+from routes.posts import posts_bp
+from services.file_upload import init_cloudinary
 
-app = Flask(__name__)
-bcrypt = Bcrypt(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or 'postgresql://postgres.wubjzcnmqyvehftmoieo:Enzolise1976...@localhost:6543/postgres'
-db = SQLAlchemy(app)
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
-
-# Configurer JWT
-app.config['JWT_SECRET_KEY'] = 'votre-cle-secrete-a-changer'  # À changer en production
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
-jwt = JWTManager(app)
-
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
-    roles = db.Column(db.String(50), nullable=False)
-    first_name = db.Column(db.String(50), nullable=False)
-    last_name = db.Column(db.String(50), nullable=False)
-    profile_picture = db.Column(db.String(255), nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
-    updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
-    private = db.Column(db.Boolean, default=False)
-    pseudo = db.Column(db.String(50), nullable=True)
-
-def __repr__(self):
-        return f'<User {self.name}>'
-
-with app.app_context():
-    db.create_all()
-
-def validate_password(password):
-    if len(password) < 8:
-        return "Le mot de passe doit contenir au moins 8 caractères."
-    if not re.search(r'[A-Z]', password):
-        return "Le mot de passe doit contenir au moins une lettre majuscule."
-    if not re.search(r'[0-9]', password):
-        return "Le mot de passe doit contenir au moins un chiffre."
-    if not re.search(r'[!@#$%^&*(),.?":{}|<>_-]', password):
-        return "Le mot de passe doit contenir au moins un caractère spécial."
-    return None
-
-@app.route('/api/users', methods=['POST'])
-def create_user():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
-    roles = data.get('roles')
-    first_name = data.get('first_name')
-    last_name = data.get('last_name')
-    profile_picture = data.get('profile_picture')
-    private = data.get('private', False)
-    pseudo = data.get('pseudo')
-
-    if not all([email, password, first_name, last_name, pseudo]):
-        return jsonify({'error': 'Tous les champs obligatoires (email, mot de passe, prénom, nom, pseudo) doivent être fournis'}), 400
-        
-    try:
-        #Vérifier que le mot de passe respecte les critères
-        password_error = validate_password(password)
-        if password_error:
-            return jsonify({'error': password_error}), 400
-        
-        # Vérifier si l'email existe déjà
-        existing_user_by_email = User.query.filter_by(email=email).first()
-        if existing_user_by_email:
-            return jsonify({'error': 'Cet email est déjà utilisé'}), 409
-
-        # Vérifier si le pseudo existe déjà
-        existing_user_by_pseudo = User.query.filter_by(pseudo=pseudo).first()
-        if existing_user_by_pseudo:
-            return jsonify({'error': 'Ce pseudo est déjà utilisé'}), 409
-
-        # Hasher le mot de passe avant de le stocker
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        
-        new_user = User(
-            email=email, 
-            password=hashed_password, # Utiliser le mot de passe haché
-            roles=roles, 
-            first_name=first_name, 
-            last_name=last_name, 
-            profile_picture=profile_picture, 
-            private=private, 
-            pseudo=pseudo
-        )
-        db.session.add(new_user)
-        db.session.commit()
-        return jsonify({'message': 'Utilisateur créé avec succès', 'user_id': new_user.id}), 201
-    except Exception as e:
-        db.session.rollback()
-        app.logger.error(f"Erreur lors de la création de l'utilisateur: {str(e)}")
-        return jsonify({'error': 'Une erreur interne est survenue lors de la création de l\'utilisateur.'}), 500
-
-
-# Ajouter la route de login
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
+def create_app(config_class=Config):
+    # Initialize Flask app
+    app = Flask(__name__)
+    app.config.from_object(config_class)
     
-    if not email or not password:
-        return jsonify({'error': 'Email et mot de passe requis'}), 400
+    # Initialize extensions
+    db.init_app(app)
+    jwt = JWTManager(app)
+    CORS(app)
     
-    # Rechercher l'utilisateur par email
-    user = User.query.filter_by(email=email).first()
+    # Initialize Cloudinary
+    init_cloudinary(app)
     
-    if not user or not bcrypt.check_password_hash(user.password, password):
-        return jsonify({'error': 'Email ou mot de passe incorrect'}), 401
+    # Register blueprints
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(posts_bp)
     
-    # Créer le token JWT
-    access_token = create_access_token(
-        identity={
-            'id': user.id,
-            'email': user.email,
-            'roles': user.roles
-        }
-    )
+    # Create database tables
+    with app.app_context():
+        db.create_all()
     
-    return jsonify({
-        'message': 'Connexion réussie',
-        'token': access_token,
-        'user': {
-            'id': user.id,
-            'email': user.email,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'roles': user.roles,
-            'profile_picture': user.profile_picture,
-            'private': user.private,
-            'pseudo': user.pseudo
-        }
-    }), 200
+    return app
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app = create_app()
+    app.run(debug=True)
