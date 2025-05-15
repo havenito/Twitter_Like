@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - Twitter-Like</title>
+    <style>
+        :root {
+            --primary-color: #1DA1F2;
+            --secondary-color: #14171A;
+            --background-color: #f7f9fa;
+            --text-color: #14171A;
+            --sidebar-width: 250px;
+            --header-height: 70px;
+            --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--secondary-color);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: all 0.3s;
+            z-index: 999;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-header h2 {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+        }
+        
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+        
+        .menu-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .menu-item:hover, .menu-item.active {
+            background-color: rgba(29, 161, 242, 0.1);
+            color: white;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .menu-item i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+            padding-top: calc(var(--header-height) + 20px);
+        }
+        
+        .header {
+            position: fixed;
+            width: calc(100% - var(--sidebar-width));
+            height: var(--header-height);
+            background-color: white;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            margin-left: var(--sidebar-width);
+            z-index: 99;
+        }
+        
+        .header-search {
+            flex: 1;
+            margin: 0 20px;
+        }
+        
+        .header-search input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #e1e8ed;
+            border-radius: 30px;
+            outline: none;
+            font-size: 0.9rem;
+        }
+        
+        .header-search input:focus {
+            border-color: var(--primary-color);
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-profile img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-card {
+            display: flex;
+            flex-direction: column;
+            height: 140px;
+        }
+        
+        .stat-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .stat-card-header h3 {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #657786;
+        }
+        
+        .stat-card-header i {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+        
+        .stat-card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card-info {
+            display: flex;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #657786;
+        }
+        
+        .stat-card-info.increase {
+            color: #17bf63;
+        }
+        
+        .stat-card-info.decrease {
+            color: #e0245e;
+        }
+        
+        .charts-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-card {
+            position: relative;
+            min-height: 300px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        
+        .data-table th, .data-table td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid #e1e8ed;
+        }
+        
+        .data-table th {
+            background-color: #f5f8fa;
+            font-weight: 600;
+            color: #657786;
+        }
+        
+        .data-table tbody tr:hover {
+            background-color: #f5f8fa;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #1a91da;
+        }
+        
+        .btn-danger {
+            background-color: #e0245e;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c01e51;
+        }
+        
+        .btn-edit {
+            background-color: #ffad1f;
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            background-color: #e6991c;
+        }
+        
+        .tag {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        
+        .tag-success {
+            background-color: rgba(23, 191, 99, 0.1);
+            color: #17bf63;
+        }
+        
+        .tag-pending {
+            background-color: rgba(255, 173, 31, 0.1);
+            color: #ffad1f;
+        }
+        
+        .tag-error {
+            background-color: rgba(224, 36, 94, 0.1);
+            color: #e0245e;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 20px;
+        }
+        
+        .pagination button {
+            padding: 5px 10px;
+            margin: 0 5px;
+            background-color: white;
+            border: 1px solid #e1e8ed;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .pagination button.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .section-title {
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .content-panel {
+            display: none;
+        }
+        
+        .content-panel.active {
+            display: block;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e1e8ed;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            font-size: 1.2rem;
+        }
+        
+        .modal-close {
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: #657786;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e1e8ed;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #e1e8ed;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding-top: calc(var(--header-height) + 20px);
+            }
+            
+            .header {
+                width: 100%;
+                margin-left: 0;
+            }
+            
+            .toggle-sidebar {
+                display: block;
+            }
+            
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .stats-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .toggle-sidebar {
+            margin-right: 10px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: none;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>Twitter-Like</h2>
+            <p>Admin Dashboard</p>
+        </div>
+        <div class="sidebar-menu">
+            <div class="menu-item active" data-panel="dashboard">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="menu-item" data-panel="users">
+                <i class="fas fa-users"></i>
+                <span>Utilisateurs</span>
+            </div>
+            <div class="menu-item" data-panel="posts">
+                <i class="fas fa-file-alt"></i>
+                <span>Publications</span>
+            </div>
+            <div class="menu-item" data-panel="categories">
+                <i class="fas fa-tags"></i>
+                <span>Catégories</span>
+            </div>
+            <div class="menu-item" data-panel="comments">
+                <i class="fas fa-comments"></i>
+                <span>Commentaires</span>
+            </div>
+            <div class="menu-item" data-panel="settings">
+                <i class="fas fa-cog"></i>
+                <span>Paramètres</span>
+            </div>
+            <div class="menu-item" id="logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Déconnexion</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="toggle-sidebar" id="toggle-sidebar">
+            <i class="fas fa-bars"></i>
+        </div>
+        <div class="header-search">
+            <input type="text" placeholder="Rechercher...">
+        </div>
+        <div class="user-profile">
+            <img src="https://ui-avatars.com/api/?name=Admin+User&background=1DA1F2&color=fff" alt="Admin User">
+            <span>Admin User</span>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Dashboard Panel -->
+        <div class="content-panel active" id="dashboard-panel">
+            <h2 class="section-title">Tableau de bord</h2>
+            
+            <!-- Stats Cards -->
+            <div class="stats-cards">
+                <div class="card stat-card">
+                    <div class="stat-card-header">
+                        <h3>Total Utilisateurs</h3>
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-card-value" id="user-count">0</div>
+                    <div class="stat-card-info increase">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>+12% depuis le mois dernier</span>
+                    </div>
+                </div>
+                
+                <div class="card stat-card">
+                    <div class="stat-card-header">
+                        <h3>Total Publications</h3>
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="stat-card-value" id="post-count">0</div>
+                    <div class="stat-card-info increase">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>+5% depuis le mois dernier</span>
+                    </div>
+                </div>
+                
+                <div class="card stat-card">
+                    <div class="stat-card-header">
+                        <h3>Total Commentaires</h3>
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <div class="stat-card-value">128</div>
+                    <div class="stat-card-info increase">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>+18% depuis le mois dernier</span>
+                    </div>
+                </div>
+                
+                <div class="card stat-card">
+                    <div class="stat-card-header">
+                        <h3>Utilisateurs Actifs</h3>
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="stat-card-value">42</div>
+                    <div class="stat-card-info decrease">
+                        <i class="fas fa-arrow-down"></i>
+                        <span>-3% depuis le mois dernier</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Posts -->
+            <h3 class="section-title">Publications Récentes</h3>
+            <div class="table-container">
+                <table class="data-table" id="recent-posts-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titre</th>
+                            <th>Auteur</th>
+                            <th>Catégorie</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-posts-body">
+                        <!-- Loading indicator -->
+                        <tr>
+                            <td colspan="6" style="text-align: center;">Chargement des publications...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Users Panel -->
+        <div class="content-panel" id="users-panel">
+            <h2 class="section-title">Gestion des Utilisateurs</h2>
+            <button class="btn btn-primary" id="add-user-btn"><i class="fas fa-plus"></i> Ajouter un utilisateur</button>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nom</th>
+                            <th>Email</th>
+                            <th>Rôle</th>
+                            <th>Statut</th>
+                            <th>Date d'inscription</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <!-- Loading indicator -->
+                        <tr>
+                            <td colspan="7" style="text-align: center;">Chargement des utilisateurs...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination">
+                <button><i class="fas fa-chevron-left"></i></button>
+                <button class="active">1</button>
+                <button>2</button>
+                <button>3</button>
+                <button><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+        
+        <!-- Posts Panel -->
+        <div class="content-panel" id="posts-panel">
+            <h2 class="section-title">Gestion des Publications</h2>
+            <button class="btn btn-primary" id="add-post-btn"><i class="fas fa-plus"></i> Ajouter une publication</button>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titre</th>
+                            <th>Auteur</th>
+                            <th>Catégorie</th>
+                            <th>Date</th>
+                            <th>Media</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="posts-table-body">
+                        <!-- Loading indicator -->
+                        <tr>
+                            <td colspan="7" style="text-align: center;">Chargement des publications...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination">
+                <button><i class="fas fa-chevron-left"></i></button>
+                <button class="active">1</button>
+                <button>2</button>
+                <button>3</button>
+                <button><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+        
+        <!-- Categories Panel -->
+        <div class="content-panel" id="categories-panel">
+            <h2 class="section-title">Gestion des Catégories</h2>
+            <button class="btn btn-primary" id="add-category-btn"><i class="fas fa-plus"></i> Ajouter une catégorie</button>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nom</th>
+                            <th>Description</th>
+                            <th>Nombre de publications</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categories-table-body">
+                        <!-- Load from API -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Comments Panel -->
+        <div class="content-panel" id="comments-panel">
+            <h2 class="section-title">Gestion des Commentaires</h2>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Contenu</th>
+                            <th>Auteur</th>
+                            <th>Publication</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Placeholder data -->
+                        <tr>
+                            <td>1</td>
+                            <td>Super article, j'ai beaucoup appris !</td>
+                            <td>John Doe</td>
+                            <td>Les bases de Flask</td>
+                            <td>15/05/2023</td>
+                            <td class="action-buttons">
+                                <button class="btn btn-edit"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-danger"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination">
+                <button><i class="fas fa-chevron-left"></i></button>
+                <button class="active">1</button>
+                <button>2</button>
+                <button>3</button>
+                <button><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+        
+        <!-- Settings Panel -->
+        <div class="content-panel" id="settings-panel">
+            <h2 class="section-title">Paramètres</h2>
+            
+            <div class="card">
+                <h3>Paramètres généraux</h3>
+                <div class="form-group">
+                    <label for="site-name">Nom du site</label>
+                    <input type="text" id="site-name" class="form-control" value="Twitter-Like">
+                </div>
+                <div class="form-group">
+                    <label for="site-description">Description</label>
+                    <textarea id="site-description" class="form-control" rows="3">Une plateforme de partage de contenu inspirée de Twitter</textarea>
+                </div>
+                <button class="btn btn-primary">Enregistrer les modifications</button>
+            </div>
+            
+            <div class="card" style="margin-top: 20px;">
+                <h3>Paramètres de sécurité</h3>
+                <div class="form-group">
+                    <label for="admin-email">Email administrateur</label>
+                    <input type="email" id="admin-email" class="form-control" value="admin@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="current-password">Mot de passe actuel</label>
+                    <input type="password" id="current-password" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="new-password">Nouveau mot de passe</label>
+                    <input type="password" id="new-password" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">Confirmer le mot de passe</label>
+                    <input type="password" id="confirm-password" class="form-control">
+                </div>
+                <button class="btn btn-primary">Mettre à jour</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add User Modal -->
+    <div class="modal" id="add-user-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Ajouter un nouvel utilisateur</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="user-first-name">Prénom</label>
+                    <input type="text" id="user-first-name" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="user-last-name">Nom</label>
+                    <input type="text" id="user-last-name" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="user-email">Email</label>
+                    <input type="email" id="user-email" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="user-password">Mot de passe</label>
+                    <input type="password" id="user-password" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="user-role">Rôle</label>
+                    <select id="user-role" class="form-control">
+                        <option value="user">Utilisateur</option>
+                        <option value="admin">Administrateur</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancel-add-user">Annuler</button>
+                <button class="btn btn-primary" id="submit-add-user">Ajouter</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Post Modal -->
+    <div class="modal" id="add-post-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Ajouter une nouvelle publication</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="post-title">Titre</label>
+                    <input type="text" id="post-title" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="post-content">Contenu</label>
+                    <textarea id="post-content" class="form-control" rows="5"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="post-category">Catégorie</label>
+                    <select id="post-category" class="form-control">
+                        <!-- Load from API -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="post-author">Auteur</label>
+                    <select id="post-author" class="form-control">
+                        <!-- Load from API -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="post-media">Media (optionnel)</label>
+                    <input type="file" id="post-media" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancel-add-post">Annuler</button>
+                <button class="btn btn-primary" id="submit-add-post">Ajouter</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Category Modal -->
+    <div class="modal" id="add-category-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Ajouter une nouvelle catégorie</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="category-name">Nom</label>
+                    <input type="text" id="category-name" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="category-description">Description</label>
+                    <textarea id="category-description" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancel-add-category">Annuler</button>
+                <button class="btn btn-primary" id="submit-add-category">Ajouter</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // API Base URL
+        const API_BASE_URL = 'http://localhost:5000/api';
+        
+        // DOM Elements
+        const sidebar = document.getElementById('sidebar');
+        const menuItems = document.querySelectorAll('.menu-item');
+        const contentPanels = document.querySelectorAll('.content-panel');
+        const toggleSidebar = document.getElementById('toggle-sidebar');
+        
+        // Modals
+        const addUserModal = document.getElementById('add-user-modal');
+        const addPostModal = document.getElementById('add-post-modal');
+        const addCategoryModal = document.getElementById('add-category-modal');
+        const modalCloseButtons = document.querySelectorAll('.modal-close');
+        
+        // Buttons
+        const addUserBtn = document.getElementById('add-user-btn');
+        const addPostBtn = document.getElementById('add-post-btn');
+        const addCategoryBtn = document.getElementById('add-category-btn');
+        const cancelAddUserBtn = document.getElementById('cancel-add-user');
+        const cancelAddPostBtn = document.getElementById('cancel-add-post');
+        const cancelAddCategoryBtn = document.getElementById('cancel-add-category');
+        const submitAddUserBtn = document.getElementById('submit-add-user');
+        const submitAddPostBtn = document.getElementById('submit-add-post');
+        const submitAddCategoryBtn = document.getElementById('submit-add-category');
+        
+        // Toggle Sidebar
+        if (toggleSidebar) {
+            toggleSidebar.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+            });
+        }
+        
+        // Navigation
+        menuItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const panelId = item.getAttribute('data-panel');
+                if (panelId) {
+                    // Deactivate all menu items and panels
+                    menuItems.forEach(mi => mi.classList.remove('active'));
+                    contentPanels.forEach(cp => cp.classList.remove('active'));
+                    
+                    // Activate the clicked item and corresponding panel
+                    item.classList.add('active');
+                    document.getElementById(`${panelId}-panel`).classList.add('active');
+                    
+                    // On mobile, close sidebar after navigation
+                    if (window.innerWidth < 992) {
+                        sidebar.classList.remove('active');
+                    }
+                }
+            });
+        });
+        
+        // Modal functions
+        function openModal(modal) {
+            modal.classList.add('active');
+        }
+        
+        function closeModal(modal) {
+            modal.classList.remove('active');
+        }
+        
+        // Open modals
+        addUserBtn.addEventListener('click', () => openModal(addUserModal));
+        addPostBtn.addEventListener('click', () => openModal(addPostModal));
+        addCategoryBtn.addEventListener('click', () => openModal(addCategoryModal));
+        
+        // Close modals with X button
+        modalCloseButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const modal = button.closest('.modal');
+                closeModal(modal);
+            });
+        });
+        
+        // Close modals with cancel button
+        cancelAddUserBtn.addEventListener('click', () => closeModal(addUserModal));
+        cancelAddPostBtn.addEventListener('click', () => closeModal(addPostModal));
+        cancelAddCategoryBtn.addEventListener('click', () => closeModal(addCategoryModal));
+        
+        // Close modals when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target.classList.contains('modal')) {
+                closeModal(event.target);
+            }
+        });
+        
+        // Fetch Data Functions
+        async function fetchUsers() {
+            try {
+                // For demo, we'll use placeholder data
+                // In a real app, you would fetch from your API
+                const users = [
+                    { id: 1, first_name: 'John', last_name: 'Doe', email: 'john@example.com', role: 'admin', status: 'active', created_at: '2023-01-15' },
+                    { id: 2, first_name: 'Jane', last_name: 'Smith', email: 'jane@example.com', role: 'user', status: 'active', created_at: '2023-02-20' },
+                    { id: 3, first_name: 'Bob', last_name: 'Johnson', email: 'bob@example.com', role: 'user', status: 'pending', created_at: '2023-03-10' }
+                ];
+                
+                const usersTableBody = document.getElementById('users-table-body');
+                if (!usersTableBody) return;
+                
+                // Update user count in dashboard
+                const userCountElement = document.getElementById('user-count');
+                if (userCountElement) {
+                    userCountElement.textContent = users.length;
+                }
+                
+                // Clear table and add users
+                usersTableBody.innerHTML = '';
+                
+                users.forEach(user => {
+                    const statusClass = user.status === 'active' ? 'tag-success' : (user.status === 'pending' ? 'tag-pending' : 'tag-error');
+                    
+                    usersTableBody.innerHTML += `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${user.first_name} ${user.last_name}</td>
+                        <td>${user.email}</td>
+                        <td>${user.role}</td>
+                        <td><span class="tag ${statusClass}">${user.status}</span></td>
+                        <td>${user.created_at}</td>
+                        <td class="action-buttons">
+                            <button class="btn btn-edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-danger"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    `;
+                });
+                
+                // Populate user dropdown in post modal
+                const postAuthorSelect = document.getElementById('post-author');
+                if (postAuthorSelect) {
+                    postAuthorSelect.innerHTML = '';
+                    users.forEach(user => {
+                        postAuthorSelect.innerHTML += `<option value="${user.id}">${user.first_name} ${user.last_name}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                // Show error in table
+                const usersTableBody = document.getElementById('users-table-body');
+                if (usersTableBody) {
+                    usersTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Error loading users: ${error.message}</td></tr>`;
+                }
+            }
+        }
+        
+        async function fetchPosts() {
+            try {
+                // Try to fetch posts from your API
+                let posts = [];
+                try {
+                    const response = await fetch(`${API_BASE_URL}/posts`);
+                    if (response.ok) {
+                        posts = await response.json();
+                    } else {
+                        throw new Error('Failed to fetch posts from API');
+                    }
+                } catch (apiError) {
+                    console.warn('API fetch failed, using placeholder data', apiError);
+                    
+                    // Use placeholder data if API fails
+                    posts = [
+                        { id: 1, title: 'Introduction à Flask', user_id: 1, category_id: 1, published_at: '2023-05-10', media_url: 'https://example.com/image1.jpg', media_type: 'image' },
+                        { id: 2, title: 'React vs Angular', user_id: 2, category_id: 2, published_at: '2023-05-12', media_url: null, media_type: null },
+                        { id: 3, title: 'Les bases du SQL', user_id: 1, category_id: 3, published_at: '2023-05-15', media_url: 'https://example.com/video1.mp4', media_type: 'video' }
+                    ];
+                }
+                
+                // Update post count in dashboard
+                const postCountElement = document.getElementById('post-count');
+                if (postCountElement) {
+                    postCountElement.textContent = posts.length;
+                }
+                
+                // Display posts in posts panel
+                const postsTableBody = document.getElementById('posts-table-body');
+                if (postsTableBody) {
+                    postsTableBody.innerHTML = '';
+                    
+                    posts.forEach(post => {
+                        const hasMedia = post.media_url ? `<i class="fas fa-${post.media_type === 'image' ? 'image' : 'video'}"></i>` : 'Non';
+                        
+                        postsTableBody.innerHTML += `
+                        <tr>
+                            <td>${post.id}</td>
+                            <td>${post.title}</td>
+                            <td>User ${post.user_id}</td>
+                            <td>Category ${post.category_id}</td>
+                            <td>${post.published_at}</td>
+                            <td>${hasMedia}</td>
+                            <td class="action-buttons">
+                                <button class="btn btn-edit"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-danger" data-post-id="${post.id}"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                        `;
+                    });
+                    
+                    // Add event listeners to delete buttons
+                    postsTableBody.querySelectorAll('.btn-danger').forEach(button => {
+                        button.addEventListener('click', async () => {
+                            const postId = button.getAttribute('data-post-id');
+                            if (confirm(`Êtes-vous sûr de vouloir supprimer la publication #${postId} ?`)) {
+                                try {
+                                    const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+                                        method: 'DELETE'
+                                    });
+                                    
+                                    if (response.ok) {
+                                        alert('Publication supprimée avec succès');
+                                        fetchPosts(); // Refresh the list
+                                    } else {
+                                        const error = await response.json();
+                                        alert(`Erreur: ${error.error || 'Échec de la suppression'}`);
+                                    }
+                                } catch (error) {
+                                    alert(`Erreur: ${error.message}`);
+                                }
+                            }
+                        });
+                    });
+                }
+                
+                // Display recent posts in dashboard
+                const recentPostsBody = document.getElementById('recent-posts-body');
+                if (recentPostsBody) {
+                    recentPostsBody.innerHTML = '';
+                    
+                    // Show only the 5 most recent posts
+                    const recentPosts = posts.slice(0, 5);
+                    
+                    recentPosts.forEach(post => {
+                        recentPostsBody.innerHTML += `
+                        <tr>
+                            <td>${post.id}</td>
+                            <td>${post.title}</td>
+                            <td>User ${post.user_id}</td>
+                            <td>Category ${post.category_id}</td>
+                            <td>${post.published_at}</td>
+                            <td class="action-buttons">
+                                <button class="btn btn-edit"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-danger" data-post-id="${post.id}"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                        `;
+                    });
+                }
+            } catch (error) {
+                console.error('Error in fetchPosts:', error);
+                
+                // Show error in posts table
+                const postsTableBody = document.getElementById('posts-table-body');
+                if (postsTableBody) {
+                    postsTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Error loading posts: ${error.message}</td></tr>`;
+                }
+                
+                // Show error in recent posts table
+                const recentPostsBody = document.getElementById('recent-posts-body');
+                if (recentPostsBody) {
+                    recentPostsBody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Error loading recent posts: ${error.message}</td></tr>`;
+                }
+            }
+        }
+        
+        async function fetchCategories() {
+            try {
+                // Placeholder data (replace with actual API call)
+                const categories = [
+                    { id: 1, name: 'Technologie', description: 'Articles sur les nouvelles technologies', nb_publications: 12 },
+                    { id: 2, name: 'Développement Web', description: 'Tout sur le développement web', nb_publications: 8 },
+                    { id: 3, name: 'Data Science', description: 'Articles sur la science des données', nb_publications: 5 }
+                ];
+                
+                // Populate category table
+                const categoriesTableBody = document.getElementById('categories-table-body');
+                if (categoriesTableBody) {
+                    categoriesTableBody.innerHTML = '';
+                    
+                    categories.forEach(category => {
+                        categoriesTableBody.innerHTML += `
+                        <tr>
+                            <td>${category.id}</td>
+                            <td>${category.name}</td>
+                            <td>${category.description}</td>
+                            <td>${category.nb_publications}</td>
+                            <td class="action-buttons">
+                                <button class="btn btn-edit"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-danger"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                        `;
+                    });
+                }
+                
+                // Populate category dropdown in post modal
+                const postCategorySelect = document.getElementById('post-category');
+                if (postCategorySelect) {
+                    postCategorySelect.innerHTML = '';
+                    categories.forEach(category => {
+                        postCategorySelect.innerHTML += `<option value="${category.id}">${category.name}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+                
+                const categoriesTableBody = document.getElementById('categories-table-body');
+                if (categoriesTableBody) {
+                    categoriesTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center;">Error loading categories: ${error.message}</td></tr>`;
+                }
+            }
+        }
+        
+        // Add event listeners to form submission
+        submitAddUserBtn.addEventListener('click', async () => {
+            const firstName = document.getElementById('user-first-name').value;
+            const lastName = document.getElementById('user-last-name').value;
+            const email = document.getElementById('user-email').value;
+            const password = document.getElementById('user-password').value;
+            const role = document.getElementById('user-role').value;
+            
+            if (!firstName || !lastName || !email || !password) {
+                alert('Veuillez remplir tous les champs requis');
+                return;
+            }
+            
+            try {
+                // Create the user object
+                const userData = {
+                    first_name: firstName,
+                    last_name: lastName,
+                    email: email,
+                    password: password,
+                    role: role
+                };
+                
+                // In a real app, send to API
+                // For demo, we'll just show success and refresh
+                alert('Utilisateur créé avec succès');
+                closeModal(addUserModal);
+                fetchUsers();
+                
+                // Clear form
+                document.getElementById('user-first-name').value = '';
+                document.getElementById('user-last-name').value = '';
+                document.getElementById('user-email').value = '';
+                document.getElementById('user-password').value = '';
+            } catch (error) {
+                alert(`Erreur: ${error.message}`);
+            }
+        });
+        
+        submitAddPostBtn.addEventListener('click', async () => {
+            const title = document.getElementById('post-title').value;
+            const content = document.getElementById('post-content').value;
+            const categoryId = document.getElementById('post-category').value;
+            const userId = document.getElementById('post-author').value;
+            const mediaFile = document.getElementById('post-media').files[0];
+            
+            if (!title || !content || !categoryId || !userId) {
+                alert('Veuillez remplir tous les champs requis');
+                return;
+            }
+            
+            try {
+                // Create form data for file upload
+                const formData = new FormData();
+                formData.append('title', title);
+                formData.append('content', content);
+                formData.append('category_id', categoryId);
+                formData.append('user_id', userId);
+                formData.append('published_at', new Date().toISOString());
+                
+                if (mediaFile) {
+                    formData.append('file', mediaFile);
+                }
+                
+                try {
+                    const response = await fetch(`${API_BASE_URL}/create_post`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        alert(`Publication créée avec succès! ID: ${result.post_id}`);
+                        closeModal(addPostModal);
+                        fetchPosts();
+                        
+                        // Clear form
+                        document.getElementById('post-title').value = '';
+                        document.getElementById('post-content').value = '';
+                        document.getElementById('post-media').value = '';
+                    } else {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Échec de la création de la publication');
+                    }
+                } catch (apiError) {
+                    console.error('API error:', apiError);
+                    alert('La publication a été simulée pour la démo');
+                    closeModal(addPostModal);
+                    fetchPosts();
+                }
+            } catch (error) {
+                alert(`Erreur: ${error.message}`);
+            }
+        });
+        
+        submitAddCategoryBtn.addEventListener('click', async () => {
+            const name = document.getElementById('category-name').value;
+            const description = document.getElementById('category-description').value;
+            
+            if (!name) {
+                alert('Veuillez entrer un nom pour la catégorie');
+                return;
+            }
+            
+            try {
+                // In a real app, send to API
+                // For demo, we'll just show success and refresh
+                alert('Catégorie créée avec succès');
+                closeModal(addCategoryModal);
+                fetchCategories();
+                
+                // Clear form
+                document.getElementById('category-name').value = '';
+                document.getElementById('category-description').value = '';
+            } catch (error) {
+                alert(`Erreur: ${error.message}`);
+            }
+        });
+        
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+                // In a real app, clear session/token and redirect
+                alert('Vous avez été déconnecté');
+                // window.location.href = 'login.html';
+            }
+        });
+        
+        // Initialize Charts
+        function initCharts() {
+            // Les graphiques ont été supprimés
+            console.log("Aucun graphique à initialiser");
+        }
+        
+        // Initialize the dashboard
+        async function initDashboard() {
+            await fetchUsers();
+            await fetchPosts();
+            await fetchCategories();
+            initCharts();
+        }
+        
+        // Start the app
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>

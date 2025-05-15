@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Utilisateurs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f8fa;
+            color: #333;
+        }
+        h1, h2 {
+            color: #1DA1F2;
+        }
+        .container {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        .form-section {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .users-section {
+            flex: 2;
+            min-width: 500px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #1DA1F2;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 5px;
+        }
+        button:hover {
+            background-color: #0c85d0;
+        }
+        .users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .user-card {
+            background-color: #f8f9fa;
+            border-left: 4px solid #1DA1F2;
+            padding: 15px;
+            border-radius: 4px;
+            position: relative;
+        }
+        .user-email {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .user-name {
+            color: #666;
+        }
+        .user-role {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .role-user {
+            background-color: #e6f7ff;
+            color: #0c85d0;
+        }
+        .role-admin {
+            background-color: #fff1f0;
+            color: #ff4d4f;
+        }
+        .status-message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        .error {
+            background-color: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+        }
+        .refresh-btn {
+            background-color: #52c41a;
+            margin-right: 10px;
+        }
+        .actions {
+            margin-top: 10px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        .user-actions {
+            margin-top: 10px;
+        }
+        .edit-btn {
+            background-color: #FFAD1F;
+        }
+        .delete-btn {
+            background-color: #E0245E;
+        }
+        .profile-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+        .image-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .modal-close {
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gestion des Utilisateurs</h1>
+    
+    <div id="status-message" style="display: none;" class="status-message"></div>
+    
+    <div class="container">
+        <div class="form-section">
+            <h2 id="form-title">Créer un nouvel utilisateur</h2>
+            <form id="user-form">
+                <input type="hidden" id="user-id">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="example@example.com" required>
+                </div>
+                <div class="form-group password-group">
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="first_name">Prénom</label>
+                    <input type="text" id="first_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="last_name">Nom</label>
+                    <input type="text" id="last_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="role">Rôle</label>
+                    <select id="role">
+                        <option value="user">Utilisateur</option>
+                        <option value="admin">Administrateur</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="profile_picture">Photo de profil</label>
+                    <input type="file" id="profile_picture" accept="image/*">
+                    <div class="image-preview" id="image-preview"></div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" id="submit-btn">Créer l'utilisateur</button>
+                    <button type="button" id="cancel-btn" class="hidden">Annuler</button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="users-section">
+            <h2>Utilisateurs existants</h2>
+            <div class="actions">
+                <button class="refresh-btn" id="refresh-users-btn">Rafraîchir la liste</button>
+            </div>
+            <div id="users-list" class="users-grid">
+                <p>Chargement des utilisateurs...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de confirmation de suppression -->
+    <div class="modal" id="delete-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirmer la suppression</h3>
+                <span class="modal-close" id="delete-modal-close">&times;</span>
+            </div>
+            <p>Êtes-vous sûr de vouloir supprimer cet utilisateur? Cette action est irréversible.</p>
+            <div class="actions">
+                <button id="cancel-delete-btn">Annuler</button>
+                <button id="confirm-delete-btn" class="delete-btn">Supprimer</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+        let isEditMode = false;
+        let userToDelete = null;
+        
+        // Éléments DOM
+        const userForm = document.getElementById('user-form');
+        const formTitle = document.getElementById('form-title');
+        const userIdInput = document.getElementById('user-id');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const firstNameInput = document.getElementById('first_name');
+        const lastNameInput = document.getElementById('last_name');
+        const roleInput = document.getElementById('role');
+        const profilePictureInput = document.getElementById('profile_picture');
+        const imagePreview = document.getElementById('image-preview');
+        const submitBtn = document.getElementById('submit-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const deleteModal = document.getElementById('delete-modal');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+        const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+        const deleteModalClose = document.getElementById('delete-modal-close');
+        
+        // Fonction pour afficher des messages d'état
+        function showStatusMessage(message, isSuccess = true) {
+            const statusElement = document.getElementById('status-message');
+            statusElement.textContent = message;
+            statusElement.className = isSuccess ? 'status-message success' : 'status-message error';
+            statusElement.style.display = 'block';
+            
+            // Masquer le message après 5 secondes
+            setTimeout(() => {
+                statusElement.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Fonction pour afficher l'aperçu de l'image
+        profilePictureInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                }
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.innerHTML = '';
+            }
+        });
+        
+        // Télécharger l'image de profil
+        async function uploadProfilePicture(file) {
+            if (!file) return null;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.url;
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Échec du téléchargement de l\'image');
+                }
+            } catch (error) {
+                console.error('Erreur lors du téléchargement de l\'image:', error);
+                return null;
+            }
+        }
+        
+        // Gérer la soumission du formulaire
+        userForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Validation basique
+            if (!emailInput.value || (!isEditMode && !passwordInput.value) || !firstNameInput.value || !lastNameInput.value) {
+                showStatusMessage('Veuillez remplir tous les champs obligatoires.', false);
+                return;
+            }
+            
+            // Télécharger l'image de profil si sélectionnée
+            let profilePictureUrl = null;
+            if (profilePictureInput.files.length > 0) {
+                profilePictureUrl = await uploadProfilePicture(profilePictureInput.files[0]);
+                if (!profilePictureUrl) {
+                    showStatusMessage('Erreur lors du téléchargement de l\'image de profil.', false);
+                    return;
+                }
+            }
+            
+            // Préparer les données utilisateur
+            const userData = {
+                email: emailInput.value,
+                first_name: firstNameInput.value,
+                last_name: lastNameInput.value,
+                roles: roleInput.value
+            };
+            
+            // Ajouter le mot de passe uniquement s'il est rempli
+            if (passwordInput.value) {
+                userData.password = passwordInput.value;
+            }
+            
+            // Ajouter l'URL de l'image de profil si disponible
+            if (profilePictureUrl) {
+                userData.profile_picture = profilePictureUrl;
+            }
+            
+            try {
+                let response;
+                
+                if (isEditMode) {
+                    // Mettre à jour l'utilisateur existant
+                    response = await fetch(`${API_BASE_URL}/users/${userIdInput.value}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(userData)
+                    });
+                } else {
+                    // Créer un nouvel utilisateur
+                    response = await fetch(`${API_BASE_URL}/users`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(userData)
+                    });
+                }
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showStatusMessage(isEditMode ? 
+                        'Utilisateur mis à jour avec succès!' : 
+                        `Utilisateur créé avec succès! ID: ${data.user_id}`);
+                    
+                    // Réinitialiser le formulaire
+                    resetForm();
+                    
+                    // Rafraîchir la liste des utilisateurs
+                    fetchUsers();
+                } else {
+                    showStatusMessage(`Erreur: ${data.error || 'Une erreur est survenue'}`, false);
+                }
+            } catch (error) {
+                showStatusMessage(`Erreur de connexion à l'API: ${error.message}`, false);
+            }
+        });
+        
+        // Fonction pour réinitialiser le formulaire
+        function resetForm() {
+            userIdInput.value = '';
+            emailInput.value = '';
+            passwordInput.value = '';
+            firstNameInput.value = '';
+            lastNameInput.value = '';
+            roleInput.value = 'user';
+            profilePictureInput.value = '';
+            imagePreview.innerHTML = '';
+            
+            // Réinitialiser le mode d'édition
+            isEditMode = false;
+            formTitle.textContent = 'Créer un nouvel utilisateur';
+            submitBtn.textContent = 'Créer l\'utilisateur';
+            cancelBtn.classList.add('hidden');
+            document.querySelector('.password-group').style.display = 'block';
+        }
+        
+        // Fonction pour récupérer les utilisateurs
+        async function fetchUsers() {
+            const usersListElement = document.getElementById('users-list');
+            usersListElement.innerHTML = '<p>Chargement des utilisateurs...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/users`);
+                
+                if (response.ok) {
+                    const users = await response.json();
+                    displayUsers(users);
+                } else {
+                    // Si le statut est 404, l'endpoint n'existe probablement pas encore
+                    if (response.status === 404) {
+                        usersListElement.innerHTML = `
+                            <p>L'endpoint GET /api/users n'existe pas encore.</p>
+                            <p>Cliquez sur le bouton "Ajouter Endpoint GET /api/users" pour voir le code à ajouter.</p>
+                        `;
+                        document.getElementById('add-user-endpoint-btn').style.display = 'block';
+                    } else {
+                        const errorData = await response.json();
+                        usersListElement.innerHTML = `<p>Erreur: ${errorData.error || response.statusText}</p>`;
+                    }
+                }
+            } catch (error) {
+                usersListElement.innerHTML = `
+                    <p>Impossible de se connecter à l'API: ${error.message}</p>
+                    <p>Assurez-vous que votre serveur Flask est en cours d'exécution sur http://localhost:5000</p>
+                `;
+            }
+        }
+        
+        // Fonction pour afficher les utilisateurs
+        function displayUsers(users) {
+            const usersListElement = document.getElementById('users-list');
+            
+            if (users.length === 0) {
+                usersListElement.innerHTML = '<p>Aucun utilisateur trouvé.</p>';
+                return;
+            }
+            
+            usersListElement.innerHTML = '';
+            
+            users.forEach(user => {
+                const userCard = document.createElement('div');
+                userCard.className = 'user-card';
+                
+                // Afficher l'image de profil si disponible
+                let profileImageHtml = '';
+                if (user.profile_picture) {
+                    profileImageHtml = `<img src="${user.profile_picture}" alt="${user.first_name || 'User'}" class="profile-image">`;
+                } else {
+                    // Image de profil par défaut avec initiales - Sécurisée contre les valeurs null
+                    const firstName = user.first_name || '';
+                    const lastName = user.last_name || '';
+                    const initials = `${firstName.charAt(0) || ''}${lastName.charAt(0) || ''}`;
+                    
+                    profileImageHtml = `
+                        <div class="profile-image" style="background-color: #1DA1F2; color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold;">
+                            ${initials || '?'}
+                        </div>
+                    `;
+                }
+                
+                userCard.innerHTML = `
+                    ${profileImageHtml}
+                    <div class="user-email">${user.email || 'Email non disponible'}</div>
+                    <div class="user-name">${user.first_name || ''} ${user.last_name || ''}</div>
+                    <div class="user-role role-${user.roles || 'user'}">${user.roles || 'user'}</div>
+                    <div>ID: ${user.id}</div>
+                    <div class="user-actions">
+                        <button class="edit-btn" data-user-id="${user.id}">Modifier</button>
+                        <button class="delete-btn" data-user-id="${user.id}">Supprimer</button>
+                    </div>
+                `;
+                
+                usersListElement.appendChild(userCard);
+            });
+            
+            // Ajouter des écouteurs d'événements pour les boutons d'édition et de suppression
+            document.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const userId = this.getAttribute('data-user-id');
+                    editUser(users.find(user => user.id == userId));
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const userId = this.getAttribute('data-user-id');
+                    userToDelete = userId;
+                    deleteModal.style.display = 'flex';
+                });
+            });
+        }
+        
+        // Fonction pour passer en mode édition
+        function editUser(user) {
+            isEditMode = true;
+            formTitle.textContent = `Modifier l'utilisateur: ${user.first_name} ${user.last_name}`;
+            submitBtn.textContent = 'Enregistrer les modifications';
+            cancelBtn.classList.remove('hidden');
+            
+            // Le mot de passe est optionnel en mode édition
+            document.querySelector('.password-group').style.display = 'block';
+            passwordInput.required = false;
+            passwordInput.placeholder = 'Laissez vide pour conserver le mot de passe actuel';
+            
+            // Remplir le formulaire avec les données de l'utilisateur
+            userIdInput.value = user.id;
+            emailInput.value = user.email;
+            passwordInput.value = '';
+            firstNameInput.value = user.first_name;
+            lastNameInput.value = user.last_name;
+            roleInput.value = user.roles;
+            
+            // Afficher l'image de profil existante
+            if (user.profile_picture) {
+                imagePreview.innerHTML = `<img src="${user.profile_picture}" alt="Preview">`;
+            } else {
+                imagePreview.innerHTML = '';
+            }
+            
+            // Faire défiler jusqu'au formulaire
+            document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Fonction pour supprimer un utilisateur
+        async function deleteUser(userId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showStatusMessage('Utilisateur supprimé avec succès!');
+                    fetchUsers();
+                } else {
+                    const data = await response.json();
+                    showStatusMessage(`Erreur: ${data.error || 'Échec de la suppression'}`, false);
+                }
+            } catch (error) {
+                showStatusMessage(`Erreur de connexion à l'API: ${error.message}`, false);
+            }
+        }
+        
+        // Écouteurs d'événements
+        document.getElementById('refresh-users-btn').addEventListener('click', fetchUsers);
+        
+        document.getElementById('add-user-endpoint-btn').addEventListener('click', function() {
+            document.getElementById('endpoints-code').style.display = 'block';
+            this.style.display = 'none';
+        });
+        
+        cancelBtn.addEventListener('click', resetForm);
+        
+        // Gestionnaires pour le modal de suppression
+        confirmDeleteBtn.addEventListener('click', function() {
+            if (userToDelete) {
+                deleteUser(userToDelete);
+                deleteModal.style.display = 'none';
+                userToDelete = null;
+            }
+        });
+        
+        cancelDeleteBtn.addEventListener('click', function() {
+            deleteModal.style.display = 'none';
+            userToDelete = null;
+        });
+        
+        deleteModalClose.addEventListener('click', function() {
+            deleteModal.style.display = 'none';
+            userToDelete = null;
+        });
+        
+        // Fermer le modal en cliquant à l'extérieur
+        window.addEventListener('click', function(event) {
+            if (event.target === deleteModal) {
+                deleteModal.style.display = 'none';
+                userToDelete = null;
+            }
+        });
+        
+        // Charger les utilisateurs au chargement de la page
+        document.addEventListener('DOMContentLoaded', fetchUsers);
+    </script>
+</body>
+</html>
