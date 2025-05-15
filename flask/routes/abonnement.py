@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from models import db
-from models.abonement import Abonnement
+from models.abonnement import Abonnement
 
 abonnements_api = Blueprint('abonnements_api', __name__)
 

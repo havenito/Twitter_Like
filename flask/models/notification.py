@@ -1,7 +1,7 @@
 from models import db
 from datetime import datetime
-from models.notification import Notifications
-class Notifications(db.Model):
+from models.notification import Notification
+class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     comments_id = db.Column(db.Integer, db.ForeignKey('comments.id'), nullable=False)

@@ -1,7 +1,7 @@
 from models import db
 from datetime import datetime
 
-class Abonnements(db.Model):
+class Abonnement(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     abonné_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     abonnement_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)

@@ -1,7 +1,7 @@
 from models import db
 from datetime import datetime
 
-class Replies(db.Model):
+class Replie(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     comment_id = db.Column(db.Integer, db.ForeignKey('comments.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
