@@ -28,7 +28,6 @@ def create_post():
         user_id = request.form['user_id']
         category_id = request.form['category_id']
         
-        # Handle file upload if present
         if 'file' in request.files:
             file = request.files['file']
             url, file_type = upload_file(file)
@@ -73,12 +72,10 @@ def create_post():
 @posts_bp.route('/api/update_post/<int:post_id>', methods=['PUT', 'POST'])
 def update_post(post_id):
     try:
-        # Find the post by ID
         post = Post.query.get(post_id)
         if not post:
             return jsonify({'error': 'Post not found'}), 404
             
-        # Update basic fields if provided
         if 'title' in request.form:
             post.title = request.form['title']
         
@@ -88,7 +85,6 @@ def update_post(post_id):
         if 'category_id' in request.form:
             post.category_id = request.form['category_id']
             
-        # Handle file update if present
         if 'file' in request.files:
             file = request.files['file']
             if file.filename:
@@ -96,19 +92,18 @@ def update_post(post_id):
                 if not url:
                     return jsonify({'error': 'File upload failed'}), 500
                     
-                # Update media info
                 post.media_url = url
                 post.media_type = determine_media_type(file_type)
                 
                 if not post.media_type:
                     return jsonify({'error': 'Unsupported file type'}), 400
                     
-        # Handle media removal if requested
+
         if request.form.get('remove_media') == 'true':
             post.media_url = None
             post.media_type = None
         
-        # Commit changes
+
         db.session.commit()
         
         return jsonify({
@@ -162,7 +157,6 @@ def delete_post(post_id):
 @posts_bp.route('/api/posts', methods=['GET'])
 def get_all_posts():
     try:
-        # Récupérer tous les posts, triés par date de publication (du plus récent au plus ancien)
         posts = Post.query.order_by(Post.published_at.desc()).all()
         result = []
         
