@@ -141,14 +141,16 @@ def forgot_password():
 
     user = User.query.filter_by(email=email).first()
     if not user:
-        return jsonify({'message': 'Si un compte existe, un email a été envoyé'}), 200
+        # On indique explicitement que l'email n'existe pas
+        return jsonify({'error': "Adresse email non reconnue."}), 404
 
+    from urllib.parse import quote
     token = create_access_token(
-        identity={'id': user.id, 'email': user.email},
+        identity=str(user.id),  # <-- CORRECTION ICI
         expires_delta=timedelta(minutes=15),
         additional_claims={'reset_password': True}
     )
-    reset_url = f"http://localhost:3000/reset-password?token={token}"
+    reset_url = f"http://localhost:3000/reset-password?token={quote(token)}"
 
     msg = Message(
         subject="Réinitialisation du mot de passe Minouverse",
@@ -157,14 +159,18 @@ def forgot_password():
              f"Clique ici pour réinitialiser ton mot de passe : {reset_url}\n\n"
              f"Ce lien expire dans 15 minutes."
     )
-    mail.send(msg)
-    return jsonify({'message': 'Un lien de réinitialisation a été envoyé'}), 200
+    try:
+        mail.send(msg)
+        return jsonify({'message': 'Un lien de réinitialisation a été envoyé'}), 200
+    except Exception as e:
+        print("Erreur envoi mail:", e)
+        return jsonify({'error': "Erreur lors de l'envoi de l'email."}), 500
 
-# --- RÉINITIALISATION DU MOT DE PASSE ---
 @app.route('/api/reset-password', methods=['POST'])
 def reset_password():
     data = request.get_json() or {}
     token = data.get('token')
+    print("Token reçu:", token)  # <-- Ajoute ce print
     new_password = data.get('new_password', '').strip()
 
     if not token or not new_password:
@@ -172,22 +178,29 @@ def reset_password():
 
     try:
         decoded = decode_token(token)
-        if not decoded.get('claims', {}).get('reset_password'):
+        print("Token décodé:", decoded)  # <-- Ajoute ce print
+        if not decoded.get('reset_password'):
+            print("Claim reset_password manquant ou faux")  # <-- Ajoute ce print
             return jsonify({'error': 'Token invalide'}), 401
 
-        user_id = decoded['sub']['id']
-        user = User.query.get(user_id)
+        user_id = decoded['sub']
+        print("user_id extrait du token:", user_id)  # <-- Ajoute ce print
+        user = User.query.get(int(user_id))
         if not user:
+            print("Utilisateur introuvable")  # <-- Ajoute ce print
             return jsonify({'error': 'Utilisateur introuvable'}), 404
 
         if err := validate_password(new_password):
+            print("Erreur validation mot de passe:", err)  # <-- Ajoute ce print
             return jsonify({'error': err}), 400
 
         user.password = bcrypt.generate_password_hash(new_password).decode('utf-8')
         db.session.commit()
+        print("Mot de passe mis à jour")  # <-- Ajoute ce print
         return jsonify({'message': 'Mot de passe mis à jour'}), 200
 
     except Exception as e:
+        print("Erreur reset-password:", e)  # <-- Ajoute ce print
         return jsonify({'error': 'Token invalide ou expiré'}), 401
 
 if __name__ == '__main__':

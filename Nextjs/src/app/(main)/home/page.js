@@ -10,26 +10,13 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const res = await fetch('/api/auth/session');
-        const session = await res.json();
-
-        if (session && session.user) {
-          setIsAuthenticated(true);
-        } else {
-          console.log("Pas de session trouvée, redirection vers /login");
-          router.replace('/login');
-        }
-      } catch (error) {
-        console.error("Erreur lors de la vérification de la session:", error);
-        router.replace('/login');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.replace('/login');
+    } else {
+      setIsAuthenticated(true);
+      setIsLoading(false);
+    }
   }, [router]);
 
   if (isLoading || !isAuthenticated) {

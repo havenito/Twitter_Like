@@ -26,11 +26,28 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.message);
-      setMessage(data.message);
+
+      if (!res.ok) {
+        // Si le backend renvoie une erreur explicite
+        if (data.error && data.error.toLowerCase().includes('email')) {
+          setError("Adresse email non reconnue.");
+        } else {
+          setError(data.error || "Erreur lors de l'envoi du mail.");
+        }
+        setShowNotification(true);
+        return;
+      }
+
+      // Cas où le backend répond toujours OK même si l'email n'existe pas
+      if (data.message && data.message.toLowerCase().includes('si un compte existe')) {
+        setMessage("Si un compte existe pour cette adresse, un email a été envoyé.");
+      } else {
+        setMessage(data.message || "Lien envoyé !");
+      }
       setShowNotification(true);
     } catch (err) {
-      setError(err.message);
+      setError("Erreur lors de l'envoi du mail.");
+      setShowNotification(true);
     } finally {
       setLoading(false);
     }
@@ -46,8 +63,8 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#120e0e] px-4">
       {showNotification && (
         <Notification
-          message={message}
-          type={message ? "success" : "error"}
+          message={error ? error : message}
+          type={error ? "error" : "success"}
           onClose={() => setShowNotification(false)}
           variants={{ initial:{opacity:0}, animate:{opacity:1}, exit:{opacity:0} }}
         />
