@@ -7,6 +7,15 @@ import { motion } from 'framer-motion';
 import Notification from '../../components/Notification';
 import { useSearchParams, useRouter } from 'next/navigation';
 
+function validatePassword(password) {
+  return (
+    password.length >= 8 &&
+    /[A-Z]/.test(password) &&
+    /[0-9]/.test(password) &&
+    /[!@#$%^&*(),.?":{}|<>]/.test(password)
+  );
+}
+
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
