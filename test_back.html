@@ -140,6 +140,7 @@
 </html> -->
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -153,18 +154,25 @@
             max-width: 800px;
             margin: 0 auto;
         }
-        h1, h2 {
+
+        h1,
+        h2 {
             color: #90EE90;
         }
+
         .form-group {
             margin-bottom: 15px;
         }
+
         label {
             display: block;
             margin-bottom: 5px;
             color: #90EE90;
         }
-        input, textarea, select {
+
+        input,
+        textarea,
+        select {
             width: 100%;
             padding: 8px;
             background-color: #333;
@@ -172,6 +180,7 @@
             color: white;
             border-radius: 4px;
         }
+
         button {
             background-color: #90EE90;
             color: black;
@@ -182,9 +191,11 @@
             margin-right: 10px;
             margin-top: 10px;
         }
+
         button:hover {
             background-color: #7CD37C;
         }
+
         .card {
             background-color: #333;
             padding: 15px;
@@ -192,25 +203,30 @@
             margin-bottom: 15px;
             border: 1px solid #444;
         }
+
         .media {
             max-width: 100%;
             max-height: 300px;
             display: block;
             margin-top: 10px;
         }
+
         .actions {
             margin-top: 10px;
         }
+
         .error {
             color: #ff6b6b;
             margin-top: 10px;
         }
+
         .success {
             color: #90EE90;
             margin-top: 10px;
         }
     </style>
 </head>
+
 <body>
     <h1>Test des API de Posts</h1>
 
@@ -250,6 +266,42 @@
     <button id="refresh-posts-btn">Rafraîchir la liste</button>
     <div id="posts-container"></div>
 
+    <h2>Créer un commentaire</h2>
+    <div class="form-group">
+        <label for="comment-content">Contenu</label>
+        <textarea id="comment-content" rows="3" required></textarea>
+    </div>
+    <div class="form-group">
+        <label for="comment-user-id">ID Utilisateur</label>
+        <input type="number" id="comment-user-id" value="1" required>
+    </div>
+    <div class="form-group">
+        <label for="comment-post-id">ID du Post</label>
+        <input type="number" id="comment-post-id" required>
+    </div>
+    <div class="form-group">
+        <label for="comment-status">Statut</label>
+        <input type="text" id="comment-status" value="published" required>
+    </div>
+    <button id="create-comment-btn">Créer Commentaire</button>
+    <div id="comment-status-msg"></div>
+
+    <h2>Créer une réponse à un commentaire</h2>
+    <div class="form-group">
+        <label for="reply-content">Contenu</label>
+        <textarea id="reply-content" rows="3" required></textarea>
+    </div>
+    <div class="form-group">
+        <label for="reply-user-id">ID Utilisateur</label>
+        <input type="number" id="reply-user-id" value="1" required>
+    </div>
+    <div class="form-group">
+        <label for="reply-comment-id">ID du Commentaire</label>
+        <input type="number" id="reply-comment-id" required>
+    </div>
+    <button id="create-reply-btn">Créer Réponse</button>
+    <div id="reply-status-msg"></div>
+
     <script>
         const API_BASE_URL = 'http://localhost:5000/api';
         let currentEditId = null;
@@ -262,23 +314,23 @@
             formData.append('user_id', document.getElementById('user-id').value);
             formData.append('category_id', document.getElementById('category-id').value);
             formData.append('published_at', new Date().toISOString());
-            
+
             const postId = document.getElementById('post-id').value;
             if (postId) {
                 formData.append('post_id', postId);
             }
-            
+
             const mediaInput = document.getElementById('media');
             if (mediaInput.files.length > 0) {
                 formData.append('file', mediaInput.files[0]);
             }
-            
+
             try {
                 const response = await fetch(`${API_BASE_URL}/create_post`, {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 const result = await response.json();
                 if (response.ok) {
                     document.getElementById('form-status').className = 'success';
@@ -301,18 +353,18 @@
             formData.append('title', document.getElementById('title').value);
             formData.append('content', document.getElementById('content').value);
             formData.append('category_id', document.getElementById('category-id').value);
-            
+
             const mediaInput = document.getElementById('media');
             if (mediaInput.files.length > 0) {
                 formData.append('file', mediaInput.files[0]);
             }
-            
+
             try {
                 const response = await fetch(`${API_BASE_URL}/update_post/${currentEditId}`, {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 const result = await response.json();
                 if (response.ok) {
                     document.getElementById('form-status').className = 'success';
@@ -333,14 +385,14 @@
         async function fetchPosts() {
             try {
                 const response = await fetch(`${API_BASE_URL}/posts`);
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
-                
+
                 const posts = await response.json();
                 const postsContainer = document.getElementById('posts-container');
-                
+
                 if (posts.length > 0) {
                     postsContainer.innerHTML = '';
                     posts.forEach(post => {
@@ -363,12 +415,12 @@
             if (!confirm('Êtes-vous sûr de vouloir supprimer ce post?')) {
                 return;
             }
-            
+
             try {
                 const response = await fetch(`${API_BASE_URL}/posts/${id}`, {
                     method: 'DELETE'
                 });
-                
+
                 const result = await response.json();
                 if (response.ok) {
                     document.getElementById('form-status').className = 'success';
@@ -389,24 +441,24 @@
             try {
                 const response = await fetch(`${API_BASE_URL}/posts/${id}`);
                 const post = await response.json();
-                
+
                 if (response.ok) {
                     document.getElementById('title').value = post.title;
                     document.getElementById('content').value = post.content;
                     document.getElementById('category-id').value = post.category_id;
                     document.getElementById('user-id').value = post.user_id;
-                    
+
                     if (post.post_id) {
                         document.getElementById('post-id').value = post.post_id;
                     } else {
                         document.getElementById('post-id').value = '';
                     }
-                    
+
                     // On ne peut pas préremplir l'input de fichier pour des raisons de sécurité
                     document.getElementById('create-post-btn').style.display = 'none';
                     document.getElementById('update-post-btn').style.display = 'inline-block';
                     document.getElementById('cancel-edit-btn').style.display = 'inline-block';
-                    
+
                     currentEditId = id;
                     document.getElementById('form-status').textContent = '';
                 } else {
@@ -423,19 +475,19 @@
         function createPostCard(post) {
             const card = document.createElement('div');
             card.className = 'card';
-            
+
             const title = document.createElement('h3');
             title.textContent = post.title;
             card.appendChild(title);
-            
+
             const content = document.createElement('p');
             content.textContent = post.content;
             card.appendChild(content);
-            
+
             const meta = document.createElement('p');
             meta.innerHTML = `<small>ID: ${post.id} | User: ${post.user_id} | Category: ${post.category_id}</small>`;
             card.appendChild(meta);
-            
+
             if (post.media_url) {
                 const media = document.createElement(post.media_type === 'image' ? 'img' : 'video');
                 media.src = post.media_url;
@@ -445,22 +497,22 @@
                 }
                 card.appendChild(media);
             }
-            
+
             const actions = document.createElement('div');
             actions.className = 'actions';
-            
+
             const editBtn = document.createElement('button');
             editBtn.textContent = 'Modifier';
             editBtn.onclick = () => prepareEditForm(post.id);
             actions.appendChild(editBtn);
-            
+
             const deleteBtn = document.createElement('button');
             deleteBtn.textContent = 'Supprimer';
             deleteBtn.onclick = () => deletePost(post.id);
             actions.appendChild(deleteBtn);
-            
+
             card.appendChild(actions);
-            
+
             return card;
         }
 
@@ -470,11 +522,11 @@
             document.getElementById('content').value = '';
             document.getElementById('post-id').value = '';
             document.getElementById('media').value = '';
-            
+
             document.getElementById('create-post-btn').style.display = 'inline-block';
             document.getElementById('update-post-btn').style.display = 'none';
             document.getElementById('cancel-edit-btn').style.display = 'none';
-            
+
             currentEditId = null;
         }
 
@@ -486,6 +538,54 @@
 
         // Charger les posts au chargement de la page
         fetchPosts();
+        // Créer un commentaire
+        document.getElementById('create-comment-btn').addEventListener('click', async () => {
+            const content = document.getElementById('comment-content').value;
+            const user_id = document.getElementById('comment-user-id').value;
+            const post_id = document.getElementById('comment-post-id').value;
+            const status = document.getElementById('comment-status').value;
+            const created_at = new Date().toISOString();
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/comments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content, user_id, post_id, status, created_at })
+                });
+                const result = await response.json();
+                const msg = document.getElementById('comment-status-msg');
+                msg.className = response.ok ? 'success' : 'error';
+                msg.textContent = response.ok ? 'Commentaire ajouté avec succès!' : `Erreur: ${result.error}`;
+            } catch (err) {
+                document.getElementById('comment-status-msg').className = 'error';
+                document.getElementById('comment-status-msg').textContent = `Erreur: ${err.message}`;
+            }
+        });
+
+        // Créer une réponse à un commentaire
+        document.getElementById('create-reply-btn').addEventListener('click', async () => {
+            const content = document.getElementById('reply-content').value;
+            const user_id = document.getElementById('reply-user-id').value;
+            const comment_id = document.getElementById('reply-comment-id').value;
+            const created_at = new Date().toISOString();
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/replies`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content, user_id, comment_id, created_at })
+                });
+                const result = await response.json();
+                const msg = document.getElementById('reply-status-msg');
+                msg.className = response.ok ? 'success' : 'error';
+                msg.textContent = response.ok ? 'Réponse ajoutée avec succès!' : `Erreur: ${result.error}`;
+            } catch (err) {
+                document.getElementById('reply-status-msg').className = 'error';
+                document.getElementById('reply-status-msg').textContent = `Erreur: ${err.message}`;
+            }
+        });
+
     </script>
 </body>
+
 </html>

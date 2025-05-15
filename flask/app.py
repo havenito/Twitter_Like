@@ -9,7 +9,8 @@ from models import db
 from routes.auth import auth_bp, bcrypt
 from routes.posts import posts_bp
 from services.file_upload import init_cloudinary
-
+import os
+print("Cloudinary API Key:", os.getenv("CLOUDINARY_API_KEY"))
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
