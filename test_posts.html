@@ -266,42 +266,6 @@
     <button id="refresh-posts-btn">Rafraîchir la liste</button>
     <div id="posts-container"></div>
 
-    <h2>Créer un commentaire</h2>
-    <div class="form-group">
-        <label for="comment-content">Contenu</label>
-        <textarea id="comment-content" rows="3" required></textarea>
-    </div>
-    <div class="form-group">
-        <label for="comment-user-id">ID Utilisateur</label>
-        <input type="number" id="comment-user-id" value="1" required>
-    </div>
-    <div class="form-group">
-        <label for="comment-post-id">ID du Post</label>
-        <input type="number" id="comment-post-id" required>
-    </div>
-    <div class="form-group">
-        <label for="comment-status">Statut</label>
-        <input type="text" id="comment-status" value="published" required>
-    </div>
-    <button id="create-comment-btn">Créer Commentaire</button>
-    <div id="comment-status-msg"></div>
-
-    <h2>Créer une réponse à un commentaire</h2>
-    <div class="form-group">
-        <label for="reply-content">Contenu</label>
-        <textarea id="reply-content" rows="3" required></textarea>
-    </div>
-    <div class="form-group">
-        <label for="reply-user-id">ID Utilisateur</label>
-        <input type="number" id="reply-user-id" value="1" required>
-    </div>
-    <div class="form-group">
-        <label for="reply-comment-id">ID du Commentaire</label>
-        <input type="number" id="reply-comment-id" required>
-    </div>
-    <button id="create-reply-btn">Créer Réponse</button>
-    <div id="reply-status-msg"></div>
-
     <script>
         const API_BASE_URL = 'http://localhost:5000/api';
         let currentEditId = null;
@@ -538,53 +502,6 @@
 
         // Charger les posts au chargement de la page
         fetchPosts();
-        // Créer un commentaire
-        document.getElementById('create-comment-btn').addEventListener('click', async () => {
-            const content = document.getElementById('comment-content').value;
-            const user_id = document.getElementById('comment-user-id').value;
-            const post_id = document.getElementById('comment-post-id').value;
-            const status = document.getElementById('comment-status').value;
-            const created_at = new Date().toISOString();
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/comments`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content, user_id, post_id, status, created_at })
-                });
-                const result = await response.json();
-                const msg = document.getElementById('comment-status-msg');
-                msg.className = response.ok ? 'success' : 'error';
-                msg.textContent = response.ok ? 'Commentaire ajouté avec succès!' : `Erreur: ${result.error}`;
-            } catch (err) {
-                document.getElementById('comment-status-msg').className = 'error';
-                document.getElementById('comment-status-msg').textContent = `Erreur: ${err.message}`;
-            }
-        });
-
-        // Créer une réponse à un commentaire
-        document.getElementById('create-reply-btn').addEventListener('click', async () => {
-            const content = document.getElementById('reply-content').value;
-            const user_id = document.getElementById('reply-user-id').value;
-            const comment_id = document.getElementById('reply-comment-id').value;
-            const created_at = new Date().toISOString();
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/replies`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content, user_id, comment_id, created_at })
-                });
-                const result = await response.json();
-                const msg = document.getElementById('reply-status-msg');
-                msg.className = response.ok ? 'success' : 'error';
-                msg.textContent = response.ok ? 'Réponse ajoutée avec succès!' : `Erreur: ${result.error}`;
-            } catch (err) {
-                document.getElementById('reply-status-msg').className = 'error';
-                document.getElementById('reply-status-msg').textContent = `Erreur: ${err.message}`;
-            }
-        });
-
     </script>
 </body>
 

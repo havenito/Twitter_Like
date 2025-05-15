@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fil d’actualité - Posts & Commentaires</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+    .post, .comment, .reply { background: white; padding: 12px; margin-bottom: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .post { max-width: 600px; margin: auto; }
+    .comments, .replies { margin-left: 20px; }
+    .comment-form, .reply-form { margin-top: 8px; }
+    textarea { width: 100%; height: 50px; padding: 8px; }
+    button { margin-top: 6px; padding: 6px 12px; cursor: pointer; }
+    .reply-button { font-size: 0.85em; color: #007bff; cursor: pointer; background: none; border: none; padding: 0; }
+  </style>
+</head>
+<body>
+
+<h1>Fil d’actualité</h1>
+<div id="posts-container"></div>
+
+<script>
+  const API_BASE = 'http://localhost:5000/api';
+
+  async function fetchPosts() {
+    const res = await fetch(`${API_BASE}/posts`);
+    return res.json();
+  }
+
+  async function fetchComments() {
+    const res = await fetch(`${API_BASE}/comments`);
+    return res.json();
+  }
+
+  async function fetchReplies() {
+    const res = await fetch(`${API_BASE}/replies`);
+    return res.json();
+  }
+
+  function createTextarea(placeholder) {
+    const ta = document.createElement('textarea');
+    ta.placeholder = placeholder;
+    return ta;
+  }
+
+  function createButton(text) {
+    const btn = document.createElement('button');
+    btn.textContent = text;
+    return btn;
+  }
+
+  // Créer une carte post
+  async function createPostCard(post, allComments, allReplies) {
+    const div = document.createElement('div');
+    div.className = 'post';
+
+    const title = document.createElement('h3');
+    title.textContent = post.title;
+
+    const content = document.createElement('p');
+    content.textContent = post.content;
+
+    div.append(title, content);
+
+    // Liste commentaires liés au post
+    const commentsContainer = document.createElement('div');
+    commentsContainer.className = 'comments';
+
+    const postComments = allComments.filter(c => c.post_id === post.id);
+
+    for (const comment of postComments) {
+      const commentElement = createCommentElement(comment, allReplies);
+      commentsContainer.appendChild(commentElement);
+    }
+    div.appendChild(commentsContainer);
+
+    // Formulaire ajout commentaire
+    const commentForm = document.createElement('form');
+    commentForm.className = 'comment-form';
+
+    const commentTextarea = createTextarea('Ajouter un commentaire...');
+    const commentSubmit = createButton('Publier');
+
+    commentForm.append(commentTextarea, commentSubmit);
+    div.appendChild(commentForm);
+
+    commentForm.onsubmit = async e => {
+      e.preventDefault();
+      const content = commentTextarea.value.trim();
+      if (!content) return alert("Le commentaire est vide.");
+
+      const newComment = {
+        content,
+        created_at: new Date().toISOString(),
+        status: "published",
+        user_id: 1,  // À remplacer par utilisateur connecté
+        post_id: post.id,
+        comment_id: null
+      };
+
+      const res = await fetch(`${API_BASE}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newComment)
+      });
+
+      if (res.ok) {
+        alert("Commentaire publié !");
+        commentTextarea.value = '';
+        // Rafraîchir la page pour simplifier
+        window.location.reload();
+      } else {
+        alert("Erreur lors de l'envoi du commentaire.");
+      }
+    };
+
+    return div;
+  }
+
+  // Créer un élément commentaire + ses replies
+  function createCommentElement(comment, allReplies) {
+    const div = document.createElement('div');
+    div.className = 'comment';
+
+    const p = document.createElement('p');
+    p.textContent = comment.content;
+
+    div.appendChild(p);
+
+    // Bouton réponse
+    const replyBtn = document.createElement('button');
+    replyBtn.className = 'reply-button';
+    replyBtn.textContent = 'Répondre';
+    div.appendChild(replyBtn);
+
+    // Container pour les replies
+    const repliesContainer = document.createElement('div');
+    repliesContainer.className = 'replies';
+
+    // Charger replies pour ce commentaire
+    const replies = allReplies.filter(r => r.comment_id === comment.id);
+    for (const reply of replies) {
+      const replyDiv = document.createElement('div');
+      replyDiv.className = 'reply';
+      replyDiv.textContent = reply.content;
+      repliesContainer.appendChild(replyDiv);
+    }
+
+    div.appendChild(repliesContainer);
+
+    // Formulaire réponse caché initialement
+    let replyForm = null;
+
+    replyBtn.onclick = () => {
+      if (replyForm) {
+        replyForm.remove();
+        replyForm = null;
+        replyBtn.disabled = false;
+        return;
+      }
+
+      replyForm = document.createElement('form');
+      replyForm.className = 'reply-form';
+
+      const textarea = createTextarea('Votre réponse...');
+      const btn = createButton('Répondre');
+
+      replyForm.append(textarea, btn);
+      div.appendChild(replyForm);
+
+      replyBtn.disabled = true;
+
+      replyForm.onsubmit = async e => {
+        e.preventDefault();
+        const content = textarea.value.trim();
+        if (!content) return alert("Le contenu de la réponse est vide.");
+
+        const newReply = {
+          comment_id: comment.id,
+          user_id: 1,  // À remplacer par utilisateur connecté
+          content,
+          created_at: new Date().toISOString()
+        };
+
+        const res = await fetch(`${API_BASE}/replies`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newReply)
+        });
+
+        if (res.ok) {
+          alert("Réponse publiée !");
+          textarea.value = '';
+          // Recharge la page pour simplifier
+          window.location.reload();
+        } else {
+          alert("Erreur lors de l'envoi de la réponse.");
+        }
+      };
+    };
+
+    return div;
+  }
+
+  // Chargement initial
+  async function init() {
+    const [posts, comments, replies] = await Promise.all([
+      fetchPosts(),
+      fetchComments(),
+      fetchReplies()
+    ]);
+
+    const container = document.getElementById('posts-container');
+    container.innerHTML = '';
+
+    for (const post of posts) {
+      const postCard = await createPostCard(post, comments, replies);
+      container.appendChild(postCard);
+    }
+  }
+
+  init();
+</script>
+
+</body>
+</html>
+<!--
+  Ce fichier HTML est un exemple de fil d'actualité avec des posts, commentaires et réponses.
+  Il utilise JavaScript pour interagir avec une API REST fictive.
+  Assurez-vous que l'API est en cours d'exécution sur http://localhost:5000/api.
