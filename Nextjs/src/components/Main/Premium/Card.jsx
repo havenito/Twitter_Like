@@ -5,7 +5,15 @@ import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 
-const Card = ({ plan, isSelected, isCurrent, onClick, className = '' }) => {
+const Card = ({
+  plan,
+  isSelected,
+  isCurrent,
+  onClick,
+  onSubscribe,
+  loading = false,
+  className = '',
+}) => {
   const cardVariants = {
     normal: { scale: 1, zIndex: 1 },
     selected: { scale: 1.05, zIndex: 10 },
@@ -16,10 +24,13 @@ const Card = ({ plan, isSelected, isCurrent, onClick, className = '' }) => {
       variants={cardVariants}
       animate={isSelected ? 'selected' : 'normal'}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
-      onClick={!isCurrent ? onClick : undefined} // Désactiver le clic sur cette carte si c'est le plan actuel
+      onClick={!isCurrent ? onClick : undefined}
       className={`relative flex flex-col p-6 rounded-xl shadow-lg transition-colors duration-300 ${
-        isCurrent ? 'bg-[#3a3a3a] border-2 border-[#90EE90] cursor-default' :
-        isSelected ? 'bg-[#3a3a3a] border-2 border-[#90EE90] cursor-pointer' : 'bg-[#2a2a2a] border border-[#444] cursor-pointer hover:bg-[#333]'
+        isCurrent
+          ? 'bg-[#3a3a3a] border-2 border-[#90EE90] cursor-default'
+          : isSelected
+          ? 'bg-[#3a3a3a] border-2 border-[#90EE90] cursor-pointer'
+          : 'bg-[#2a2a2a] border border-[#444] cursor-pointer hover:bg-[#333]'
       } ${className}`}
     >
       {isCurrent && (
@@ -43,20 +54,20 @@ const Card = ({ plan, isSelected, isCurrent, onClick, className = '' }) => {
           </li>
         ))}
       </ul>
-      {!isCurrent && ( // Afficher le bouton seulement si ce n'est pas le plan actuel
+      {!isCurrent && plan.id !== 'free' && (
         <button
-          onClick={(e) => {
-            e.stopPropagation(); // Empêche le clic sur le bouton de déclencher le onClick de la carte
-            console.log(`Souscription à ${plan.name}`);
-            // TODO: Ajouter la logique de souscription
+          onClick={e => {
+            e.stopPropagation();
+            if (onSubscribe) onSubscribe();
           }}
+          disabled={loading}
           className={`w-full py-2 mt-auto rounded-full font-semibold transition-all duration-300 ${
             isSelected
               ? 'bg-[#90EE90] text-black hover:bg-[#7CD37C]'
               : 'bg-[#444] text-gray-300 hover:bg-[#555] hover:text-white'
           }`}
         >
-          Souscrire à l'abonnement
+          {loading ? 'Redirection...' : "Souscrire à l'abonnement"}
         </button>
       )}
     </motion.div>

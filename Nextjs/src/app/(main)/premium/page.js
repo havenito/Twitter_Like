@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import Card from '../../../components/Main/Premium/Card';
 import { motion } from 'framer-motion';
-import Link from 'next/link'; 
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; 
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons'; 
+import Link from 'next/link';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 
 const subscriptionPlans = [
   {
@@ -14,12 +14,12 @@ const subscriptionPlans = [
     description: 'Les fonctionnalités de base pour commencer.',
     price: '0€',
     features: [
-        'Accès au fil d\'actualité',
-        'Poster des "Miaous"',
-        'Suivre d\'autres utilisateurs',
-        'Messagerie directe',
-        'Support basique',
-        'Publicités',
+      'Accès au fil d\'actualité',
+      'Poster des "Miaous"',
+      'Suivre d\'autres utilisateurs',
+      'Messagerie directe',
+      'Support basique',
+      'Publicités',
     ],
   },
   {
@@ -53,11 +53,33 @@ const subscriptionPlans = [
 
 export default function PremiumPage() {
   const [selectedPlanId, setSelectedPlanId] = useState(null);
-  // TODO: Remplacer 'free' par la logique pour récupérer l'abonnement actuel de l'utilisateur depuis la BDD
   const [currentPlanId] = useState('free');
+  const [loading, setLoading] = useState(false);
 
   const handleCardClick = (planId) => {
     setSelectedPlanId(planId === selectedPlanId ? null : planId);
+  };
+
+  // Fonction Stripe pour chaque bouton "Souscrire à l'abonnement"
+  const handleSubscribe = async (planId) => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location = data.url;
+      } else {
+        alert('Erreur Stripe : ' + data.error);
+      }
+    } catch (err) {
+      alert('Erreur Stripe : ' + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -103,7 +125,7 @@ export default function PremiumPage() {
               hidden: { opacity: 0, y: 20 },
               visible: { opacity: 1, y: 0 },
             }}
-            className="flex"
+            className="flex flex-col"
           >
             <Card
               plan={plan}
@@ -111,6 +133,8 @@ export default function PremiumPage() {
               isCurrent={currentPlanId === plan.id}
               onClick={() => handleCardClick(plan.id)}
               className="flex-1"
+              loading={loading}
+              onSubscribe={() => handleSubscribe(plan.id)}
             />
           </motion.div>
         ))}
