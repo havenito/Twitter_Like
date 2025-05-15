@@ -1,6 +1,6 @@
 from models import db
 from datetime import datetime
-from models.notification import Notification
+
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
