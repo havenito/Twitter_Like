@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Backend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .form-container {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        textarea, input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Backend</h1>
+
+    <div class="form-container">
+        <h2>Create Post</h2>
+        <form id="createPostForm">
+            <input type="text" id="postTitle" placeholder="Title" required>
+            <textarea id="postContent" placeholder="Content" required></textarea>
+            <input type="datetime-local" id="postPublishedAt" required>
+            <input type="number" id="postUserId" placeholder="User ID" required>
+            <input type="number" id="postCategoryId" placeholder="Category ID" required>
+            <button type="submit">Create Post</button>
+        </form>
+    </div>
+
+    <div class="form-container">
+        <h2>Create Comment</h2>
+        <form id="createCommentForm">
+            <textarea id="commentContent" placeholder="Content" required></textarea>
+            <input type="datetime-local" id="commentCreatedAt" required>
+            <input type="text" id="commentStatus" placeholder="Status" required>
+            <input type="number" id="commentUserId" placeholder="User ID" required>
+            <input type="number" id="commentPostId" placeholder="Post ID" required>
+            <button type="submit">Create Comment</button>
+        </form>
+    </div>
+
+    <div class="form-container">
+        <h2>Create Reply</h2>
+        <form id="createReplyForm">
+            <input type="number" id="replyCommentId" placeholder="Comment ID" required>
+            <input type="number" id="replyUserId" placeholder="User ID" required>
+            <textarea id="replyContent" placeholder="Content" required></textarea>
+            <input type="datetime-local" id="replyCreatedAt" required>
+            <button type="submit">Create Reply</button>
+        </form>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000'; // Assurez-vous que cela correspond à l'URL de votre backend
+
+        document.getElementById('createPostForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const title = document.getElementById('postTitle').value;
+            const content = document.getElementById('postContent').value;
+            const publishedAt = document.getElementById('postPublishedAt').value;
+            const userId = document.getElementById('postUserId').value;
+            const categoryId = document.getElementById('postCategoryId').value;
+
+            const response = await fetch(`${API_BASE_URL}/api/create_post`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ title, content, published_at: publishedAt, user_id: userId, category_id: categoryId }),
+            });
+
+            const result = await response.json();
+            alert(JSON.stringify(result));
+        });
+
+        document.getElementById('createCommentForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const content = document.getElementById('commentContent').value;
+            const createdAt = document.getElementById('commentCreatedAt').value;
+            const status = document.getElementById('commentStatus').value;
+            const userId = document.getElementById('commentUserId').value;
+            const postId = document.getElementById('commentPostId').value;
+
+            const response = await fetch(`${API_BASE_URL}/api/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ content, created_at: createdAt, status, user_id: userId, post_id: postId }),
+            });
+
+            const result = await response.json();
+            alert(JSON.stringify(result));
+        });
+
+        document.getElementById('createReplyForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const commentId = document.getElementById('replyCommentId').value;
+            const userId = document.getElementById('replyUserId').value;
+            const content = document.getElementById('replyContent').value;
+            const createdAt = document.getElementById('replyCreatedAt').value;
+
+            const response = await fetch(`${API_BASE_URL}/api/replies`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ comment_id: commentId, user_id: userId, content, created_at: createdAt }),
+            });
+
+            const result = await response.json();
+            alert(JSON.stringify(result));
+        });
+    </script>
+</body>
+</html>

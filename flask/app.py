@@ -23,6 +23,7 @@ from flask_bcrypt import Bcrypt
 
 from config import Config
 from models import db
+
 from routes.auth import auth_bp, bcrypt
 from routes.posts import posts_bp
 from services.file_upload import init_cloudinary
