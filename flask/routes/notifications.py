@@ -1,12 +1,13 @@
 from flask import Blueprint, request, jsonify
-from models import db, Notifications
+from models import db
+from models.notification import Notification
 
 notification_api = Blueprint('notification_api', __name__)
 
 @notification_api.route('/api/notifications', methods=['GET'])
 def get_notifications():
     try:
-        notifications = Notifications.query.all()
+        notifications = Notification.query.all()
         return jsonify([notification.to_dict() for notification in notifications])
     except Exception as e:
         return jsonify({'error': f'Failed to fetch notifications: {str(e)}'}), 500
@@ -14,7 +15,7 @@ def get_notifications():
 @notification_api.route('/api/notifications/<int:id>', methods=['GET'])
 def get_notification(id):
     try:
-        notification = Notifications.query.get_or_404(id)
+        notification = Notification.query.get_or_404(id)
         return jsonify(notification.to_dict())
     except Exception as e:
         return jsonify({'error': f'Notification not found: {str(e)}'}), 404
@@ -23,7 +24,7 @@ def get_notification(id):
 def create_notification():
     try:
         data = request.get_json()
-        new_notification = Notifications(
+        new_notification = Notification(
             post_id=data['post_id'],
             comments_id=data['comments_id'],
             user_id=data['user_id'],
@@ -42,7 +43,7 @@ def create_notification():
 def update_notification(id):
     try:
         data = request.get_json()
-        notification = Notifications.query.get_or_404(id)
+        notification = Notification.query.get_or_404(id)
 
         if 'post_id' in data:
             notification.post_id = data['post_id']
@@ -74,7 +75,7 @@ def update_notification(id):
 @notification_api.route('/api/notifications/<int:id>', methods=['DELETE'])
 def delete_notification(id):
     try:
-        notification = Notifications.query.get_or_404(id)
+        notification = Notification.query.get_or_404(id)
         db.session.delete(notification)
         db.session.commit()
         return jsonify({'message': 'Notification deleted successfully'})

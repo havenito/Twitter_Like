@@ -1,12 +1,13 @@
 from flask import Blueprint, request, jsonify
-from models import db, Abonnements
+from models import db
+from models.abonement import Abonnement
 
 abonnements_api = Blueprint('abonnements_api', __name__)
 
 @abonnements_api.route('/api/abonnements', methods=['GET'])
 def get_abonnements():
     try:
-        abonnements = Abonnements.query.all()
+        abonnements = Abonnement.query.all()
         return jsonify([abonnement.to_dict() for abonnement in abonnements])
     except Exception as e:
         return jsonify({'error': f'Failed to fetch abonnements: {str(e)}'}), 500
@@ -14,7 +15,7 @@ def get_abonnements():
 @abonnements_api.route('/api/abonnements/<int:id>', methods=['GET'])
 def get_abonnement(id):
     try:
-        abonnement = Abonnements.query.get_or_404(id)
+        abonnement = Abonnement.query.get_or_404(id)
         return jsonify(abonnement.to_dict())
     except Exception as e:
         return jsonify({'error': f'Abonnement not found: {str(e)}'}), 404
@@ -23,7 +24,7 @@ def get_abonnement(id):
 def create_abonnement():
     try:
         data = request.get_json()
-        new_abonnement = Abonnements(
+        new_abonnement = Abonnement(
             abonne_id=data['abonne_id'],
             abonnement_id=data['abonnement_id'],
             date_suivi=data['date_suivi']
@@ -41,7 +42,7 @@ def create_abonnement():
 def update_abonnement(id):
     try:
         data = request.get_json()
-        abonnement = Abonnements.query.get_or_404(id)
+        abonnement = Abonnement.query.get_or_404(id)
 
         if 'abonne_id' in data:
             abonnement.abonne_id = data['abonne_id']
@@ -69,7 +70,7 @@ def update_abonnement(id):
 @abonnements_api.route('/api/abonnements/<int:id>', methods=['DELETE'])
 def delete_abonnement(id):
     try:
-        abonnement = Abonnements.query.get_or_404(id)
+        abonnement = Abonnement.query.get_or_404(id)
         db.session.delete(abonnement)
         db.session.commit()
         return jsonify({'message': 'Abonnement deleted successfully'})

@@ -1,12 +1,12 @@
 from flask import Blueprint, request, jsonify
-from models import db, Comments
-
+from models import db
+from models.comment import Comment
 comment_api = Blueprint('comment_api', __name__)
 
 @comment_api.route('/api/comments', methods=['GET'])
 def get_comments():
     try:
-        comments = Comments.query.all()
+        comments = Comment.query.all()
         return jsonify([comment.to_dict() for comment in comments])
     except Exception as e:
         return jsonify({'error': f'Failed to fetch comments: {str(e)}'}), 500
@@ -14,7 +14,7 @@ def get_comments():
 @comment_api.route('/api/comments/<int:id>', methods=['GET'])
 def get_comment(id):
     try:
-        comment = Comments.query.get_or_404(id)
+        comment = Comment.query.get_or_404(id)
         return jsonify(comment.to_dict())
     except Exception as e:
         return jsonify({'error': f'Comment not found: {str(e)}'}), 404
@@ -23,7 +23,7 @@ def get_comment(id):
 def create_comment():
     try:
         data = request.get_json()
-        new_comment = Comments(
+        new_comment = Comment(
             content=data['content'],
             created_at=data['created_at'],
             status=data['status'],
@@ -44,7 +44,7 @@ def create_comment():
 def update_comment(id):
     try:
         data = request.get_json()
-        comment = Comments.query.get_or_404(id)
+        comment = Comment.query.get_or_404(id)
 
         if 'content' in data:
             comment.content = data['content']
@@ -80,7 +80,7 @@ def update_comment(id):
 @comment_api.route('/api/comments/<int:id>', methods=['DELETE'])
 def delete_comment(id):
     try:
-        comment = Comments.query.get_or_404(id)
+        comment = Comment.query.get_or_404(id)
         db.session.delete(comment)
         db.session.commit()
         return jsonify({'message': 'Comment deleted successfully'})

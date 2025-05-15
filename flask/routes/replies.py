@@ -1,12 +1,13 @@
 from flask import Blueprint, request, jsonify
-from models import db, Replies
+from models import db
+from models.replie import Replie
 
 replies_api = Blueprint('replies_api', __name__)
 
 @replies_api.route('/api/replies', methods=['GET'])
 def get_replies():
     try:
-        replies = Replies.query.all()
+        replies = Replie.query.all()
         return jsonify([reply.to_dict() for reply in replies])
     except Exception as e:
         return jsonify({'error': f'Failed to fetch replies: {str(e)}'}), 500
@@ -14,7 +15,7 @@ def get_replies():
 @replies_api.route('/api/replies/<int:id>', methods=['GET'])
 def get_reply(id):
     try:
-        reply = Replies.query.get_or_404(id)
+        reply = Replie.query.get_or_404(id)
         return jsonify(reply.to_dict())
     except Exception as e:
         return jsonify({'error': f'Reply not found: {str(e)}'}), 404
@@ -23,7 +24,7 @@ def get_reply(id):
 def create_reply():
     try:
         data = request.get_json()
-        new_reply = Replies(
+        new_reply = Replie(
             comment_id=data['comment_id'],
             user_id=data['user_id'],
             content=data['content'],
@@ -42,7 +43,7 @@ def create_reply():
 def update_reply(id):
     try:
         data = request.get_json()
-        reply = Replies.query.get_or_404(id)
+        reply = Replie.query.get_or_404(id)
 
         if 'comment_id' in data:
             reply.comment_id = data['comment_id']
@@ -74,7 +75,7 @@ def update_reply(id):
 @replies_api.route('/api/replies/<int:id>', methods=['DELETE'])
 def delete_reply(id):
     try:
-        reply = Replies.query.get_or_404(id)
+        reply = Replie.query.get_or_404(id)
         db.session.delete(reply)
         db.session.commit()
         return jsonify({'message': 'Reply deleted successfully'})
