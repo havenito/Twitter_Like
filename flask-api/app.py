@@ -8,6 +8,7 @@ from models import db
 from routes.auth import auth_bp, bcrypt
 from routes.posts import posts_bp
 from services.file_upload import init_cloudinary
+from routes.categories import categories_bp
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -21,6 +22,7 @@ def create_app(config_class=Config):
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(posts_bp)
+    app.register_blueprint(categories_bp)
     
     with app.app_context():
         db.create_all()

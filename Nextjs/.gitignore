@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 test_post.html
+admin_dashboard.html
+user_test.html
+test_categorie.html

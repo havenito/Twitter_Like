@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Catégories</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f8fa;
+            color: #333;
+        }
+        h1, h2 {
+            color: #1DA1F2;
+        }
+        .container {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        .panel {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #1DA1F2;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 5px;
+        }
+        button:hover {
+            background-color: #0c85d0;
+        }
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .category-card {
+            background-color: #f8f9fa;
+            border-left: 4px solid #1DA1F2;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: box-shadow 0.3s ease;
+        }
+        .category-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .category-name {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        .category-description {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .post-card {
+            background-color: #f8f9fa;
+            border-left: 4px solid #52c41a;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .post-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .post-content {
+            color: #666;
+        }
+        .status-message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        .error {
+            background-color: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+        }
+        .refresh-btn {
+            background-color: #52c41a;
+        }
+        .delete-btn {
+            background-color: #ff4d4f;
+            border: 2px solid #cc3033;
+        }
+        .delete-btn:hover {
+            background-color: #cc3033;
+        }
+        .edit-btn {
+            background-color: #FFAD1F;
+            border: 2px solid #F29F05;
+        }
+        .edit-btn:hover {
+            background-color: #F29F05;
+        }
+        .view-posts-btn {
+            background-color: #722ed1;
+            border: 2px solid #5b21b6;
+        }
+        .view-posts-btn:hover {
+            background-color: #5b21b6;
+        }
+        .category-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .category-actions button {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            flex: 1;
+            min-width: 100px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        .category-actions button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .hidden {
+            display: none;
+        }
+        .detail-item {
+            margin-bottom: 10px;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gestion des Catégories</h1>
+    
+    <div id="status-message" style="display: none;" class="status-message"></div>
+    
+    <div class="container">
+        <div class="panel">
+            <h2>Créer une nouvelle catégorie</h2>
+            <form id="create-category-form">
+                <div class="form-group">
+                    <label for="create-name">Nom</label>
+                    <input type="text" id="create-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="create-description">Description</label>
+                    <textarea id="create-description"></textarea>
+                </div>
+                <button type="submit">Créer la catégorie</button>
+            </form>
+        </div>
+        
+        <div class="panel">
+            <h2>Modifier une catégorie</h2>
+            <form id="update-category-form" class="hidden">
+                <input type="hidden" id="update-id">
+                <div class="form-group">
+                    <label for="update-name">Nom</label>
+                    <input type="text" id="update-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="update-description">Description</label>
+                    <textarea id="update-description"></textarea>
+                </div>
+                <button type="submit">Enregistrer les modifications</button>
+                <button type="button" id="cancel-update">Annuler</button>
+            </form>
+            <p id="update-placeholder">Sélectionnez une catégorie à modifier en cliquant sur le bouton "Modifier" dans la liste des catégories.</p>
+        </div>
+    </div>
+    
+    <div class="panel">
+        <h2>Toutes les catégories</h2>
+        <button class="refresh-btn" id="refresh-categories-btn">Rafraîchir la liste</button>
+        <div id="categories-list" class="categories-grid">
+            <p>Chargement des catégories...</p>
+        </div>
+    </div>
+    
+    <div class="panel hidden" id="category-detail-panel">
+        <h2>Détails de la catégorie</h2>
+        <div id="category-detail">
+            <!-- Les détails seront insérés ici -->
+        </div>
+        <button id="back-to-list">Retour à la liste</button>
+    </div>
+    
+    <div class="panel hidden" id="category-posts-panel">
+        <h2>Publications dans la catégorie</h2>
+        <div id="category-posts">
+            <!-- Les posts seront insérés ici -->
+        </div>
+        <button id="back-from-posts">Retour à la liste</button>
+    </div>
+    
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+        
+        // Éléments DOM
+        const statusMessage = document.getElementById('status-message');
+        const createForm = document.getElementById('create-category-form');
+        const updateForm = document.getElementById('update-category-form');
+        const updatePlaceholder = document.getElementById('update-placeholder');
+        const categoriesList = document.getElementById('categories-list');
+        const categoryDetailPanel = document.getElementById('category-detail-panel');
+        const categoryDetail = document.getElementById('category-detail');
+        const categoryPostsPanel = document.getElementById('category-posts-panel');
+        const categoryPosts = document.getElementById('category-posts');
+        
+        // Fonction pour afficher des messages d'état
+        function showStatusMessage(message, isSuccess = true) {
+            statusMessage.textContent = message;
+            statusMessage.className = isSuccess ? 'status-message success' : 'status-message error';
+            statusMessage.style.display = 'block';
+            
+            // Masquer le message après 5 secondes
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Fonction pour récupérer toutes les catégories
+        async function fetchCategories() {
+            categoriesList.innerHTML = '<p>Chargement des catégories...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/categories`);
+                
+                // Vérifier le type de contenu de la réponse
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error(`Réponse non-JSON reçue: ${contentType}`);
+                }
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || `Erreur ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                // Vérifier la structure de données attendue
+                if (!data.categories) {
+                    console.warn('Format de réponse inattendu:', data);
+                    // Adaptez pour gérer différents formats de réponse
+                    displayCategories(Array.isArray(data) ? data : [data]);
+                } else {
+                    displayCategories(data.categories);
+                }
+            } catch (error) {
+                console.error('Erreur complète:', error);
+                categoriesList.innerHTML = `<p>Erreur: ${error.message}</p>`;
+                showStatusMessage(`Erreur: ${error.message}`, false);
+            }
+        }
+        
+        // Fonction pour afficher les catégories
+        function displayCategories(categories) {
+            if (!categories || categories.length === 0) {
+                categoriesList.innerHTML = '<p>Aucune catégorie trouvée.</p>';
+                return;
+            }
+            
+            categoriesList.innerHTML = '';
+            
+            categories.forEach(category => {
+                const categoryCard = document.createElement('div');
+                categoryCard.className = 'category-card';
+                
+                categoryCard.innerHTML = `
+                    <div class="category-name">${category.name}</div>
+                    <div class="category-description">${category.description || 'Aucune description'}</div>
+                    <div class="category-id">ID: ${category.id}</div>
+                    <div class="category-actions">
+                        <button class="edit-btn" data-id="${category.id}">
+                            <i class="fa fa-edit"></i> Modifier
+                        </button>
+                        <button class="delete-btn" data-id="${category.id}">
+                            <i class="fa fa-trash"></i> Supprimer
+                        </button>
+                        <button class="view-posts-btn" data-id="${category.id}">
+                            <i class="fa fa-list"></i> Voir posts
+                        </button>
+                    </div>
+                `;
+                
+                categoriesList.appendChild(categoryCard);
+            });
+            
+            // Ajouter des écouteurs d'événements
+            document.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const categoryId = button.getAttribute('data-id');
+                    fetchCategoryForEdit(categoryId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const categoryId = button.getAttribute('data-id');
+                    if (confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
+                        deleteCategory(categoryId);
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.view-posts-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const categoryId = button.getAttribute('data-id');
+                    fetchCategoryPosts(categoryId);
+                });
+            });
+        }
+        
+        // Fonction pour récupérer une catégorie pour édition
+        async function fetchCategoryForEdit(categoryId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/categories/${categoryId}`);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Échec de la récupération de la catégorie');
+                }
+                
+                const category = await response.json();
+                
+                // Remplir le formulaire
+                document.getElementById('update-id').value = category.id;
+                document.getElementById('update-name').value = category.name;
+                document.getElementById('update-description').value = category.description || '';
+                
+                // Afficher le formulaire
+                updateForm.classList.remove('hidden');
+                updatePlaceholder.classList.add('hidden');
+            } catch (error) {
+                showStatusMessage(`Erreur: ${error.message}`, false);
+            }
+        }
+        
+        // Fonction pour créer une nouvelle catégorie
+        async function createCategory(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('create-name').value;
+            const description = document.getElementById('create-description').value;
+            
+            if (!name) {
+                showStatusMessage('Le nom de la catégorie est obligatoire', false);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/categories`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, description })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Échec de la création de la catégorie');
+                }
+                
+                const data = await response.json();
+                showStatusMessage(`Catégorie créée avec succès! ID: ${data.category_id}`);
+                
+                // Réinitialiser le formulaire
+                document.getElementById('create-name').value = '';
+                document.getElementById('create-description').value = '';
+                
+                // Rafraîchir la liste
+                fetchCategories();
+            } catch (error) {
+                showStatusMessage(`Erreur: ${error.message}`, false);
+            }
+        }
+        
+        // Fonction pour mettre à jour une catégorie
+        async function updateCategory(event) {
+            event.preventDefault();
+            
+            const categoryId = document.getElementById('update-id').value;
+            const name = document.getElementById('update-name').value;
+            const description = document.getElementById('update-description').value;
+            
+            if (!name) {
+                showStatusMessage('Le nom de la catégorie est obligatoire', false);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/categories/${categoryId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, description })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Échec de la mise à jour de la catégorie');
+                }
+                
+                showStatusMessage('Catégorie mise à jour avec succès!');
+                
+                // Cacher le formulaire de mise à jour
+                updateForm.classList.add('hidden');
+                updatePlaceholder.classList.remove('hidden');
+                
+                // Rafraîchir la liste
+                fetchCategories();
+            } catch (error) {
+                showStatusMessage(`Erreur: ${error.message}`, false);
+            }
+        }
+        
+        // Fonction pour supprimer une catégorie
+        async function deleteCategory(categoryId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/categories/${categoryId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Échec de la suppression de la catégorie');
+                }
+                
+                showStatusMessage('Catégorie supprimée avec succès!');
+                
+                // Rafraîchir la liste
+                fetchCategories();
+            } catch (error) {
+                showStatusMessage(`Erreur: ${error.message}`, false);
+            }
+        }
+        
+        // Fonction pour récupérer les posts d'une catégorie
+        async function fetchCategoryPosts(categoryId) {
+            categoryPosts.innerHTML = '<p>Chargement des publications...</p>';
+            categoryPostsPanel.classList.remove('hidden');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/categories/${categoryId}/posts`);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Échec de la récupération des publications');
+                }
+                
+                const data = await response.json();
+                
+                if (data.posts.length === 0) {
+                    categoryPosts.innerHTML = '<p>Aucune publication dans cette catégorie.</p>';
+                } else {
+                    categoryPosts.innerHTML = '';
+                    data.posts.forEach(post => {
+                        const postCard = document.createElement('div');
+                        postCard.className = 'post-card';
+                        
+                        postCard.innerHTML = `
+                            <div class="post-title">${post.title}</div>
+                            <div class="post-content">${post.content}</div>
+                        `;
+                        
+                        categoryPosts.appendChild(postCard);
+                    });
+                }
+            } catch (error) {
+                categoryPosts.innerHTML = `<p>Erreur: ${error.message}</p>`;
+            }
+        }
+        
+        // Ajouter des écouteurs d'événements
+        createForm.addEventListener('submit', createCategory);
+        updateForm.addEventListener('submit', updateCategory);
+        
+        document.getElementById('cancel-update').addEventListener('click', () => {
+            updateForm.classList.add('hidden');
+            updatePlaceholder.classList.remove('hidden');
+        });
+        
+        document.getElementById('refresh-categories-btn').addEventListener('click', fetchCategories);
+        
+        document.getElementById('back-to-list').addEventListener('click', () => {
+            categoryDetailPanel.classList.add('hidden');
+        });
+        
+        document.getElementById('back-from-posts').addEventListener('click', () => {
+            categoryPostsPanel.classList.add('hidden');
+        });
+        
+        // Charger les catégories au chargement de la page
+        document.addEventListener('DOMContentLoaded', fetchCategories);
+    </script>
+</body>
+</html>

@@ -61,6 +61,14 @@ def create_post():
         
         db.session.add(post)
         db.session.commit()
+        
+        # Mise à jour du post_id dans la catégorie correspondante
+        from models.category import Category
+        category = Category.query.get(category_id)
+        if category:
+            category.post_id = post.id
+            db.session.commit()
+        
         return jsonify({'message': 'Post created successfully', 'post_id': post.id})
     
     except KeyError as e:
