@@ -56,7 +56,7 @@
             max-width: 100%;
             max-height: 300px;
             display: block;
-            margin-top: 10px;
+            margin: 10px 0;
         }
         .actions {
             margin-top: 10px;
@@ -68,6 +68,108 @@
         .success {
             color: #90EE90;
             margin-top: 10px;
+        }
+        .media-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .preview-item {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: 4px;
+            overflow: hidden;
+            background-color: #444;
+        }
+        .preview-item img, .preview-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .remove-preview {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background-color: rgba(255, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            font-size: 10px;
+            line-height: 1;
+            padding: 0;
+            margin: 0;
+            cursor: pointer;
+        }
+        .media-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .media-gallery-item {
+            width: calc(50% - 5px);
+            position: relative;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .media-gallery-item img, .media-gallery-item video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .existing-media {
+            margin-top: 15px;
+            border-top: 1px solid #555;
+            padding-top: 15px;
+        }
+        .existing-media-item {
+            position: relative;
+            display: inline-block;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            border: 2px solid #444;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .existing-media-item img, .existing-media-item video {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+        }
+        .remove-media-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: rgba(255, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .remove-media-btn:hover {
+            background-color: rgba(255, 0, 0, 0.9);
+        }
+        .upload-btn {
+            display: inline-block;
+            background-color: #1DA1F2;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .upload-btn:hover {
+            background-color: #0c85d0;
         }
     </style>
 </head>
@@ -97,9 +199,21 @@
             <input type="number" id="post-id">
         </div>
         <div class="form-group">
-            <label for="media">Média (optionnel)</label>
-            <input type="file" id="media">
+            <label>Ajouter des médias (plusieurs fichiers possibles)</label>
+            <input type="file" id="media" multiple accept="image/*,video/*" style="display:none">
+            <button type="button" class="upload-btn" id="upload-btn">Choisir des fichiers</button>
+            <div id="media-preview" class="media-preview"></div>
         </div>
+        
+        <!-- Section pour les médias existants (lors de la modification) -->
+        <div id="existing-media" class="existing-media" style="display: none;">
+            <h3>Médias existants</h3>
+            <p>Cliquez sur la croix rouge pour supprimer un média</p>
+            <div id="existing-media-list"></div>
+        </div>
+        
+        <input type="hidden" id="media-to-remove" value="">
+        
         <button id="create-post-btn">Créer Post</button>
         <button id="update-post-btn" style="display: none;">Mettre à jour Post</button>
         <button id="cancel-edit-btn" style="display: none;">Annuler</button>
@@ -113,6 +227,70 @@
     <script>
         const API_BASE_URL = 'http://localhost:5000/api';
         let currentEditId = null;
+        let mediaToRemove = [];
+        let selectedFiles = []; // Tableau pour stocker les fichiers sélectionnés
+
+        // Configuration du bouton d'upload
+        document.getElementById('upload-btn').addEventListener('click', function() {
+            document.getElementById('media').click();
+        });
+
+        // Gestionnaire d'événement pour les fichiers sélectionnés
+        document.getElementById('media').addEventListener('change', function(e) {
+            const files = e.target.files;
+            
+            // Ajouter les nouveaux fichiers à notre tableau
+            for (let i = 0; i < files.length; i++) {
+                selectedFiles.push(files[i]);
+            }
+            
+            // Réinitialiser l'input file pour permettre la sélection du même fichier
+            e.target.value = '';
+            
+            // Afficher les fichiers
+            displaySelectedFiles();
+        });
+
+        // Fonction pour afficher les fichiers sélectionnés
+        function displaySelectedFiles() {
+            const preview = document.getElementById('media-preview');
+            preview.innerHTML = '';
+            
+            selectedFiles.forEach((file, index) => {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'preview-item';
+                
+                const isImage = file.type.startsWith('image/');
+                const isVideo = file.type.startsWith('video/');
+                
+                if (isImage || isVideo) {
+                    const fileURL = URL.createObjectURL(file);
+                    
+                    if (isImage) {
+                        previewItem.innerHTML = `
+                            <img src="${fileURL}" alt="${file.name}">
+                            <button class="remove-preview" data-index="${index}">×</button>
+                        `;
+                    } else {
+                        previewItem.innerHTML = `
+                            <video src="${fileURL}" muted></video>
+                            <button class="remove-preview" data-index="${index}">×</button>
+                        `;
+                    }
+                }
+                
+                preview.appendChild(previewItem);
+            });
+            
+            // Ajouter des écouteurs pour les boutons de suppression
+            document.querySelectorAll('.remove-preview').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    selectedFiles.splice(index, 1); // Supprimer le fichier
+                    displaySelectedFiles(); // Rafraîchir l'affichage
+                });
+            });
+        }
 
         // Fonction pour créer un nouveau post
         async function createPost() {
@@ -128,9 +306,14 @@
                 formData.append('post_id', postId);
             }
             
-            const mediaInput = document.getElementById('media');
-            if (mediaInput.files.length > 0) {
-                formData.append('file', mediaInput.files[0]);
+            // Ajouter tous les fichiers sélectionnés de notre tableau
+            if (selectedFiles.length > 0) {
+                console.log(`Nombre de fichiers à envoyer: ${selectedFiles.length}`);
+                
+                selectedFiles.forEach((file, index) => {
+                    console.log(`Ajout du fichier ${index + 1}: ${file.name}`);
+                    formData.append('files[]', file);
+                });
             }
             
             try {
@@ -162,9 +345,19 @@
             formData.append('content', document.getElementById('content').value);
             formData.append('category_id', document.getElementById('category-id').value);
             
-            const mediaInput = document.getElementById('media');
-            if (mediaInput.files.length > 0) {
-                formData.append('file', mediaInput.files[0]);
+            // Ajouter tous les fichiers sélectionnés de notre tableau
+            if (selectedFiles.length > 0) {
+                selectedFiles.forEach((file, index) => {
+                    console.log(`Ajout du fichier ${index + 1}: ${file.name}`);
+                    formData.append('files[]', file);
+                });
+            }
+            
+            // Ajouter les IDs des médias à supprimer
+            if (mediaToRemove.length > 0) {
+                for (let mediaId of mediaToRemove) {
+                    formData.append('remove_media_ids', mediaId);
+                }
             }
             
             try {
@@ -262,6 +455,14 @@
                         document.getElementById('post-id').value = '';
                     }
                     
+                    // Réinitialiser la liste des médias à supprimer et les fichiers sélectionnés
+                    mediaToRemove = [];
+                    selectedFiles = [];
+                    document.getElementById('media-preview').innerHTML = '';
+                    
+                    // Afficher les médias existants
+                    displayExistingMedia(post);
+                    
                     // On ne peut pas préremplir l'input de fichier pour des raisons de sécurité
                     document.getElementById('create-post-btn').style.display = 'none';
                     document.getElementById('update-post-btn').style.display = 'inline-block';
@@ -276,6 +477,66 @@
             } catch (error) {
                 document.getElementById('form-status').className = 'error';
                 document.getElementById('form-status').textContent = `Erreur: ${error.message}`;
+            }
+        }
+
+        // Fonction pour afficher les médias existants d'un post
+        function displayExistingMedia(post) {
+            const container = document.getElementById('existing-media');
+            const mediaList = document.getElementById('existing-media-list');
+            mediaList.innerHTML = '';
+            
+            // Vérifier si le post a des médias dans le format "media" (tableau)
+            if (post.media && post.media.length > 0) {
+                container.style.display = 'block';
+                
+                post.media.forEach(item => {
+                    const mediaItem = document.createElement('div');
+                    mediaItem.className = 'existing-media-item';
+                    mediaItem.dataset.id = item.id;
+                    
+                    // Créer l'élément médial (image ou vidéo)
+                    const mediaElement = document.createElement(item.type === 'image' ? 'img' : 'video');
+                    mediaElement.src = item.url;
+                    if (item.type === 'video') {
+                        mediaElement.controls = true;
+                    }
+                    
+                    // Bouton de suppression
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-media-btn';
+                    removeBtn.innerHTML = '×'; // Croix
+                    removeBtn.onclick = function() {
+                        mediaToRemove.push(item.id);
+                        mediaItem.style.opacity = '0.3';
+                        removeBtn.disabled = true;
+                    };
+                    
+                    mediaItem.appendChild(mediaElement);
+                    mediaItem.appendChild(removeBtn);
+                    mediaList.appendChild(mediaItem);
+                });
+            } 
+            // Rétrocompatibilité: vérifier si post a un ancien format de média
+            else if (post.media_url) {
+                container.style.display = 'block';
+                
+                const mediaItem = document.createElement('div');
+                mediaItem.className = 'existing-media-item';
+                
+                // Créer l'élément média
+                const mediaElement = document.createElement(post.media_type === 'image' ? 'img' : 'video');
+                mediaElement.src = post.media_url;
+                if (post.media_type === 'video') {
+                    mediaElement.controls = true;
+                }
+                
+                mediaItem.appendChild(mediaElement);
+                mediaList.appendChild(mediaItem);
+                
+                // Note: pas de bouton de suppression pour l'ancien format car nous n'avons pas d'ID de média
+            } else {
+                container.style.display = 'none';
             }
         }
 
@@ -296,7 +557,30 @@
             meta.innerHTML = `<small>ID: ${post.id} | User: ${post.user_id} | Category: ${post.category_id}</small>`;
             card.appendChild(meta);
             
-            if (post.media_url) {
+            // Affichage des médias multiples
+            if (post.media && post.media.length > 0) {
+                const mediaGallery = document.createElement('div');
+                mediaGallery.className = 'media-gallery';
+                
+                post.media.forEach(item => {
+                    const galleryItem = document.createElement('div');
+                    galleryItem.className = 'media-gallery-item';
+                    
+                    const mediaElement = document.createElement(item.type === 'image' ? 'img' : 'video');
+                    mediaElement.src = item.url;
+                    mediaElement.className = 'media';
+                    if (item.type === 'video') {
+                        mediaElement.controls = true;
+                    }
+                    
+                    galleryItem.appendChild(mediaElement);
+                    mediaGallery.appendChild(galleryItem);
+                });
+                
+                card.appendChild(mediaGallery);
+            } 
+            // Rétrocompatibilité avec l'ancien format
+            else if (post.media_url) {
                 const media = document.createElement(post.media_type === 'image' ? 'img' : 'video');
                 media.src = post.media_url;
                 media.className = 'media';
@@ -330,12 +614,17 @@
             document.getElementById('content').value = '';
             document.getElementById('post-id').value = '';
             document.getElementById('media').value = '';
+            document.getElementById('media-preview').innerHTML = '';
+            document.getElementById('existing-media').style.display = 'none';
+            document.getElementById('existing-media-list').innerHTML = '';
             
             document.getElementById('create-post-btn').style.display = 'inline-block';
             document.getElementById('update-post-btn').style.display = 'none';
             document.getElementById('cancel-edit-btn').style.display = 'none';
             
             currentEditId = null;
+            mediaToRemove = [];
+            selectedFiles = []; // Réinitialiser le tableau de fichiers
         }
 
         // Ajouter des écouteurs d'événements

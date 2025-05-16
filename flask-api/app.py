@@ -25,6 +25,7 @@ def create_app(config_class=Config):
     app.register_blueprint(categories_bp)
     
     with app.app_context():
+        from models.post_media import PostMedia
         db.create_all()
     
     return app

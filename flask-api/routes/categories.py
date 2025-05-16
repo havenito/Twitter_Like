@@ -83,19 +83,36 @@ def get_posts_by_category(category_id):
     try:
         # Obtenir les posts
         from models.post import Post
-        posts = Post.query.filter_by(category_id=category.id).all()
+        from models.post_media import PostMedia
         
-        posts_list = [
-            {
+        posts = Post.query.filter_by(category_id=category.id).all()
+        posts_list = []
+        
+        for post in posts:
+            # Récupérer tous les médias associés à ce post
+            media_list = PostMedia.query.filter_by(post_id=post.id).all()
+            media = []
+            
+            for item in media_list:
+                media.append({
+                    'id': item.id,
+                    'url': item.media_url,
+                    'type': item.media_type
+                })
+            
+            # Créer l'objet post avec tous ses médias
+            post_data = {
                 'id': post.id, 
                 'title': post.title, 
                 'content': post.content,
-                'media_url': post.media_url,  # Assurez-vous d'inclure le champ media_url
-                'media_type': post.media_type,
+                'media_url': post.media_url,  # Pour rétrocompatibilité
+                'media_type': post.media_type,  # Pour rétrocompatibilité
+                'media': media,  # Liste de tous les médias
                 'published_at': post.published_at.isoformat() if post.published_at else None,
                 'user_id': post.user_id
-            } for post in posts
-        ]
+            }
+            
+            posts_list.append(post_data)
         
         return jsonify({'posts': posts_list}), 200
     except Exception as e:

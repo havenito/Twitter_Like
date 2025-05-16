@@ -196,6 +196,97 @@
             font-weight: bold;
             color: #666;
         }
+        /* Nouveaux styles pour la galerie de médias */
+        .media-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        .media-gallery-item {
+            width: calc(33.33% - 10px);  /* Modifié pour 3 images par ligne */
+            position: relative;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: transform 0.2s ease;
+        }
+        .media-gallery-item:hover {
+            transform: scale(1.03);
+        }
+        .media-gallery-item img, .media-gallery-item video {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+        }
+        .media-type-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0,0,0,0.6);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1;
+        }
+        .post-media-count {
+            font-size: 14px;
+            color: #1DA1F2;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        /* Style pour le bouton de suppression de média */
+        .remove-media-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(255, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 2;
+            transition: background-color 0.2s;
+        }
+        .remove-media-btn:hover {
+            background-color: rgba(255, 0, 0, 0.9);
+        }
+        .media-gallery-item.deleting {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .media-gallery-item.deleting::after {
+            content: 'Suppression...';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        /* Pour les écrans plus petits */
+        @media (max-width: 768px) {
+            .media-gallery-item {
+                width: calc(50% - 5px);
+            }
+        }
+        @media (max-width: 480px) {
+            .media-gallery-item {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -259,6 +350,9 @@
         <div id="category-posts">
             <!-- Les posts seront insérés ici -->
         </div>
+        <button id="refresh-posts-btn" style="background-color: #52c41a; margin-right: 10px;">
+            <i class="fa fa-sync"></i> Rafraîchir les posts
+        </button>
         <button id="back-from-posts">Retour à la liste</button>
     </div>
     
@@ -376,6 +470,7 @@
             document.querySelectorAll('.view-posts-btn').forEach(button => {
                 button.addEventListener('click', () => {
                     const categoryId = button.getAttribute('data-id');
+                    categoryPostsPanel.dataset.activeCategoryId = categoryId;
                     fetchCategoryPosts(categoryId);
                 });
             });
@@ -507,13 +602,90 @@
             }
         }
         
+        // Fonction pour supprimer définitivement un média
+        async function deleteMedia(mediaId) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer définitivement ce média?')) {
+                return false;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/media/${mediaId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Échec de la suppression du média');
+                }
+                
+                showStatusMessage('Média supprimé avec succès!');
+                return true;
+            } catch (error) {
+                showStatusMessage(`Erreur: ${error.message}`, false);
+                return false;
+            }
+        }
+        
+        // Fonction pour supprimer un média depuis la galerie
+        async function deleteMediaFromGallery(mediaId, element) {
+            // Empêcher la propagation de l'événement
+            event.stopPropagation();
+            
+            const galleryItem = element.closest('.media-gallery-item');
+            galleryItem.classList.add('deleting');
+            
+            const success = await deleteMedia(mediaId);
+            if (success) {
+                // Animation pour la suppression
+                galleryItem.style.transition = 'opacity 0.5s, transform 0.5s';
+                galleryItem.style.opacity = '0';
+                galleryItem.style.transform = 'scale(0.8)';
+                
+                setTimeout(() => {
+                    galleryItem.remove();
+                    
+                    // Vérifier s'il reste des médias dans la galerie
+                    const gallery = document.querySelector('.media-gallery');
+                    if (gallery && gallery.children.length === 0) {
+                        // S'il n'y a plus de médias, mettre à jour l'affichage
+                        const mediaCount = gallery.previousElementSibling;
+                        if (mediaCount && mediaCount.classList.contains('post-media-count')) {
+                            mediaCount.textContent = "0 média attaché";
+                        }
+                        gallery.remove();
+                    } else if (gallery) {
+                        // Mettre à jour le compteur de médias
+                        const mediaCount = gallery.previousElementSibling;
+                        if (mediaCount && mediaCount.classList.contains('post-media-count')) {
+                            const count = gallery.children.length;
+                            mediaCount.textContent = `${count} média(s) attaché(s)`;
+                        }
+                    }
+                }, 500);
+            } else {
+                galleryItem.classList.remove('deleting');
+            }
+        }
+        
         // Fonction pour récupérer les posts d'une catégorie
         async function fetchCategoryPosts(categoryId) {
             categoryPosts.innerHTML = '<p>Chargement des publications...</p>';
             categoryPostsPanel.classList.remove('hidden');
             
             try {
-                const response = await fetch(`${API_BASE_URL}/categories/${categoryId}/posts`);
+                // Ajouter un paramètre timestamp pour éviter la mise en cache
+                const timestamp = new Date().getTime();
+                const response = await fetch(`${API_BASE_URL}/categories/${categoryId}/posts?_=${timestamp}`, {
+                    // Désactiver explicitement le cache
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
                 
                 if (!response.ok) {
                     const error = await response.json();
@@ -521,35 +693,90 @@
                 }
                 
                 const data = await response.json();
+                console.log("Données reçues:", data); 
                 
-                if (data.posts.length === 0) {
+                if (!data.posts || data.posts.length === 0) {
                     categoryPosts.innerHTML = '<p>Aucune publication dans cette catégorie.</p>';
-                } else {
-                    categoryPosts.innerHTML = '';
-                    data.posts.forEach(post => {
-                        const postCard = document.createElement('div');
-                        postCard.className = 'post-card';
+                    return;
+                }
+                
+                categoryPosts.innerHTML = '';
+                
+                data.posts.forEach(post => {
+                    console.log(`Post ${post.id} - Nombre de médias:`, post.media ? post.media.length : 0);
+                    
+                    const postCard = document.createElement('div');
+                    postCard.className = 'post-card';
+                    
+                    let postHTML = `
+                        <div class="post-title">${post.title}</div>
+                        <div class="post-content">${post.content}</div>
+                    `;
+                    
+                    // Gestion des médias multiples (avec plus de vérifications)
+                    if (post.media && Array.isArray(post.media) && post.media.length > 0) {
+                        // Filtrer les médias non valides (par précaution)
+                        const validMedia = post.media.filter(item => item && item.url && item.type);
                         
-                        // Vérifier si le post a une image/média
-                        const mediaHtml = post.media_url ? 
-                            `<div class="post-media">
-                                <img src="${post.media_url}" alt="${post.title}" class="post-image">
-                            </div>` : '';
+                        if (validMedia.length > 0) {
+                            postHTML += `<div class="post-media-count">${validMedia.length} média(s) attaché(s)</div>`;
+                            postHTML += '<div class="media-gallery">';
+                            
+                            validMedia.forEach((item, index) => {
+                                console.log(`Media ${index+1} pour post ${post.id}:`, item);
+                                
+                                if (item.type === 'image') {
+                                    // Ajouter timestamp pour forcer le rechargement des images
+                                    const imgUrl = `${item.url}?t=${timestamp}`;
+                                    postHTML += `
+                                        <div class="media-gallery-item" data-media-id="${item.id}">
+                                            <span class="media-type-label">Image</span>
+                                            <img src="${imgUrl}" alt="Image du post" class="post-image">
+                                            <button class="remove-media-btn" title="Supprimer définitivement" onclick="deleteMediaFromGallery(${item.id}, this)">×</button>
+                                        </div>
+                                    `;
+                                } else if (item.type === 'video') {
+                                    // Ajouter timestamp pour forcer le rechargement des vidéos
+                                    const videoUrl = `${item.url}?t=${timestamp}`;
+                                    postHTML += `
+                                        <div class="media-gallery-item" data-media-id="${item.id}">
+                                            <span class="media-type-label">Vidéo</span>
+                                            <video src="${videoUrl}" controls class="post-image"></video>
+                                            <button class="remove-media-btn" title="Supprimer définitivement" onclick="deleteMediaFromGallery(${item.id}, this)">×</button>
+                                        </div>
+                                    `;
+                                }
+                            });
+                            
+                            postHTML += '</div>';
+                        }
+                    } else if (post.media_url) {
+                        // Ancien format avec média unique (ajouter timestamp également)
+                        const mediaUrl = `${post.media_url}?t=${timestamp}`;
+                        const isVideo = post.media_type === 'video';
                         
-                        postCard.innerHTML = `
-                            <div class="post-title">${post.title}</div>
-                            ${mediaHtml}
-                            <div class="post-content">${post.content}</div>
-                            <div class="post-details">
-                                <span class="post-date">Publié le: ${new Date(post.published_at).toLocaleDateString()}</span>
-                                <span class="post-id">ID: ${post.id}</span>
+                        postHTML += `
+                            <div class="post-media">
+                                ${isVideo 
+                                    ? `<video src="${mediaUrl}" controls class="post-image"></video>`
+                                    : `<img src="${mediaUrl}" alt="${post.title}" class="post-image">`
+                                }
                             </div>
                         `;
-                        
-                        categoryPosts.appendChild(postCard);
-                    });
-                }
+                    }
+                    
+                    postHTML += `
+                        <div class="post-details">
+                            <span class="post-date">Publié le: ${new Date(post.published_at).toLocaleDateString()}</span>
+                            <span class="post-id">ID: ${post.id}</span>
+                        </div>
+                    `;
+                    
+                    postCard.innerHTML = postHTML;
+                    categoryPosts.appendChild(postCard);
+                });
             } catch (error) {
+                console.error("Erreur lors de la récupération des posts:", error);
                 categoryPosts.innerHTML = `<p>Erreur: ${error.message}</p>`;
             }
         }
@@ -571,6 +798,14 @@
         
         document.getElementById('back-from-posts').addEventListener('click', () => {
             categoryPostsPanel.classList.add('hidden');
+        });
+        
+        // Écouteur pour le bouton de rafraîchissement des posts
+        document.getElementById('refresh-posts-btn').addEventListener('click', () => {
+            const activeCategoryId = categoryPostsPanel.dataset.activeCategoryId;
+            if (activeCategoryId) {
+                fetchCategoryPosts(activeCategoryId);
+            }
         });
         
         // Charger les catégories au chargement de la page
