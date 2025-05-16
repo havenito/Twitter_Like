@@ -93,7 +93,7 @@ export default function RegisterPage() {
     setError('');
     
     if (!firstName || !email || !pseudo || !password || !confirmPassword) { 
-      setError('Veuillez remplir tous les champs obligatoires (sauf le nom de famille qui est facultatif).');
+      setError('Veuillez remplir tous les champs obligatoires (Prénom, Email, Pseudo, Mot de passe).');
       setLoading(false);
       return;
     }
