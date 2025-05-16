@@ -1,4 +1,5 @@
 from models import db
+from models.category import Category
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)

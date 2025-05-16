@@ -1,84 +1,84 @@
 from flask import Blueprint, request, jsonify
 from models import db
+from models.user import User
 from models.replie import Replie
+from flask_bcrypt import Bcrypt
+from flask_jwt_extended import create_access_token
 
 replies_api = Blueprint('replies_api', __name__)
 
+@replies_api.route('/api/replies', methods=['POST'])
+def create_replie():
+    data = request.get_json()
+    content = data.get('content')
+    comment_id = data.get('comment_id')
+    user_id = data.get('user_id')
+
+    if not content:
+        return jsonify({'error': 'Content is required'}), 400
+    
+    new_replie = Replie(content=content, comment_id=comment_id, user_id=user_id)
+    db.session.add(new_replie)
+    db.session.commit()
+
+    return jsonify({'message': 'Replie created successfully', 'replie_id': new_replie.id}), 201
+
 @replies_api.route('/api/replies', methods=['GET'])
 def get_replies():
-    try:
-        replies = Replie.query.all()
-        return jsonify([reply.to_dict() for reply in replies])
-    except Exception as e:
-        return jsonify({'error': f'Failed to fetch replies: {str(e)}'}), 500
+    replies = Replie.query.all()
+    replies_list = [{'id': replie.id, 'content': replie.content, 'comment_id': replie.comment_id, 'user_id': replie.user_id} for replie in replies]
+    
+    return jsonify({'replies': replies_list}), 200
 
-@replies_api.route('/api/replies/<int:id>', methods=['GET'])
-def get_reply(id):
-    try:
-        reply = Replie.query.get_or_404(id)
-        return jsonify(reply.to_dict())
-    except Exception as e:
-        return jsonify({'error': f'Reply not found: {str(e)}'}), 404
+@replies_api.route('/api/replies/<int:replie_id>', methods=['PUT'])
+def update_replie(replie_id):
+    data = request.get_json()
+    content = data.get('content')
 
-@replies_api.route('/api/replies', methods=['POST'])
-def create_reply():
-    try:
-        data = request.get_json()
-        new_reply = Replie(
-            comment_id=data['comment_id'],
-            user_id=data['user_id'],
-            content=data['content'],
-            created_at=data['created_at']
-        )
-        db.session.add(new_reply)
-        db.session.commit()
-        return jsonify({'message': 'Reply created successfully', 'reply_id': new_reply.id}), 201
-    except KeyError as e:
-        return jsonify({'error': f'Missing required field: {str(e)}'}), 400
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': f'Failed to create reply: {str(e)}'}), 500
+    replie = Replie.query.get(replie_id)
+    if not replie:
+        return jsonify({'error': 'Replie not found'}), 404
 
-@replies_api.route('/api/replies/<int:id>', methods=['PUT'])
-def update_reply(id):
-    try:
-        data = request.get_json()
-        reply = Replie.query.get_or_404(id)
+    if content:
+        replie.content = content
 
-        if 'comment_id' in data:
-            reply.comment_id = data['comment_id']
+    db.session.commit()
 
-        if 'user_id' in data:
-            reply.user_id = data['user_id']
+    return jsonify({'message': 'Replie updated successfully'}), 200
 
-        if 'content' in data:
-            reply.content = data['content']
+@replies_api.route('/api/replies/<int:replie_id>', methods=['DELETE'])
+def delete_replie(replie_id):
+    replie = Replie.query.get(replie_id)
+    if not replie:
+        return jsonify({'error': 'Replie not found'}), 404
 
-        if 'created_at' in data:
-            reply.created_at = data['created_at']
+    db.session.delete(replie)
+    db.session.commit()
 
-        db.session.commit()
-        return jsonify({
-            'message': 'Reply updated successfully',
-            'reply': {
-                'id': reply.id,
-                'comment_id': reply.comment_id,
-                'user_id': reply.user_id,
-                'content': reply.content,
-                'created_at': reply.created_at
-            }
-        })
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': f'Failed to update reply: {str(e)}'}), 500
+    return jsonify({'message': 'Replie deleted successfully'}), 200
 
-@replies_api.route('/api/replies/<int:id>', methods=['DELETE'])
-def delete_reply(id):
-    try:
-        reply = Replie.query.get_or_404(id)
-        db.session.delete(reply)
-        db.session.commit()
-        return jsonify({'message': 'Reply deleted successfully'})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': f'Failed to delete reply: {str(e)}'}), 500
+@replies_api.route('/api/replies/<int:replie_id>', methods=['GET'])
+def get_replie(replie_id):
+    replie = Replie.query.get(replie_id)
+    if not replie:
+        return jsonify({'error': 'Replie not found'}), 404
+
+    replie_data = {
+        'id': replie.id,
+        'content': replie.content,
+        'comment_id': replie.comment_id,
+        'user_id': replie.user_id
+    }
+
+    return jsonify({'replie': replie_data}), 200
+
+@replies_api.route('/api/replies/<int:replie_id>/comments', methods=['GET'])
+def get_replie_comments(replie_id):
+    replie = Replie.query.get(replie_id)
+    if not replie:
+        return jsonify({'error': 'Replie not found'}), 404
+
+    comments = replie.comments
+    comments_list = [{'id': comment.id, 'content': comment.content, 'created_at': comment.created_at} for comment in comments]
+    
+    return jsonify({'comments': comments_list}), 200
