@@ -1,17 +1,18 @@
 from flask import Blueprint, request, jsonify
 from models import db
 from models.comment import Comment
-comment_api = Blueprint('comment_api', __name__)
+comments_api = Blueprint('comments_api', __name__)
 
-@comment_api.route('/api/comments', methods=['GET'])
+@comments_api.route('/api/comments', methods=['GET'])
 def get_comments():
     try:
         comments = Comment.query.all()
         return jsonify([comment.to_dict() for comment in comments])
     except Exception as e:
+        print(f"Erreur lors de la récupération des comments: {e}")
         return jsonify({'error': f'Failed to fetch comments: {str(e)}'}), 500
 
-@comment_api.route('/api/comments/<int:id>', methods=['GET'])
+@comments_api.route('/api/comments/<int:id>', methods=['GET'])
 def get_comment(id):
     try:
         comment = Comment.query.get_or_404(id)
@@ -19,7 +20,7 @@ def get_comment(id):
     except Exception as e:
         return jsonify({'error': f'Comment not found: {str(e)}'}), 404
 
-@comment_api.route('/api/comments', methods=['POST'])
+@comments_api.route('/api/comments', methods=['POST'])
 def create_comment():
     try:
         data = request.get_json()
@@ -40,7 +41,7 @@ def create_comment():
         db.session.rollback()
         return jsonify({'error': f'Failed to create comment: {str(e)}'}), 500
 
-@comment_api.route('/api/comments/<int:id>', methods=['PUT'])
+@comments_api.route('/api/comments/<int:id>', methods=['PUT'])
 def update_comment(id):
     try:
         data = request.get_json()
@@ -77,7 +78,7 @@ def update_comment(id):
         db.session.rollback()
         return jsonify({'error': f'Failed to update comment: {str(e)}'}), 500
 
-@comment_api.route('/api/comments/<int:id>', methods=['DELETE'])
+@comments_api.route('/api/comments/<int:id>', methods=['DELETE'])
 def delete_comment(id):
     try:
         comment = Comment.query.get_or_404(id)

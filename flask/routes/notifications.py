@@ -2,9 +2,9 @@ from flask import Blueprint, request, jsonify
 from models import db
 from models.notification import Notification
 
-notification_api = Blueprint('notification_api', __name__)
+notifications_api = Blueprint('notifications_api', __name__)
 
-@notification_api.route('/api/notifications', methods=['GET'])
+@notifications_api.route('/api/notifications', methods=['GET'])
 def get_notifications():
     try:
         notifications = Notification.query.all()
@@ -12,7 +12,7 @@ def get_notifications():
     except Exception as e:
         return jsonify({'error': f'Failed to fetch notifications: {str(e)}'}), 500
 
-@notification_api.route('/api/notifications/<int:id>', methods=['GET'])
+@notifications_api.route('/api/notifications/<int:id>', methods=['GET'])
 def get_notification(id):
     try:
         notification = Notification.query.get_or_404(id)
@@ -20,7 +20,7 @@ def get_notification(id):
     except Exception as e:
         return jsonify({'error': f'Notification not found: {str(e)}'}), 404
 
-@notification_api.route('/api/notifications', methods=['POST'])
+@notifications_api.route('/api/notifications', methods=['POST'])
 def create_notification():
     try:
         data = request.get_json()
@@ -39,7 +39,7 @@ def create_notification():
         db.session.rollback()
         return jsonify({'error': f'Failed to create notification: {str(e)}'}), 500
 
-@notification_api.route('/api/notifications/<int:id>', methods=['PUT'])
+@notifications_api.route('/api/notifications/<int:id>', methods=['PUT'])
 def update_notification(id):
     try:
         data = request.get_json()
@@ -72,7 +72,7 @@ def update_notification(id):
         db.session.rollback()
         return jsonify({'error': f'Failed to update notification: {str(e)}'}), 500
 
-@notification_api.route('/api/notifications/<int:id>', methods=['DELETE'])
+@notifications_api.route('/api/notifications/<int:id>', methods=['DELETE'])
 def delete_notification(id):
     try:
         notification = Notification.query.get_or_404(id)
