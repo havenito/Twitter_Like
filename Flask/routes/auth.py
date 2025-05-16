@@ -8,6 +8,7 @@ from datetime import timedelta
 import re
 import os
 from urllib.parse import quote
+from services.file_upload import upload_file 
 
 bcrypt = Bcrypt()
 auth_bp = Blueprint('auth', __name__)
@@ -28,14 +29,44 @@ def validate_password(password):
 
 @auth_bp.route('/api/users', methods=['POST'])
 def create_user():
-    data = request.get_json()
-    email = data.get('email', '').strip().lower()
-    password = data.get('password', '').strip()
-    first_name = data.get('first_name', '').strip()
-    last_name = data.get('last_name', '').strip() 
-    profile_picture = data.get('profile_picture')
-    pseudo = data.get('pseudo', '').strip()
-    private = data.get('private', False)
+    profile_picture_to_save = None
+    data_source = None
+
+    if request.content_type and 'multipart/form-data' in request.content_type:
+        data_source = request.form
+        email = data_source.get('email', '').strip().lower()
+        password = data_source.get('password', '').strip()
+        first_name = data_source.get('first_name', '').strip()
+        last_name_data = data_source.get('last_name')
+        last_name = last_name_data.strip() if isinstance(last_name_data, str) else last_name_data
+        pseudo = data_source.get('pseudo', '').strip()
+        
+        is_public_str = data_source.get('isPublic', 'true')
+        private = not (is_public_str.lower() == 'true')
+        
+        roles = data_source.get('roles', 'user').strip()
+
+        if 'profile_picture' in request.files:
+            file = request.files['profile_picture']
+            if file and file.filename:
+                uploaded_url, _ = upload_file(file)
+                if uploaded_url:
+                    profile_picture_to_save = uploaded_url
+    else:
+        json_data = request.get_json()
+        if not json_data:
+            return jsonify({'error': 'Invalid or missing JSON data'}), 400
+        data_source = json_data
+        
+        email = data_source.get('email', '').strip().lower()
+        password = data_source.get('password', '').strip()
+        first_name = data_source.get('first_name', '').strip()
+        last_name_data = data_source.get('last_name')
+        last_name = last_name_data.strip() if isinstance(last_name_data, str) else last_name_data
+        profile_picture_to_save = data_source.get('profile_picture')
+        pseudo = data_source.get('pseudo', '').strip()
+        private = data_source.get('private', False) 
+        roles = data_source.get('roles', 'user').strip()
 
     if not all([email, password, first_name, pseudo]):
         return jsonify({'error': 'Les champs email, mot de passe, prénom et pseudo sont obligatoires'}), 400
@@ -46,17 +77,17 @@ def create_user():
     if User.query.filter_by(email=email).first():
         return jsonify({'error': 'Email déjà enregistré'}), 400
     
-    if User.query.filter_by(pseudo=pseudo).first(): 
+    if User.query.filter_by(pseudo=pseudo).first():
         return jsonify({'error': 'Pseudo déjà utilisé'}), 409
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     new_user = User(
         email=email,
         password=hashed_password,
-        roles='user', 
+        roles=roles, 
         first_name=first_name,
         last_name=last_name,
-        profile_picture=profile_picture,
+        profile_picture=profile_picture_to_save,
         pseudo=pseudo, 
         private=private
     )
@@ -64,7 +95,11 @@ def create_user():
     db.session.add(new_user)
     db.session.commit()
     
-    return jsonify({'message': 'Utilisateur créé avec succès', 'user_id': new_user.id}), 201
+    return jsonify({
+        'message': 'Utilisateur créé avec succès', 
+        'user_id': new_user.id,
+        'profile_picture': new_user.profile_picture
+    }), 201
 
 @auth_bp.route('/api/login', methods=['POST'])
 def login():
@@ -78,7 +113,6 @@ def login():
     user = User.query.filter_by(email=email).first()
     
     if user and bcrypt.check_password_hash(user.password, password):
-        # NextAuth will handle token creation. Return user details.
         user_data = {
             'id': user.id,
             'email': user.email,
@@ -106,7 +140,6 @@ def request_password_reset():
 
 
     # Create a short-lived token specifically for password reset
-    # The identity can be user.id or user.email
     reset_token = create_access_token(
         identity=str(user.id), 
         expires_delta=timedelta(minutes=15),
