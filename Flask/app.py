@@ -2,12 +2,16 @@ from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_bcrypt import Bcrypt
+from flask_mail import Mail # Add this import
 
 from config import Config
 from models import db
-from routes.auth import auth_bp, bcrypt
+# Removed bcrypt from here as it's initialized in auth_bp
+from routes.auth import auth_bp # bcrypt is initialized within auth_bp
 from routes.posts import posts_bp
 from services.file_upload import init_cloudinary
+
+mail = Mail() # Initialize Mail instance
 
 def create_app(config_class=Config):
     # Initialize Flask app
@@ -18,6 +22,7 @@ def create_app(config_class=Config):
     db.init_app(app)
     jwt = JWTManager(app)
     CORS(app)
+    mail.init_app(app) # Initialize Mail with app context
     
     # Initialize Cloudinary
     init_cloudinary(app)
