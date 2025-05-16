@@ -17,6 +17,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordCriteria, setPasswordCriteria] = useState({
     minLength: false,
     hasUppercase: false,
@@ -50,7 +51,10 @@ export default function RegisterPage() {
     setShowPassword(!showPassword);
   };
 
-  // Fonctions pour vérifier chaque critère du mot de passe
+  const toggleShowConfirmPassword = () => { 
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
   const checkMinLength = (pass) => pass.length >= 8;
   const checkHasUppercase = (pass) => /[A-Z]/.test(pass);
   const checkHasNumber = (pass) => /\d/.test(pass);
@@ -88,8 +92,8 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
     
-    if (!firstName || !lastName || !email || !pseudo || !password || !confirmPassword) {
-      setError('Veuillez remplir tous les champs obligatoires.');
+    if (!firstName || !email || !pseudo || !password || !confirmPassword) { 
+      setError('Veuillez remplir tous les champs obligatoires (sauf le nom de famille qui est facultatif).');
       setLoading(false);
       return;
     }
@@ -138,7 +142,6 @@ export default function RegisterPage() {
       
       setShowNotification(true);
       
-      // Redirection vers la page de connexion après un court délai
       setTimeout(() => {
         router.push('/login');
       }, 1500);
@@ -149,7 +152,6 @@ export default function RegisterPage() {
     }
   };
 
-  // Variantes personnalisées
   const centeredNotificationVariants = {
     initial: { opacity: 0, x:-285, y: -50, scale: 0.3 }, 
     animate: { opacity: 1, x:-285, y: 0, scale: 1 },    
@@ -263,7 +265,13 @@ export default function RegisterPage() {
               onClick={() => fileInputRef.current.click()}
             >
               {previewImage ? (
-                <Image src={previewImage} alt="Preview" className="w-full h-full object-cover" />
+                <Image 
+                  src={previewImage} 
+                  alt="Preview" 
+                  width={96} 
+                  height={96} 
+                  className="w-full h-full object-cover" 
+                />
               ) : (
                 <FontAwesomeIcon icon={faCamera} className="text-[#90EE90] text-2xl" />
               )}
@@ -313,7 +321,7 @@ export default function RegisterPage() {
             
             <div>
               <label htmlFor="lastName" className="block text-[#90EE90] mb-1">
-                Nom
+                Nom <span className="text-gray-400 text-xs">(Facultatif)</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
@@ -326,7 +334,6 @@ export default function RegisterPage() {
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Nom"
                   className="w-full pl-10 pr-3 py-2 bg-[#444444] text-white rounded border border-[#555555] focus:outline-none focus:ring-2 focus:ring-[#90EE90]"
-                  required
                 />
               </div>
             </div>
@@ -428,13 +435,21 @@ export default function RegisterPage() {
               </span>
               <input
                 id="confirmPassword"
-                type={showPassword ? "text" : "password"}
+                type={showConfirmPassword ? "text" : "password"} 
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirmez votre mot de passe"
                 className="w-full pl-10 pr-10 py-2 bg-[#444444] text-white rounded border border-[#555555] focus:outline-none focus:ring-2 focus:ring-[#90EE90]"
                 required
               />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#90EE90] focus:outline-none"
+                onClick={toggleShowConfirmPassword}
+                tabIndex="-1"
+              >
+                <FontAwesomeIcon icon={showConfirmPassword ? faEyeSlash : faEye} />
+              </button>
             </div>
           </motion.div>
           

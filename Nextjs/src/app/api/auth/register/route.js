@@ -5,15 +5,15 @@ export async function POST(req) {
     const formData = await req.formData();
     
     const firstName = formData.get('firstName');
-    const lastName = formData.get('lastName');
+    const lastName = formData.get('lastName') || null; 
     const email = formData.get('email');
     const pseudo = formData.get('pseudo');
     const password = formData.get('password');
     const isPublic = formData.get('isPublic') === 'true';
 
-    if (!firstName || !lastName || !email || !pseudo || !password) {
+    if (!firstName || !email || !pseudo || !password) { 
       return NextResponse.json({ 
-        error: 'Tous les champs sont obligatoires' 
+        error: 'Les champs prénom, email, pseudo et mot de passe sont obligatoires' 
       }, { status: 400 });
     }
     
@@ -28,7 +28,7 @@ export async function POST(req) {
         roles: 'user', 
         first_name: firstName,
         last_name: lastName,
-        profile_picture: null, // Pour l'instant, on envoie null.
+        profile_picture: null, 
         private: !isPublic,
         pseudo
       }),
@@ -39,7 +39,6 @@ export async function POST(req) {
       // Essayer de parser la réponse JSON, qu'elle soit OK ou une erreur JSON de Flask
       flaskApiData = await flaskApiResponse.json();
     } catch (e) {
-      // Si Flask renvoie une réponse non-JSON en cas d'erreur (ex: erreur serveur brute, réponse vide)
       if (!flaskApiResponse.ok) {
         console.error('Erreur API Flask (réponse non-JSON ou vide):', flaskApiResponse.status, flaskApiResponse.statusText);
         return NextResponse.json(
@@ -47,7 +46,6 @@ export async function POST(req) {
           { status: flaskApiResponse.status || 500 }
         );
       }
-      // Si la réponse était ok mais le JSON est invalide (peu probable pour une création réussie)
       console.error('Réponse JSON invalide de l\'API Flask pour une requête réussie:', e);
       return NextResponse.json(
         { error: 'Réponse invalide du service utilisateur après une opération réussie.' },

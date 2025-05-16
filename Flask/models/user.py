@@ -6,7 +6,7 @@ class User(db.Model):
     password = db.Column(db.String(255), nullable=False)
     roles = db.Column(db.String(50), nullable=False)
     first_name = db.Column(db.String(50), nullable=False)
-    last_name = db.Column(db.String(50), nullable=False)
+    last_name = db.Column(db.String(50), nullable=True)
     profile_picture = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
