@@ -3,39 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '../../../components/Main/Sidebar/Sidebar';
-// Header and Footer are now handled by layout.js
-// import Header from '../../components/Home/Header/Header'; 
-// import Footer from '../../components/Footer';
+
 
 export default function HomePage() {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check authentication on component mount
-  useEffect(() => {
-    const checkAuth = () => {
-      try {
-        const token = localStorage.getItem('userToken');
-        if (token) {
-          setIsAuthenticated(true);
-        } else {
-          console.log("Utilisateur non authentifié tentant d'accéder à la page d'accueil. Redirection vers la page de connexion.");
-          router.replace('/login');
-        }
-      } catch (error) {
-        console.error("Erreur lors de l'accès au localStorage:", error);
-        router.replace('/login');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, [router]);
-
   // Loading state or unauthenticated
-  if (isLoading || !isAuthenticated) {
+  if (isLoading) {
     // The layout structure isn't applied during loading/redirect, 
     // so we provide a full-screen loader here.
     return (
