@@ -4,81 +4,111 @@ from models.notification import Notification
 
 notifications_api = Blueprint('notifications_api', __name__)
 
-@notifications_api.route('/api/notifications', methods=['GET'])
-def get_notifications():
-    try:
-        notifications = Notification.query.all()
-        return jsonify([notification.to_dict() for notification in notifications])
-    except Exception as e:
-        return jsonify({'error': f'Failed to fetch notifications: {str(e)}'}), 500
-
-@notifications_api.route('/api/notifications/<int:id>', methods=['GET'])
-def get_notification(id):
-    try:
-        notification = Notification.query.get_or_404(id)
-        return jsonify(notification.to_dict())
-    except Exception as e:
-        return jsonify({'error': f'Notification not found: {str(e)}'}), 404
-
 @notifications_api.route('/api/notifications', methods=['POST'])
 def create_notification():
-    try:
-        data = request.get_json()
-        new_notification = Notification(
-            post_id=data['post_id'],
-            comments_id=data['comments_id'],
-            user_id=data['user_id'],
-            date=data['date']
-        )
-        db.session.add(new_notification)
-        db.session.commit()
-        return jsonify({'message': 'Notification created successfully', 'notification_id': new_notification.id}), 201
-    except KeyError as e:
-        return jsonify({'error': f'Missing required field: {str(e)}'}), 400
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': f'Failed to create notification: {str(e)}'}), 500
+    data = request.get_json()
+    post_id = data.get('post_id')
+    comments_id = data.get('comments_id')
+    user_id = data.get('user_id')
 
-@notifications_api.route('/api/notifications/<int:id>', methods=['PUT'])
-def update_notification(id):
-    try:
-        data = request.get_json()
-        notification = Notification.query.get_or_404(id)
+    if not post_id or not comments_id or not user_id:
+        return jsonify({'error': 'Post ID, Comments ID, and User ID are required'}), 400
 
-        if 'post_id' in data:
-            notification.post_id = data['post_id']
+    new_notification = Notification(post_id=post_id, comments_id=comments_id, user_id=user_id)
+    db.session.add(new_notification)
+    db.session.commit()
 
-        if 'comments_id' in data:
-            notification.comments_id = data['comments_id']
+    return jsonify({'message': 'Notification created successfully', 'notification_id': new_notification.id}), 201
+@notifications_api.route('/api/notifications', methods=['GET'])
+def get_notifications():
+    notifications = Notification.query.all()
+    notifications_list = [{'id': notification.id, 'post_id': notification.post_id, 'comments_id': notification.comments_id, 'user_id': notification.user_id} for notification in notifications]
+    
+    return jsonify({'notifications': notifications_list}), 200
+@notifications_api.route('/api/notifications/<int:notification_id>', methods=['PUT'])
+def update_notification(notification_id):
+    data = request.get_json()
+    post_id = data.get('post_id')
+    comments_id = data.get('comments_id')
+    user_id = data.get('user_id')
 
-        if 'user_id' in data:
-            notification.user_id = data['user_id']
+    notification = Notification.query.get(notification_id)
+    if not notification:
+        return jsonify({'error': 'Notification not found'}), 404
 
-        if 'date' in data:
-            notification.date = data['date']
+    if post_id:
+        notification.post_id = post_id
+    if comments_id:
+        notification.comments_id = comments_id
+    if user_id:
+        notification.user_id = user_id
 
-        db.session.commit()
-        return jsonify({
-            'message': 'Notification updated successfully',
-            'notification': {
-                'id': notification.id,
-                'post_id': notification.post_id,
-                'comments_id': notification.comments_id,
-                'user_id': notification.user_id,
-                'date': notification.date
-            }
-        })
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': f'Failed to update notification: {str(e)}'}), 500
+    db.session.commit()
 
-@notifications_api.route('/api/notifications/<int:id>', methods=['DELETE'])
-def delete_notification(id):
-    try:
-        notification = Notification.query.get_or_404(id)
-        db.session.delete(notification)
-        db.session.commit()
-        return jsonify({'message': 'Notification deleted successfully'})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': f'Failed to delete notification: {str(e)}'}), 500
+    return jsonify({'message': 'Notification updated successfully'}), 200
+@notifications_api.route('/api/notifications/<int:notification_id>', methods=['DELETE'])
+def delete_notification(notification_id):
+    notification = Notification.query.get(notification_id)
+    if not notification:
+        return jsonify({'error': 'Notification not found'}), 404
+
+    db.session.delete(notification)
+    db.session.commit()
+
+    return jsonify({'message': 'Notification deleted successfully'}), 200
+@notifications_api.route('/api/notifications/<int:notification_id>', methods=['GET'])
+def get_notification(notification_id):
+    notification = Notification.query.get(notification_id)
+    if not notification:
+        return jsonify({'error': 'Notification not found'}), 404
+
+    notification_data = {
+        'id': notification.id,
+        'post_id': notification.post_id,
+        'comments_id': notification.comments_id,
+        'user_id': notification.user_id
+    }
+
+    return jsonify({'notification': notification_data}), 200
+@notifications_api.route('/api/notifications/user/<int:user_id>', methods=['GET'])
+def get_user_notifications(user_id):
+    notifications = Notification.query.filter_by(user_id=user_id).all()
+    notifications_list = [{'id': notification.id, 'post_id': notification.post_id, 'comments_id': notification.comments_id, 'user_id': notification.user_id} for notification in notifications]
+    
+    return jsonify({'notifications': notifications_list}), 200
+@notifications_api.route('/api/notifications/post/<int:post_id>', methods=['GET'])
+def get_post_notifications(post_id):
+    notifications = Notification.query.filter_by(post_id=post_id).all()
+    notifications_list = [{'id': notification.id, 'post_id': notification.post_id, 'comments_id': notification.comments_id, 'user_id': notification.user_id} for notification in notifications]
+    
+    return jsonify({'notifications': notifications_list}), 200
+@notifications_api.route('/api/notifications/comment/<int:comments_id>', methods=['GET'])
+def get_comment_notifications(comments_id):
+    notifications = Notification.query.filter_by(comments_id=comments_id).all()
+    notifications_list = [{'id': notification.id, 'post_id': notification.post_id, 'comments_id': notification.comments_id, 'user_id': notification.user_id} for notification in notifications]
+    
+    return jsonify({'notifications': notifications_list}), 200
+@notifications_api.route('/api/notifications/user/<int:user_id>/post/<int:post_id>', methods=['GET'])
+def get_user_post_notifications(user_id, post_id):
+    notifications = Notification.query.filter_by(user_id=user_id, post_id=post_id).all()
+    notifications_list = [{'id': notification.id, 'post_id': notification.post_id, 'comments_id': notification.comments_id, 'user_id': notification.user_id} for notification in notifications]
+    
+    return jsonify({'notifications': notifications_list}), 200
+@notifications_api.route('/api/notifications/user/<int:user_id>/comment/<int:comments_id>', methods=['GET'])
+def get_user_comment_notifications(user_id, comments_id):
+    notifications = Notification.query.filter_by(user_id=user_id, comments_id=comments_id).all()
+    notifications_list = [{'id': notification.id, 'post_id': notification.post_id, 'comments_id': notification.comments_id, 'user_id': notification.user_id} for notification in notifications]
+    
+    return jsonify({'notifications': notifications_list}), 200
+@notifications_api.route('/api/notifications/post/<int:post_id>/comment/<int:comments_id>', methods=['GET'])
+def get_post_comment_notifications(post_id, comments_id):
+    notifications = Notification.query.filter_by(post_id=post_id, comments_id=comments_id).all()
+    notifications_list = [{'id': notification.id, 'post_id': notification.post_id, 'comments_id': notification.comments_id, 'user_id': notification.user_id} for notification in notifications]
+    
+    return jsonify({'notifications': notifications_list}), 200
+@notifications_api.route('/api/notifications/user/<int:user_id>/post/<int:post_id>/comment/<int:comments_id>', methods=['GET'])
+def get_user_post_comment_notifications(user_id, post_id, comments_id):
+    notifications = Notification.query.filter_by(user_id=user_id, post_id=post_id, comments_id=comments_id).all()
+    notifications_list = [{'id': notification.id, 'post_id': notification.post_id, 'comments_id': notification.comments_id, 'user_id': notification.user_id} for notification in notifications]
+    
+    return jsonify({'notifications': notifications_list}), 200
