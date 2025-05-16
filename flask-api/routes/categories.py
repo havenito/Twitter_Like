@@ -79,31 +79,24 @@ def get_posts_by_category(category_id):
     category = Category.query.get(category_id)
     if not category:
         return jsonify({'error': 'Category not found'}), 404
-
-    # Vérifiez ici le nom exact de l'attribut dans votre modèle Category
-    # Selon votre modèle, utilisez l'une des options suivantes:
     
     try:
-        # Option 1: Si la relation s'appelle 'posts'
-        if hasattr(category, 'posts'):
-            if hasattr(category.posts, 'all'):  # Si lazy='dynamic'
-                posts = category.posts.all()
-            else:  # Si lazy='select'
-                posts = category.posts
-        # Option 2: Si la relation s'appelle 'post_id' mais n'a pas de méthode get_all_posts
-        elif hasattr(category, 'post_id'):
-            if category.post_id is None:
-                return jsonify({'posts': [], 'message': 'Aucun post trouvé pour cette catégorie'}), 200
-            
-            # Tentative de récupération directe
-            posts = category.post_id
-        else:
-            # Fallback - requête manuelle
-            from models.post import Post
-            posts = Post.query.filter_by(category_id=category.id).all()
-            
-        posts_list = [{'id': post.id, 'title': post.title, 'content': post.content} for post in posts]
-        return jsonify({'posts': posts_list}), 200
+        # Obtenir les posts
+        from models.post import Post
+        posts = Post.query.filter_by(category_id=category.id).all()
         
+        posts_list = [
+            {
+                'id': post.id, 
+                'title': post.title, 
+                'content': post.content,
+                'media_url': post.media_url,  # Assurez-vous d'inclure le champ media_url
+                'media_type': post.media_type,
+                'published_at': post.published_at.isoformat() if post.published_at else None,
+                'user_id': post.user_id
+            } for post in posts
+        ]
+        
+        return jsonify({'posts': posts_list}), 200
     except Exception as e:
         return jsonify({'error': f'Erreur lors de la récupération des posts: {str(e)}'}), 500
