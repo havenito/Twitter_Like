@@ -112,18 +112,22 @@ def login():
         
     user = User.query.filter_by(email=email).first()
     
-    if user and bcrypt.check_password_hash(user.password, password):
-        user_data = {
-            'id': user.id,
-            'email': user.email,
-            'roles': user.roles, 
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'pseudo': user.pseudo,
-            'profile_picture': user.profile_picture,
-            'private': user.private 
-        }
-        return jsonify({'message': 'Connexion réussie', 'user': user_data}), 200
+    if user: # Vérifier d'abord si l'utilisateur existe
+        if user.password is None: # L'utilisateur existe mais n'a pas de mot de passe (donc un utilisateur OAuth)
+            return jsonify({'error': 'Ce compte a été créé via un fournisseur externe (Google/GitHub). Veuillez vous connecter en utilisant le bouton correspondant.'}), 401
+        
+        if bcrypt.check_password_hash(user.password, password):
+            user_data = {
+                'id': user.id,
+                'email': user.email,
+                'roles': user.roles, 
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'pseudo': user.pseudo,
+                'profile_picture': user.profile_picture,
+                'private': user.private 
+            }
+            return jsonify({'message': 'Connexion réussie', 'user': user_data}), 200
     
     return jsonify({'error': 'Email ou mot de passe invalide'}), 401
 
@@ -136,7 +140,12 @@ def request_password_reset():
 
     user = User.query.filter_by(email=email).first()
     if not user:
+        # Répondre de manière générique pour ne pas révéler si un email existe ou non
         return jsonify({'message': "Si un compte avec cet email existe, un lien de réinitialisation a été envoyé."}), 200
+
+    if user.password is None:
+        # L'utilisateur existe mais n'a pas de mot de passe (compte OAuth)
+        return jsonify({'error': 'Ce compte a été créé via un fournisseur externe (Google/GitHub). La réinitialisation de mot de passe n\'est pas applicable.'}), 400
 
 
     # Create a short-lived token specifically for password reset

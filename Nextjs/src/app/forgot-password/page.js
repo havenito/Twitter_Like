@@ -15,6 +15,7 @@ export default function ForgotPasswordPage() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
+  const [fieldError, setFieldError] = useState(''); 
   const router = useRouter();
 
   const handleSubmit = async (e) => {
@@ -23,9 +24,9 @@ export default function ForgotPasswordPage() {
     setError('');
     setMessage('');
     setShowNotification(false);
+    setFieldError(''); 
 
     try {
-      // Adaptez l'URL de l'API si nécessaire
       const res = await fetch('http://localhost:5000/api/request-password-reset', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -34,13 +35,20 @@ export default function ForgotPasswordPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || data.message || 'Erreur lors de la demande de réinitialisation.');
+        // Vérifier si l'erreur est celle spécifique aux comptes OAuth
+        if (data.error && data.error.includes("fournisseur externe")) {
+          setFieldError(data.error);
+        } else {
+          setError(data.error || data.message || 'Erreur lors de la demande de réinitialisation.');
+          setShowNotification(true);
+        }
+        return; 
       }
       setMessage(data.message || 'Si un compte avec cet email existe, un lien de réinitialisation a été envoyé.');
       setShowNotification(true);
-      setEmail(''); // Optionnel: vider le champ email après succès
+      setEmail('');
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Une erreur inattendue est survenue.');
       setShowNotification(true);
     } finally {
       setLoading(false);
@@ -61,7 +69,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#222222] px-4">
-      {showNotification && (
+      {showNotification && !fieldError && (
         <Notification
           message={message || error}
           type={message ? 'success' : 'error'}
@@ -97,7 +105,12 @@ export default function ForgotPasswordPage() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1, duration: 0.4 }}
-          >
+            >
+            {fieldError && (
+              <div className="bg-red-500/20 border border-red-500 text-red-200 px-3 py-2 rounded mb-2">
+                {fieldError}
+              </div>
+            )}
             <label htmlFor="email" className="block text-[#90EE90] mb-1">
               Adresse e-mail
             </label>
