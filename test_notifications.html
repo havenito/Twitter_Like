@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Notifications</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+    .notification { background: white; padding: 12px; margin-bottom: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .notif-header { font-weight: bold; margin-bottom: 4px; }
+    .notif-actions { margin-top: 6px; }
+    button { margin-right: 8px; }
+  </style>
+</head>
+<body>
+
+<h1>Centre de notifications</h1>
+
+<label for="userIdInput">Entrez votre ID utilisateur :</label>
+<input type="number" id="userIdInput" placeholder="Ex : 10" />
+<button onclick="loadNotifications()">Charger les notifications</button>
+
+<div id="notifications-container"></div>
+
+<script>
+  const API_BASE = 'http://localhost:5000/api';
+
+  async function fetchNotifications(userId) {
+    const res = await fetch(`${API_BASE}/notifications/user/${userId}`);
+    if (!res.ok) {
+      alert("Erreur lors du chargement des notifications.");
+      return [];
+    }
+    const data = await res.json();
+    return data.notifications || [];
+  }
+
+  async function deleteNotification(notificationId) {
+    const res = await fetch(`${API_BASE}/notifications/${notificationId}`, {
+      method: 'DELETE'
+    });
+    if (res.ok) {
+      alert("Notification supprimée.");
+      loadNotifications();
+    } else {
+      alert("Erreur lors de la suppression.");
+    }
+  }
+
+  async function loadNotifications() {
+    const userId = document.getElementById('userIdInput').value;
+    if (!userId) {
+      alert("Veuillez entrer un ID utilisateur.");
+      return;
+    }
+
+    const notifications = await fetchNotifications(userId);
+    const container = document.getElementById('notifications-container');
+    container.innerHTML = '';
+
+    if (notifications.length === 0) {
+      container.innerHTML = '<p>Aucune notification.</p>';
+      return;
+    }
+
+    for (const notif of notifications) {
+      const div = document.createElement('div');
+      div.className = 'notification';
+
+      const header = document.createElement('div');
+      header.className = 'notif-header';
+      header.textContent = notif.type === 'comment'
+        ? `Nouveau commentaire sur le post ID ${notif.post_id}`
+        : `Nouvelle publication`;
+
+      const body = document.createElement('p');
+      body.textContent = notif.content;
+
+      const actions = document.createElement('div');
+      actions.className = 'notif-actions';
+
+      const openBtn = document.createElement('a');
+      openBtn.href = `/post.html?id=${notif.post_id}`;
+      openBtn.textContent = 'Voir la publication';
+      openBtn.target = '_blank';
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Supprimer';
+      delBtn.onclick = () => deleteNotification(notif.id);
+
+      actions.append(openBtn, delBtn);
+      div.append(header, body, actions);
+      container.appendChild(div);
+    }
+  }
+</script>
+
+</body>
+</html>
