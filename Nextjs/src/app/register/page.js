@@ -221,13 +221,15 @@ export default function RegisterPage() {
           transition={{ duration: 0.5 }}
           className="flex justify-center mb-6"
         >
-          <Image 
-            src="/minouverselogo.png" 
-            alt="Minouverse Logo" 
-            width={80} 
-            height={80} 
-            className="object-contain"
-          />
+          <Link href="/">
+            <Image 
+              src="/minouverselogo.png" 
+              alt="Minouverse Logo" 
+              width={80} 
+              height={80} 
+              className="object-contain"
+            />
+          </Link>
         </motion.div>
         
         <motion.h1

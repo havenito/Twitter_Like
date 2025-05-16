@@ -26,33 +26,39 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setShowNotification(false);
     
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+      const result = await signIn('credentials', {
+        redirect: false, // Prevent NextAuth from redirecting automatically
+        email,
+        password,
       });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Échec de la connexion');
+
+      setLoading(false);
+
+      if (result.error) {
+        console.error("SignIn Error:", result.error);
+        setError(result.error || 'Échec de la connexion. Veuillez vérifier vos identifiants.');
+        setPassword(''); // Clear password field on error
+        return;
       }
       
-      localStorage.setItem('userToken', data.token);
-      
-      setShowNotification(true);
-      
-      // Redirection vers la page d'accueil après un court délai
-      setTimeout(() => {
-        router.push('/home');
-      }, 1500);
-    } catch (error) {
-      setPassword('');
-      setError(error.message || 'Échec de la connexion. Veuillez vérifier vos identifiants.');
-    } finally {
+      if (result.ok) {
+        setShowNotification(true);
+        setTimeout(() => {
+          router.push(result.url || '/home'); 
+        }, 1500);
+      } else {
+        setError('Échec de la connexion. Une erreur inattendue est survenue.');
+        setPassword('');
+      }
+
+    } catch (catchError) {
       setLoading(false);
+      setPassword('');
+      console.error("Submit Catch Error:", catchError);
+      setError(catchError.message || 'Une erreur inattendue est survenue lors de la tentative de connexion.');
     }
   };
 
@@ -60,7 +66,6 @@ export default function LoginPage() {
     setShowPassword(!showPassword);
   };
 
-  // Variantes pour la notification
   const centeredNotificationVariants = {
     initial: { opacity: 0, x:-100, y: -50, scale: 0.3 }, 
     animate: { opacity: 1, x:-100, y: 0, scale: 1 },   
@@ -110,13 +115,15 @@ export default function LoginPage() {
         className="w-full max-w-md bg-[#333333] p-8 rounded-lg shadow-lg"
       >
         <div className="flex justify-center mb-6">
-          <Image 
-            src="/minouverselogo.png" 
-            alt="Minouverse Logo" 
-            width={80} 
-            height={80} 
-            className="object-contain"
-          />
+          <Link href="/">
+            <Image 
+              src="/minouverselogo.png" 
+              alt="Minouverse Logo" 
+              width={80} 
+              height={80} 
+              className="object-contain"
+            />
+          </Link>
         </div>
         
         <h1 className="text-2xl font-bold text-center text-[#90EE90] mb-6">

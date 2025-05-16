@@ -32,12 +32,12 @@ def create_user():
     email = data.get('email', '').strip().lower()
     password = data.get('password', '').strip()
     first_name = data.get('first_name', '').strip()
-    last_name = data.get('last_name', '').strip() # Optional in your model
+    last_name = data.get('last_name', '').strip() 
     profile_picture = data.get('profile_picture')
-    pseudo = data.get('pseudo', '').strip() # Added pseudo
-    private = data.get('private', False) # Added private
+    pseudo = data.get('pseudo', '').strip()
+    private = data.get('private', False)
 
-    if not all([email, password, first_name, pseudo]): # lastName is optional
+    if not all([email, password, first_name, pseudo]):
         return jsonify({'error': 'Les champs email, mot de passe, prénom et pseudo sont obligatoires'}), 400
     
     if err := validate_password(password):
@@ -46,19 +46,19 @@ def create_user():
     if User.query.filter_by(email=email).first():
         return jsonify({'error': 'Email déjà enregistré'}), 400
     
-    if User.query.filter_by(pseudo=pseudo).first(): # Check for pseudo uniqueness
+    if User.query.filter_by(pseudo=pseudo).first(): 
         return jsonify({'error': 'Pseudo déjà utilisé'}), 409
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     new_user = User(
         email=email,
         password=hashed_password,
-        roles='user', # Default role
+        roles='user', 
         first_name=first_name,
         last_name=last_name,
         profile_picture=profile_picture,
-        pseudo=pseudo, # Save pseudo
-        private=private # Save private status
+        pseudo=pseudo, 
+        private=private
     )
     
     db.session.add(new_user)
@@ -78,22 +78,18 @@ def login():
     user = User.query.filter_by(email=email).first()
     
     if user and bcrypt.check_password_hash(user.password, password):
-        # Include more user details in the token or response as needed
-        access_token = create_access_token(identity=user.id) 
-        return jsonify({
-            'message': 'Connexion réussie',
-            'token': access_token, # Changed from access_token to token to match frontend
-            'user': {
-                'id': user.id,
-                'email': user.email,
-                'roles': user.roles,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'pseudo': user.pseudo,
-                'profile_picture': user.profile_picture,
-                'private': user.private
-            }
-        }), 200
+        # NextAuth will handle token creation. Return user details.
+        user_data = {
+            'id': user.id,
+            'email': user.email,
+            'roles': user.roles, 
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'pseudo': user.pseudo,
+            'profile_picture': user.profile_picture,
+            'private': user.private 
+        }
+        return jsonify({'message': 'Connexion réussie', 'user': user_data}), 200
     
     return jsonify({'error': 'Email ou mot de passe invalide'}), 401
 
@@ -106,10 +102,7 @@ def request_password_reset():
 
     user = User.query.filter_by(email=email).first()
     if not user:
-        # It's often better not to reveal if an email exists for security reasons
-        # but following the example's explicitness:
         return jsonify({'message': "Si un compte avec cet email existe, un lien de réinitialisation a été envoyé."}), 200
-        # return jsonify({'error': "Adresse email non reconnue."}), 404
 
 
     # Create a short-lived token specifically for password reset
@@ -140,7 +133,7 @@ def request_password_reset():
         return jsonify({'error': "Erreur lors de l'envoi de l'email. Veuillez réessayer plus tard."}), 500
 
 @auth_bp.route('/api/reset-password', methods=['POST'])
-def reset_password_with_token(): # Renamed to avoid conflict if you have another reset_password
+def reset_password_with_token(): 
     data = request.get_json()
     token = data.get('token')
     new_password = data.get('new_password', '').strip()
@@ -156,7 +149,7 @@ def reset_password_with_token(): # Renamed to avoid conflict if you have another
         if not decoded_token.get('reset_password'):
             return jsonify({'error': 'Token invalide ou non destiné à la réinitialisation du mot de passe'}), 401
         
-        user_id = decoded_token['sub'] # 'sub' is the standard claim for identity
+        user_id = decoded_token['sub'] 
         user = User.query.get(user_id)
 
         if not user:

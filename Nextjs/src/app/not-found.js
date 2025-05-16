@@ -12,7 +12,7 @@ export default function NotFound() {
       <p className="text-lg text-gray-400 mb-8 text-center max-w-md">
         Oups ! Il semble que la page que vous cherchez se soit perdue dans le Minouverse.
       </p>
-      <Link href="/home">
+      <Link href="/">
         <button className="bg-[#90EE90] text-black px-6 py-3 rounded-full font-bold hover:bg-[#7CD37C] transition-all duration-300 shadow-lg hover:shadow-xl">
           Retourner à l'accueil
         </button>

@@ -1,4 +1,5 @@
 import './globals.css';
+import { Providers } from './providers'; 
 
 export const metadata = {
   title: "Minouverse",
@@ -9,7 +10,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="fr">
       <body>
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

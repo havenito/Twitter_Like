@@ -1,44 +1,40 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCrown } from "@fortawesome/free-solid-svg-icons";
 import ConfirmModal from '../../ConfirmModal'; 
+import { useSession, signOut } from 'next-auth/react'; 
 
 const Header = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { data: session, status } = useSession(); // Use NextAuth session
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false); 
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    const checkAuthStatus = () => {
-      const token = localStorage.getItem('userToken');
-      setIsAuthenticated(!!token);
-    };
-    
-    checkAuthStatus();
-  }, []);
-
   const handleLogoutClick = () => {
     setShowConfirmModal(true); 
   };
 
-  const confirmLogout = () => {
+  const confirmLogout = async () => {
     setIsLoggingOut(true); 
     
-    setTimeout(() => {
-      localStorage.removeItem('userToken');
-      setIsAuthenticated(false);
-      router.push('/');
+    try {
+      await signOut({ redirect: false }); 
+      router.push('/login'); 
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
       setIsLoggingOut(false); 
       setShowConfirmModal(false); 
-    }, 1500); 
+    }
   };
+
+  const isAuthenticated = status === 'authenticated';
 
   return (
     <>
@@ -88,14 +84,17 @@ const Header = () => {
           </Link>
         </div>
         
-        <div className="flex gap-4 items-center">
-          <button 
-            onClick={handleLogoutClick} 
-            className="bg-[#90EE90] text-black px-5 py-2 rounded-full hover:bg-[#7CD37C] transition-all duration-300"
-          >
-            Se déconnecter
-          </button>
-        </div>
+        {isAuthenticated && ( // Only show logout button if authenticated
+          <div className="flex gap-4 items-center">
+            <button 
+              onClick={handleLogoutClick} 
+              className="bg-[#90EE90] text-black px-5 py-2 rounded-full hover:bg-[#7CD37C] transition-all duration-300"
+              disabled={isLoggingOut} // Disable button while logging out
+            >
+              {isLoggingOut ? 'Déconnexion...' : 'Se déconnecter'}
+            </button>
+          </div>
+        )}
       </header>
 
       <ConfirmModal
