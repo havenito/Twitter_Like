@@ -10,7 +10,7 @@ import ConfirmModal from '../../ConfirmModal';
 import { useSession, signOut } from 'next-auth/react'; 
 
 const Header = () => {
-  const { data: session, status } = useSession(); // Use NextAuth session
+  const { data: session, status } = useSession();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false); 
   const router = useRouter();
@@ -84,17 +84,15 @@ const Header = () => {
           </Link>
         </div>
         
-        {isAuthenticated && ( // Only show logout button if authenticated
-          <div className="flex gap-4 items-center">
-            <button 
-              onClick={handleLogoutClick} 
-              className="bg-[#90EE90] text-black px-5 py-2 rounded-full hover:bg-[#7CD37C] transition-all duration-300"
-              disabled={isLoggingOut} // Disable button while logging out
-            >
-              {isLoggingOut ? 'Déconnexion...' : 'Se déconnecter'}
-            </button>
-          </div>
-        )}
+        <div className="flex gap-4 items-center">
+          <button 
+            onClick={handleLogoutClick} 
+            className="bg-[#90EE90] text-black px-5 py-2 rounded-full hover:bg-[#7CD37C] transition-all duration-300"
+            disabled={isLoggingOut}
+          >
+            {isLoggingOut ? 'Déconnexion...' : 'Se déconnecter'}
+          </button>
+        </div>
       </header>
 
       <ConfirmModal
