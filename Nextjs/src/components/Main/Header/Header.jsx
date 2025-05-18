@@ -24,13 +24,13 @@ const Header = () => {
     setIsLoggingOut(true); 
     
     try {
-      await signOut({ redirect: false }); 
-      router.push('/'); 
+      await signOut({ callbackUrl: '/', redirect: true }); 
     } catch (error) {
       console.error("Logout failed:", error);
-    } finally {
-      setIsLoggingOut(false); 
-      setShowConfirmModal(false); 
+      setIsLoggingOut(false);
+    }
+    finally {
+      setShowConfirmModal(false);
     }
   };
 

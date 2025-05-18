@@ -165,7 +165,11 @@ export const authOptions = {
       return true; // Pour les autres types de connexion (credentials)
     },
     async redirect({ url, baseUrl }) {
+      if (url === "/") { //'signOut' avec "callbackUrl: '/'" redirige vers la page d'accueil '/'
+        return baseUrl + '/'; 
+      } else { // sinon la redirection par défaut est vers la page d'accueil '/home'
       return baseUrl + '/home';
+      }
     },
   },
 };
