@@ -101,12 +101,32 @@ def create_user():
         'profile_picture': new_user.profile_picture
     }), 201
 
+@auth_bp.route('/api/upload', methods=['POST'])
+def upload_profile_image():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+        
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+        
+    if file:
+        url, file_type = upload_file(file)
+        if url:
+            return jsonify({'url': url, 'type': file_type}), 200
+        else:
+            return jsonify({'error': 'Failed to upload file'}), 500
+    return jsonify({'error': 'File processing error'}), 400
+
 @auth_bp.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON data'}), 400
+
     email = data.get('email')
     password = data.get('password')
-    
+
     if not email or not password:
         return jsonify({'error': 'Email et mot de passe requis'}), 400
             
@@ -133,9 +153,128 @@ def login():
     else:
         return jsonify({'error': 'Mot de passe incorrect.'}), 401
 
+@auth_bp.route('/api/users', methods=['GET'])
+def get_users():
+    users = User.query.all()
+    result = []
+    
+    for user_obj in users:
+        result.append({
+            'id': user_obj.id,
+            'email': user_obj.email,
+            'first_name': user_obj.first_name,
+            'last_name': user_obj.last_name, 
+            'roles': user_obj.roles,
+            'profile_picture': user_obj.profile_picture,
+            'pseudo': user_obj.pseudo,
+            'private': user_obj.private,
+            'created_at': user_obj.created_at.isoformat() if hasattr(user_obj, 'created_at') and user_obj.created_at else None,
+            'updated_at': user_obj.updated_at.isoformat() if hasattr(user_obj, 'updated_at') and user_obj.updated_at else None
+        })
+    
+    return jsonify(result)
+
+@auth_bp.route('/api/users/<int:user_id>', methods=['PUT', 'OPTIONS'])
+def update_user(user_id):
+    if request.method == 'OPTIONS':
+        response = jsonify({'message': 'OPTIONS request successful'})
+        response.headers.add('Access-Control-Allow-Methods', 'PUT, OPTIONS')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        return response, 200
+        
+    user_to_update = User.query.get(user_id)
+    if not user_to_update:
+        return jsonify({'error': 'Utilisateur non trouvé'}), 404
+    
+    profile_picture_url_to_set = user_to_update.profile_picture
+    data_source = None
+
+    if request.content_type and 'multipart/form-data' in request.content_type:
+        data_source = request.form
+        if 'profile_picture' in request.files:
+            file = request.files['profile_picture']
+            if file and file.filename:
+                uploaded_url, _ = upload_file(file)
+                if uploaded_url:
+                    profile_picture_url_to_set = uploaded_url
+    elif request.is_json:
+        data_source = request.get_json()
+        if not data_source:
+             return jsonify({'error': 'Invalid or missing JSON data'}), 400
+        if 'profile_picture' in data_source:
+            profile_picture_url_to_set = data_source.get('profile_picture')
+    else:
+        return jsonify({'error': 'Unsupported content type or no data provided'}), 415
+
+    if data_source:
+        if 'email' in data_source and data_source.get('email', '').strip():
+            new_email = data_source.get('email').strip().lower()
+            if new_email != user_to_update.email:
+                existing_user = User.query.filter(User.email == new_email, User.id != user_id).first()
+                if existing_user:
+                    return jsonify({'error': 'Email déjà enregistré par un autre utilisateur'}), 400
+                user_to_update.email = new_email
+
+        if 'first_name' in data_source:
+            user_to_update.first_name = data_source.get('first_name', '').strip()
+        if 'last_name' in data_source:
+            user_to_update.last_name = data_source.get('last_name', '').strip()
+        if 'password' in data_source and data_source.get('password', '').strip():
+            new_password = data_source.get('password').strip()
+            if err := validate_password(new_password):
+                return jsonify({'error': err}), 400
+            user_to_update.password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+        
+        if 'pseudo' in data_source:
+            new_pseudo = data_source.get('pseudo', '').strip()
+            if new_pseudo != user_to_update.pseudo:
+                if new_pseudo:
+                    existing_user_pseudo = User.query.filter(User.pseudo == new_pseudo, User.id != user_id).first()
+                    if existing_user_pseudo:
+                        return jsonify({'error': 'Pseudo déjà utilisé par un autre utilisateur'}), 409
+                user_to_update.pseudo = new_pseudo
+
+        if request.is_json:
+            if 'private' in data_source:
+                user_to_update.private = bool(data_source.get('private'))
+        elif 'isPublic' in data_source:
+            is_public_str = data_source.get('isPublic')
+            user_to_update.private = not (is_public_str.lower() == 'true')
+
+    user_to_update.profile_picture = profile_picture_url_to_set
+    
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Utilisateur mis à jour avec succès',
+        'user': {
+            'id': user_to_update.id,
+            'email': user_to_update.email,
+            'first_name': user_to_update.first_name,
+            'last_name': user_to_update.last_name,
+            'roles': user_to_update.roles,
+            'profile_picture': user_to_update.profile_picture,
+            'pseudo': user_to_update.pseudo,
+            'private': user_to_update.private
+        }
+    }), 200
+
+@auth_bp.route('/api/users/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    user_to_delete = User.query.get(user_id)
+    if not user_to_delete:
+        return jsonify({'error': 'Utilisateur non trouvé'}), 404
+    
+    db.session.delete(user_to_delete)
+    db.session.commit()
+    
+    return jsonify({'message': 'Utilisateur supprimé avec succès'}), 200
+
 @auth_bp.route('/api/request-password-reset', methods=['POST'])
 def request_password_reset():
     data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid or missing JSON data'}), 400
     email = data.get('email', '').strip().lower()
     if not email:
         return jsonify({'error': 'Email requis'}), 400
@@ -147,8 +286,6 @@ def request_password_reset():
     if user.password is None:
         return jsonify({'error': 'Ce compte a été créé via un fournisseur externe (Google/GitHub). La réinitialisation de mot de passe n\'est pas applicable.'}), 400
 
-
-    # Create a short-lived token specifically for password reset
     reset_token = create_access_token(
         identity=str(user.id), 
         expires_delta=timedelta(minutes=15),
@@ -167,8 +304,11 @@ def request_password_reset():
              f"L'équipe Minouverse"
     )
     try:
-        mail = current_app.extensions.get('mail')
-        mail.send(msg)
+        mail_ext = current_app.extensions.get('mail')
+        if not mail_ext:
+            current_app.logger.error("Flask-Mail extension not initialized.")
+            return jsonify({'error': "Erreur de configuration du service d'email."}), 500
+        mail_ext.send(msg)
         return jsonify({'message': 'Un lien de réinitialisation a été envoyé à votre adresse email.'}), 200
     except Exception as e:
         current_app.logger.error(f"Erreur lors de l'envoi de l'email de réinitialisation : {e}")
@@ -177,6 +317,9 @@ def request_password_reset():
 @auth_bp.route('/api/reset-password', methods=['POST'])
 def reset_password_with_token(): 
     data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid or missing JSON data'}), 400
+        
     token = data.get('token')
     new_password = data.get('new_password', '').strip()
 
