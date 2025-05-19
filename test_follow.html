@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Follow/Unfollow - Twitter Like</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    header {
+      background-color: #1da1f2;
+      color: white;
+      padding: 15px 0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    header .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+    }
+    
+    h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    
+    .login-container {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 30px;
+      margin: 50px auto;
+      max-width: 400px;
+      text-align: center;
+    }
+    
+    .login-container h2 {
+      margin-top: 0;
+      color: #1da1f2;
+      margin-bottom: 20px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+      text-align: left;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #555;
+    }
+    
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    
+    .login-options {
+      display: flex;
+      margin-bottom: 20px;
+    }
+    
+    .login-option {
+      flex: 1;
+      padding: 10px;
+      background: #f8f9fa;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    .login-option.active {
+      background: #1da1f2;
+      color: white;
+    }
+    
+    .login-option:first-child {
+      border-radius: 5px 0 0 5px;
+    }
+    
+    .login-option:last-child {
+      border-radius: 0 5px 5px 0;
+    }
+    
+    .btn-primary {
+      background-color: #1da1f2;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+      transition: background-color 0.2s;
+      width: 100%;
+      margin-top: 10px;
+    }
+    
+    .btn-primary:hover {
+      background-color: #0c85d0;
+    }
+    
+    .btn-secondary {
+      background-color: white;
+      color: #1da1f2;
+      border: 1px solid #1da1f2;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    
+    .btn-logout {
+      background-color: transparent;
+      color: white;
+      border: 1px solid white;
+      padding: 8px 16px;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    .user-info {
+      display: flex;
+      align-items: center;
+      color: white;
+    }
+    
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: white;
+      margin-right: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #1da1f2;
+    }
+    
+    .user-name {
+      font-weight: bold;
+    }
+    
+    .user-id {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    
+    .profile-container {
+      max-width: 900px;
+      margin: 30px auto;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    
+    .profile-header {
+      padding: 30px;
+      background: #1da1f2;
+      color: white;
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .profile-info {
+      display: flex;
+      align-items: center;
+    }
+    
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background-color: white;
+      margin-right: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: bold;
+      color: #1da1f2;
+    }
+    
+    .profile-name-container h2 {
+      margin: 0;
+      font-size: 24px;
+    }
+    
+    .profile-id {
+      opacity: 0.8;
+      margin-top: 5px;
+    }
+    
+    .profile-stats {
+      display: flex;
+      margin-top: 15px;
+    }
+    
+    .stat {
+      margin-right: 20px;
+      font-size: 14px;
+    }
+    
+    .stat-count {
+      font-weight: bold;
+      font-size: 18px;
+    }
+    
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .tab {
+      padding: 15px 20px;
+      cursor: pointer;
+      flex: 1;
+      text-align: center;
+      font-weight: bold;
+    }
+    
+    .tab.active {
+      border-bottom: 3px solid #1da1f2;
+      color: #1da1f2;
+    }
+    
+    .tab-content {
+      display: none;
+      padding: 20px;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .users-list {
+      margin-top: 20px;
+    }
+    
+    .user-card {
+      display: flex;
+      align-items: center;
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      transition: background-color 0.2s;
+    }
+    
+    .user-card:hover {
+      background-color: #f8f9fa;
+    }
+    
+    .user-card-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background-color: #1da1f2;
+      color: white;
+      margin-right: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    
+    .user-card-info {
+      flex: 1;
+    }
+    
+    .user-card-name {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .user-card-bio {
+      font-size: 14px;
+      color: #777;
+      margin: 0;
+    }
+    
+    .follow-btn {
+      background-color: #1da1f2;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+    
+    .follow-btn.following {
+      background-color: white;
+      color: #1da1f2;
+      border: 1px solid #1da1f2;
+    }
+    
+    .follow-btn:hover {
+      background-color: #0c85d0;
+    }
+    
+    .follow-btn.following:hover {
+      background-color: #ffeaea;
+      color: #e0245e;
+      border-color: #e0245e;
+    }
+    
+    .date-info {
+      font-size: 12px;
+      color: #999;
+      margin-top: 5px;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #777;
+    }
+    
+    .error-message {
+      background-color: #fff1f0;
+      border: 1px solid #ffa39e;
+      color: #cf1322;
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+    }
+    
+    .success-message {
+      background-color: #f6ffed;
+      border: 1px solid #b7eb8f;
+      color: #52c41a;
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+    }
+    
+    .empty-message {
+      text-align: center;
+      padding: 20px;
+      color: #999;
+      font-style: italic;
+    }
+    
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Twitter Like - Test Follow</h1>
+      <div id="user-header-info" class="hidden">
+        <div class="user-info">
+          <div class="user-avatar" id="header-avatar"></div>
+          <div>
+            <div class="user-name" id="header-username"></div>
+            <div class="user-id" id="header-user-id"></div>
+          </div>
+        </div>
+      </div>
+      <button id="logout-btn" class="btn-logout hidden">Déconnexion</button>
+    </div>
+  </header>
+  
+  <div class="container">
+    <!-- Formulaire de connexion -->
+    <div id="auth-container" class="login-container">
+      <div class="login-options">
+        <div class="login-option active" data-option="login">Connexion</div>
+        <div class="login-option" data-option="select-user">Sélectionner un utilisateur</div>
+      </div>
+      
+      <div id="login-form">
+        <h2>Connexion</h2>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Mot de passe</label>
+          <input type="password" id="password" required>
+        </div>
+        <button id="login-btn" class="btn-primary">Se connecter</button>
+        <div id="login-error" class="error-message hidden"></div>
+      </div>
+      
+      <div id="select-user-form" class="hidden">
+        <h2>Sélectionner un utilisateur</h2>
+        <div class="form-group">
+          <label for="user-select">Choisir un utilisateur</label>
+          <select id="user-select">
+            <option value="">Chargement des utilisateurs...</option>
+          </select>
+        </div>
+        <button id="select-user-btn" class="btn-primary">Sélectionner</button>
+      </div>
+    </div>
+    
+    <!-- Profil et gestion des follows (visible après connexion) -->
+    <div id="profile-section" class="hidden">
+      <div class="profile-container">
+        <div class="profile-header">
+          <div class="profile-info">
+            <div class="profile-avatar" id="profile-avatar"></div>
+            <div class="profile-name-container">
+              <h2 id="profile-username">Nom d'utilisateur</h2>
+              <div class="profile-id" id="profile-user-id">ID: 0</div>
+              <div class="profile-stats">
+                <div class="stat">
+                  <div class="stat-count" id="following-count">0</div>
+                  <div>Abonnements</div>
+                </div>
+                <div class="stat">
+                  <div class="stat-count" id="followers-count">0</div>
+                  <div>Abonnés</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tabs">
+          <div class="tab active" data-tab="following">Abonnements</div>
+          <div class="tab" data-tab="followers">Abonnés</div>
+          <div class="tab" data-tab="all-users">Tous les utilisateurs</div>
+        </div>
+        
+        <div class="tab-content active" id="following-tab">
+          <div class="loading">Chargement des abonnements...</div>
+          <div id="following-list" class="users-list"></div>
+        </div>
+        
+        <div class="tab-content" id="followers-tab">
+          <div class="loading">Chargement des abonnés...</div>
+          <div id="followers-list" class="users-list"></div>
+        </div>
+        
+        <div class="tab-content" id="all-users-tab">
+          <div class="loading">Chargement des utilisateurs...</div>
+          <div id="all-users-list" class="users-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:5000/api';
+    let currentUser = null;
+    
+    // Ajoutez cette fonction utilitaire au début de votre section <script>
+    async function fetchWithErrorHandling(url, options = {}) {
+      try {
+        const response = await fetch(url, options);
+        
+        // Vérifier le type de contenu
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error(`Réponse non-JSON reçue de ${url}`);
+          console.error(`Type de contenu: ${contentType}`);
+          
+          // Récupérer le texte brut pour déboguer
+          const text = await response.text();
+          console.error(`Début de la réponse: ${text.substring(0, 150)}...`);
+          
+          throw new Error(`Le serveur a renvoyé une réponse non-JSON (${response.status} ${response.statusText})`);
+        }
+        
+        const data = await response.json();
+        return { ok: response.ok, status: response.status, data };
+      } catch (error) {
+        console.error(`Erreur lors de la requête à ${url}:`, error);
+        throw error;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Vérifier si un utilisateur est déjà connecté
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        showUserInterface();
+      }
+      
+      // Gérer les onglets de connexion
+      document.querySelectorAll('.login-option').forEach(option => {
+        option.addEventListener('click', () => {
+          document.querySelectorAll('.login-option').forEach(o => o.classList.remove('active'));
+          option.classList.add('active');
+          
+          const optionType = option.dataset.option;
+          if (optionType === 'login') {
+            document.getElementById('login-form').classList.remove('hidden');
+            document.getElementById('select-user-form').classList.add('hidden');
+          } else {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('select-user-form').classList.remove('hidden');
+            loadUsers();
+          }
+        });
+      });
+      
+      // Gérer les onglets du profil
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          
+          tab.classList.add('active');
+          document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+          
+          // Charger les données appropriées selon l'onglet actif
+          if (tab.dataset.tab === 'following') {
+            loadFollowing();
+          } else if (tab.dataset.tab === 'followers') {
+            loadFollowers();
+          } else if (tab.dataset.tab === 'all-users') {
+            loadAllUsers();
+          }
+        });
+      });
+      
+      // Écouteurs d'événements pour les boutons
+      document.getElementById('login-btn').addEventListener('click', loginUser);
+      document.getElementById('select-user-btn').addEventListener('click', selectUser);
+      document.getElementById('logout-btn').addEventListener('click', logoutUser);
+    });
+    
+    // Fonction pour se connecter avec email/mot de passe
+    async function loginUser() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      
+      if (!email || !password) {
+        showError('login-error', 'Veuillez remplir tous les champs');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_BASE}/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Échec de la connexion');
+        }
+        
+        // Stocker les informations de l'utilisateur
+        currentUser = {
+          id: data.user.id,
+          username: data.user.username,
+          email: data.user.email,
+          token: data.access_token
+        };
+        
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        showUserInterface();
+      } catch (error) {
+        showError('login-error', error.message);
+      }
+    }
+    
+    // Fonction pour sélectionner un utilisateur existant (mode démo)
+    async function selectUser() {
+      const userId = document.getElementById('user-select').value;
+      
+      if (!userId) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_BASE}/users/${userId}`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Échec de la récupération des données utilisateur');
+        }
+        
+        console.log('Données utilisateur reçues:', data); // Pour déboguer
+        
+        // Stocker les informations de l'utilisateur avec vérification
+        currentUser = {
+          id: data.id,
+          username: data.username || data.name || 'Utilisateur', // Essayer plusieurs champs possibles
+          email: data.email || ''
+        };
+        
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        showUserInterface();
+      } catch (error) {
+        alert(`Erreur: ${error.message}`);
+      }
+    }
+    
+    // Fonction pour se déconnecter
+    function logoutUser() {
+      localStorage.removeItem('currentUser');
+      currentUser = null;
+      
+      // Cacher l'interface utilisateur et montrer le formulaire de connexion
+      document.getElementById('profile-section').classList.add('hidden');
+      document.getElementById('user-header-info').classList.add('hidden');
+      document.getElementById('logout-btn').classList.add('hidden');
+      document.getElementById('auth-container').classList.remove('hidden');
+    }
+    
+    // Afficher l'interface utilisateur après connexion
+    function showUserInterface() {
+      // Mettre à jour les informations d'en-tête
+      document.getElementById('header-username').textContent = currentUser.username || 'Utilisateur';
+      document.getElementById('header-user-id').textContent = `ID: ${currentUser.id}`;
+      
+      // Ajouter une vérification avant d'accéder au premier caractère
+      document.getElementById('header-avatar').textContent = 
+        (currentUser.username && currentUser.username.length > 0) 
+          ? currentUser.username[0].toUpperCase() 
+          : '?';
+      
+      // Mettre à jour les informations de profil
+      document.getElementById('profile-username').textContent = currentUser.username || 'Utilisateur';
+      document.getElementById('profile-user-id').textContent = `ID: ${currentUser.id}`;
+      
+      // Ajouter une vérification ici aussi
+      document.getElementById('profile-avatar').textContent = 
+        (currentUser.username && currentUser.username.length > 0) 
+          ? currentUser.username[0].toUpperCase() 
+          : '?';
+      
+      // Afficher l'interface utilisateur
+      document.getElementById('auth-container').classList.add('hidden');
+      document.getElementById('profile-section').classList.remove('hidden');
+      document.getElementById('user-header-info').classList.remove('hidden');
+      document.getElementById('logout-btn').classList.remove('hidden');
+      
+      // Charger les données
+      loadFollowing();
+      loadFollowers();
+    }
+    
+    // Charger tous les utilisateurs pour le formulaire de sélection
+    async function loadUsers() {
+      try {
+        const { ok, status, data } = await fetchWithErrorHandling(`${API_BASE}/users`);
+        if (!ok) {
+          throw new Error(data.error || `Échec de la récupération des utilisateurs (${status})`);
+        }
+        
+        console.log('Données reçues de l\'API:', data); // Pour déboguer
+        
+        const select = document.getElementById('user-select');
+        select.innerHTML = '';
+        
+        // Ajouter une option vide
+        const emptyOption = document.createElement('option');
+        emptyOption.value = '';
+        emptyOption.textContent = 'Sélectionner un utilisateur';
+        select.appendChild(emptyOption);
+        
+        // Déterminer quelle structure utiliser
+        const users = Array.isArray(data) ? data : 
+                     (data.users && Array.isArray(data.users) ? data.users : []);
+        
+        // Ajouter les utilisateurs
+        users.forEach(user => {
+          const option = document.createElement('option');
+          option.value = user.id;
+          option.textContent = `${user.username} (${user.email})`;
+          select.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Erreur:', error);
+        document.getElementById('user-select').innerHTML = '<option value="">Erreur de chargement</option>';
+      }
+    }
+    
+    // Charger également tous les utilisateurs pour l'onglet "Tous les utilisateurs"
+    async function loadAllUsers() {
+      try {
+        const response = await fetch(`${API_BASE}/users`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Échec de la récupération des utilisateurs');
+        }
+        
+        const usersList = document.getElementById('all-users-list');
+        usersList.innerHTML = '';
+        
+        // Déterminer quelle structure utiliser
+        const users = Array.isArray(data) ? data : 
+                     (data.users && Array.isArray(data.users) ? data.users : []);
+        
+        if (users.length === 0) {
+          usersList.innerHTML = '<p class="empty-message">Aucun utilisateur trouvé.</p>';
+          return;
+        }
+        
+        // Vérifier les statuts de suivi pour tous les utilisateurs
+        for (const user of users) {
+          // Ne pas afficher l'utilisateur actuel
+          if (user.id === currentUser.id) continue;
+          
+          // Vérifier si l'utilisateur actuel suit cet utilisateur
+          let isFollowing = false;
+          try {
+            const followResponse = await fetch(`${API_BASE}/users/${currentUser.id}/follows/${user.id}`);
+            const followData = await followResponse.json();
+            isFollowing = followData.status;
+          } catch (error) {
+            console.error(`Erreur de vérification du statut de suivi pour ${user.id}:`, error);
+          }
+          
+          const card = createUserCard(user, null, isFollowing);
+          usersList.appendChild(card);
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        document.getElementById('all-users-list').innerHTML = `
+          <p class="error-message">Une erreur est survenue lors du chargement des utilisateurs.</p>
+        `;
+      } finally {
+        document.querySelector('#all-users-tab .loading').style.display = 'none';
+      }
+    }
+    
+    // Charger les utilisateurs que l'utilisateur actuel suit
+    async function loadFollowing() {
+      try {
+        const response = await fetch(`${API_BASE}/users/${currentUser.id}/following`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Erreur lors du chargement des abonnements');
+        }
+        
+        // Mettre à jour le compteur
+        document.getElementById('following-count').textContent = data.following_count;
+        
+        // Afficher la liste
+        const followingList = document.getElementById('following-list');
+        followingList.innerHTML = '';
+        
+        if (data.following.length === 0) {
+          followingList.innerHTML = '<p class="empty-message">Vous ne suivez personne.</p>';
+          return;
+        }
+        
+        for (const user of data.following) {
+          const card = createUserCard(user, user.followed_since, true);
+          followingList.appendChild(card);
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        document.getElementById('following-list').innerHTML = `
+          <p class="error-message">Une erreur est survenue lors du chargement des abonnements.</p>
+        `;
+      } finally {
+        document.querySelector('#following-tab .loading').style.display = 'none';
+      }
+    }
+    
+    // Charger les utilisateurs qui suivent l'utilisateur actuel
+    async function loadFollowers() {
+      try {
+        const response = await fetch(`${API_BASE}/users/${currentUser.id}/followers`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Erreur lors du chargement des abonnés');
+        }
+        
+        // Mettre à jour le compteur
+        document.getElementById('followers-count').textContent = data.followers_count;
+        
+        // Afficher la liste
+        const followersList = document.getElementById('followers-list');
+        followersList.innerHTML = '';
+        
+        if (data.followers.length === 0) {
+          followersList.innerHTML = '<p class="empty-message">Personne ne vous suit.</p>';
+          return;
+        }
+        
+        for (const user of data.followers) {
+          // Vérifier si l'utilisateur actuel suit également cet abonné
+          let isFollowing = false;
+          try {
+            const followResponse = await fetch(`${API_BASE}/users/${currentUser.id}/follows/${user.id}`);
+            const followData = await followResponse.json();
+            isFollowing = followData.status;
+          } catch (error) {
+            console.error(`Erreur de vérification du statut de suivi pour ${user.id}:`, error);
+          }
+          
+          const card = createUserCard(user, user.following_since, isFollowing);
+          followersList.appendChild(card);
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        document.getElementById('followers-list').innerHTML = `
+          <p class="error-message">Une erreur est survenue lors du chargement des abonnés.</p>
+        `;
+      } finally {
+        document.querySelector('#followers-tab .loading').style.display = 'none';
+      }
+    }
+    
+    // Créer une carte d'utilisateur
+    function createUserCard(user, since, isFollowing) {
+      const card = document.createElement('div');
+      card.className = 'user-card';
+      
+      const initials = user.username ? user.username[0].toUpperCase() : '?';
+      
+      card.innerHTML = `
+        <div class="user-card-avatar">${initials}</div>
+        <div class="user-card-info">
+          <div class="user-card-name">${user.username}</div>
+          <p class="user-card-bio">${user.email}</p>
+          ${since ? `<div class="date-info">Depuis ${new Date(since).toLocaleDateString()}</div>` : ''}
+        </div>
+        <button class="follow-btn ${isFollowing ? 'following' : ''}" data-id="${user.id}">
+          ${isFollowing ? 'Abonné' : 'S\'abonner'}
+        </button>
+      `;
+      
+      // Ajouter un gestionnaire d'événements pour le bouton follow/unfollow
+      const followBtn = card.querySelector('.follow-btn');
+      followBtn.addEventListener('click', async () => {
+        followBtn.disabled = true;
+        
+        try {
+          if (isFollowing) {
+            // Désabonnement
+            const response = await fetch(`${API_BASE}/follows`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                follower_id: currentUser.id,
+                followed_id: user.id
+              })
+            });
+            
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.error || 'Échec du désabonnement');
+            }
+            
+            followBtn.textContent = 'S\'abonner';
+            followBtn.classList.remove('following');
+            isFollowing = false;
+          } else {
+            // Abonnement
+            const response = await fetch(`${API_BASE}/follows`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                follower_id: currentUser.id,
+                followed_id: user.id
+              })
+            });
+            
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.error || 'Échec de l\'abonnement');
+            }
+            
+            followBtn.textContent = 'Abonné';
+            followBtn.classList.add('following');
+            isFollowing = true;
+          }
+          
+          // Rafraîchir les compteurs et les listes
+          loadFollowing();
+          loadFollowers();
+        } catch (error) {
+          console.error('Erreur:', error);
+          alert(`Erreur: ${error.message}`);
+        } finally {
+          followBtn.disabled = false;
+        }
+      });
+      
+      return card;
+    }
+    
+    // Fonction utilitaire pour afficher des erreurs
+    function showError(elementId, message) {
+      const errorElement = document.getElementById(elementId);
+      errorElement.textContent = message;
+      errorElement.classList.remove('hidden');
+      
+      setTimeout(() => {
+        errorElement.classList.add('hidden');
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
