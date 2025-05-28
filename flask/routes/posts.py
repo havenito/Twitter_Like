@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
 from models import db
 from models.post import Post
+from models.notification import Notification
+from models.follow import Follow
 from services.file_upload import upload_file, determine_media_type
 
 posts_bp = Blueprint('posts', __name__)
@@ -27,55 +29,136 @@ def create_post():
         post_id = request.form.get('post_id')
         user_id = request.form['user_id']
         category_id = request.form['category_id']
-        
+
         if 'file' in request.files:
             file = request.files['file']
             url, file_type = upload_file(file)
-            
+
             if not url:
                 return jsonify({'error': 'File upload failed'}), 500
-                
+
             media_type = determine_media_type(file_type)
             if not media_type:
                 return jsonify({'error': 'Unsupported file type'}), 400
-                
+
             post = Post(
-                title=title, 
-                content=content, 
-                published_at=published_at, 
-                media_url=url, 
-                user_id=user_id, 
-                category_id=category_id, 
+                title=title,
+                content=content,
+                published_at=published_at,
+                media_url=url,
+                user_id=user_id,
+                category_id=category_id,
                 post_id=post_id,
                 media_type=media_type
             )
         else:
             post = Post(
-                title=title, 
-                content=content, 
+                title=title,
+                content=content,
                 published_at=published_at,
-                user_id=user_id, 
-                category_id=category_id, 
+                user_id=user_id,
+                category_id=category_id,
                 post_id=post_id
             )
-        
+
         db.session.add(post)
         db.session.commit()
-        
+
         # Mise à jour du post_id dans la catégorie correspondante
         from models.category import Category
         category = Category.query.get(category_id)
         if category:
             category.post_id = post.id
             db.session.commit()
-        
+
+        # Notifier les followers de l'utilisateur qui a publié le post
+        notify_followers_on_new_post(post)
+
         return jsonify({'message': 'Post created successfully', 'post_id': post.id})
-    
+
     except KeyError as e:
         return jsonify({'error': f'Missing required field: {str(e)}'}), 400
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Failed to create post: {str(e)}'}), 500
+
+def notify_followers_on_new_post(post):
+    # Récupérer tous les followers de l'utilisateur qui a publié le post
+    followers = Follow.query.filter_by(followed_id=post.user_id).all()
+
+    for follow in followers:
+        notification = Notification(
+            post_id=post.id,
+            user_id=follow.follower_id
+        )
+        db.session.add(notification)
+
+    db.session.commit()
+
+# @posts_bp.route('/api/create_post', methods=['POST'])
+# def create_post():
+#     try:
+#         title = request.form['title']
+#         content = request.form['content']
+#         published_at = request.form['published_at']
+#         post_id = request.form.get('post_id')
+#         user_id = request.form['user_id']
+#         category_id = request.form['category_id']
+        
+#         if 'file' in request.files:
+#             file = request.files['file']
+#             url, file_type = upload_file(file)
+            
+#             if not url:
+#                 return jsonify({'error': 'File upload failed'}), 500
+                
+#             media_type = determine_media_type(file_type)
+#             if not media_type:
+#                 return jsonify({'error': 'Unsupported file type'}), 400
+                
+#             post = Post(
+#                 title=title, 
+#                 content=content, 
+#                 published_at=published_at, 
+#                 media_url=url, 
+#                 user_id=user_id, 
+#                 category_id=category_id, 
+#                 post_id=post_id,
+#                 media_type=media_type
+#             )
+#         else:
+#             post = Post(
+#                 title=title, 
+#                 content=content, 
+#                 published_at=published_at,
+#                 user_id=user_id, 
+#                 category_id=category_id, 
+#                 post_id=post_id
+#             )
+        
+#         db.session.add(post)
+#         db.session.commit()
+        
+#         # Mise à jour du post_id dans la catégorie correspondante
+#         from models.category import Category
+#         category = Category.query.get(category_id)
+#         if category:
+#             category.post_id = post.id
+#             db.session.commit()
+        
+#         return jsonify({'message': 'Post created successfully', 'post_id': post.id})
+    
+#     except KeyError as e:
+#         return jsonify({'error': f'Missing required field: {str(e)}'}), 400
+#     except Exception as e:
+#         db.session.rollback()
+#         return jsonify({'error': f'Failed to create post: {str(e)}'}), 500
+
+
+
+
+
+
 
 @posts_bp.route('/api/update_post/<int:post_id>', methods=['PUT', 'POST'])
 def update_post(post_id):

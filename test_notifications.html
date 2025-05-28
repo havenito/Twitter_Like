@@ -1,95 +1,94 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Test Notifications</title>
+  <meta charset="UTF-8" />
+  <title>Test API - Notifications</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
-    .notification { background: white; padding: 12px; margin-bottom: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .notif-header { font-weight: bold; margin-bottom: 4px; }
-    .notif-actions { margin-top: 6px; }
-    button { margin-right: 8px; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 20px;
+    }
+    .notification {
+      background: white;
+      padding: 12px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    #notifications-container {
+      max-width: 600px;
+      margin: auto;
+    }
+    input, button {
+      padding: 8px;
+      margin: 5px 0;
+    }
+    button {
+      cursor: pointer;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
   </style>
 </head>
 <body>
 
-<h1>Centre de notifications</h1>
+<h1>Notifications</h1>
 
-<label for="userIdInput">Entrez votre ID utilisateur :</label>
-<input type="number" id="userIdInput" placeholder="Ex : 10" />
-<button onclick="loadNotifications()">Charger les notifications</button>
+<!-- Champ pour entrer l'ID utilisateur -->
+<label for="userIdInput">Votre ID utilisateur :</label>
+<input type="number" id="userIdInput" placeholder="Entrez votre ID (ex: 10)" />
+<button onclick="fetchNotifications()">Récupérer Notifications</button>
 
 <div id="notifications-container"></div>
 
 <script>
   const API_BASE = 'http://localhost:5000/api';
 
-  async function fetchNotifications(userId) {
-    const res = await fetch(`${API_BASE}/notifications/user/${userId}`);
-    if (!res.ok) {
-      alert("Erreur lors du chargement des notifications.");
-      return [];
-    }
-    const data = await res.json();
-    return data.notifications || [];
-  }
-
-  async function deleteNotification(notificationId) {
-    const res = await fetch(`${API_BASE}/notifications/${notificationId}`, {
-      method: 'DELETE'
-    });
-    if (res.ok) {
-      alert("Notification supprimée.");
-      loadNotifications();
-    } else {
-      alert("Erreur lors de la suppression.");
-    }
-  }
-
-  async function loadNotifications() {
+  async function fetchNotifications() {
     const userId = document.getElementById('userIdInput').value;
+
     if (!userId) {
       alert("Veuillez entrer un ID utilisateur.");
       return;
     }
 
-    const notifications = await fetchNotifications(userId);
-    const container = document.getElementById('notifications-container');
-    container.innerHTML = '';
+    try {
+      const res = await fetch(`${API_BASE}/user_notifications/${userId}`);
+      const notifications = await res.json();
 
-    if (notifications.length === 0) {
-      container.innerHTML = '<p>Aucune notification.</p>';
-      return;
-    }
+      const container = document.getElementById('notifications-container');
+      container.innerHTML = '';
 
-    for (const notif of notifications) {
-      const div = document.createElement('div');
-      div.className = 'notification';
+      if (notifications.length === 0) {
+        container.innerHTML = '<p>Aucune notification trouvée.</p>';
+        return;
+      }
 
-      const header = document.createElement('div');
-      header.className = 'notif-header';
-      header.textContent = notif.type === 'comment'
-        ? `Nouveau commentaire sur le post ID ${notif.post_id}`
-        : `Nouvelle publication`;
+      notifications.forEach(notification => {
+        const notificationElement = document.createElement('div');
+        notificationElement.className = 'notification';
 
-      const body = document.createElement('p');
-      body.textContent = notif.content;
+        let notificationContent = `Notification ID: ${notification.id}, Date: ${notification.date}<br>`;
+        if (notification.post_id) {
+          notificationContent += `Post: ${notification.post_title}<br>Content: ${notification.post_content}<br>`;
+        }
+        if (notification.comment_id) {
+          notificationContent += `Comment: ${notification.comment_content}<br>`;
+        }
 
-      const actions = document.createElement('div');
-      actions.className = 'notif-actions';
-
-      const openBtn = document.createElement('a');
-      openBtn.href = `/post.html?id=${notif.post_id}`;
-      openBtn.textContent = 'Voir la publication';
-      openBtn.target = '_blank';
-
-      const delBtn = document.createElement('button');
-      delBtn.textContent = 'Supprimer';
-      delBtn.onclick = () => deleteNotification(notif.id);
-
-      actions.append(openBtn, delBtn);
-      div.append(header, body, actions);
-      container.appendChild(div);
+        notificationElement.innerHTML = notificationContent;
+        container.appendChild(notificationElement);
+      });
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      alert("Erreur lors de la récupération des notifications.");
     }
   }
 </script>

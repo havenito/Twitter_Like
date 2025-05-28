@@ -1,5 +1,7 @@
 from flask import Blueprint, request, jsonify
 from models import db
+from models.post import Post
+from models.notification import Notification
 from models.comment import Comment
 
 
@@ -14,12 +16,27 @@ def create_comment():
 
     if not content:
         return jsonify({'error': 'Content is required'}), 400
-    
+
     new_comment = Comment(content=content, post_id=post_id, user_id=user_id)
     db.session.add(new_comment)
     db.session.commit()
 
+    # Notifier l'utilisateur du post
+    notify_user_on_new_comment(new_comment)
+
     return jsonify({'message': 'Comment created successfully', 'comment_id': new_comment.id}), 201
+
+def notify_user_on_new_comment(comment):
+    post = Post.query.get(comment.post_id)
+    if post:
+        notification = Notification(
+            post_id=post.id,
+            comments_id=comment.id,
+            user_id=post.user_id
+        )
+        db.session.add(notification)
+        db.session.commit()
+
 
 @comments_api.route('/api/comments', methods=['GET'])
 def get_comments():
