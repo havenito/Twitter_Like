@@ -7,6 +7,6 @@ class Notification(db.Model):
     comments_id = db.Column(db.Integer, db.ForeignKey('comments.id'), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     date = db.Column(db.DateTime, default=datetime.utcnow)
-    follow_id = db.Column(db.Integer, db.ForeignKey('follow.id'), nullable=True)
+    follow_id = db.Column(db.Integer, db.ForeignKey('follows.id'), nullable=True)
     replie_id = db.Column(db.Integer, db.ForeignKey('replies.id'), nullable=True)
     type = db.Column(db.String(50), nullable=False)  # e.g., 'comment', 'reply', 'follow','post'
