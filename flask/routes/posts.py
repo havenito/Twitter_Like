@@ -83,80 +83,31 @@ def create_post():
         return jsonify({'error': f'Failed to create post: {str(e)}'}), 500
 
 def notify_followers_on_new_post(post):
-    # Récupérer tous les followers de l'utilisateur qui a publié le post
-    followers = Follow.query.filter_by(followed_id=post.user_id).all()
+    try:
+        #  Récupérer tous les followers de l'utilisateur qui a créé le post
+        followers = Follow.query.filter_by(following_id=post.user_id).all()
 
-    for follow in followers:
-        notification = Notification(
-            post_id=post.id,
-            user_id=follow.follower_id
-        )
-        db.session.add(notification)
+        if not followers:
+            print("Aucun follower à notifier pour ce post.")
+            return
 
-    db.session.commit()
+        #  Créer une notification pour chaque follower
+        for follower in followers:
+            notification = Notification(
+                post_id=post.id,
+                comments_id=None,
+                user_id=follower.follower_id,  
+                replie_id=None,
+                follow_id=None,
+                type="post"  
+            )
+            db.session.add(notification)
 
-# @posts_bp.route('/api/create_post', methods=['POST'])
-# def create_post():
-#     try:
-#         title = request.form['title']
-#         content = request.form['content']
-#         published_at = request.form['published_at']
-#         post_id = request.form.get('post_id')
-#         user_id = request.form['user_id']
-#         category_id = request.form['category_id']
-        
-#         if 'file' in request.files:
-#             file = request.files['file']
-#             url, file_type = upload_file(file)
-            
-#             if not url:
-#                 return jsonify({'error': 'File upload failed'}), 500
-                
-#             media_type = determine_media_type(file_type)
-#             if not media_type:
-#                 return jsonify({'error': 'Unsupported file type'}), 400
-                
-#             post = Post(
-#                 title=title, 
-#                 content=content, 
-#                 published_at=published_at, 
-#                 media_url=url, 
-#                 user_id=user_id, 
-#                 category_id=category_id, 
-#                 post_id=post_id,
-#                 media_type=media_type
-#             )
-#         else:
-#             post = Post(
-#                 title=title, 
-#                 content=content, 
-#                 published_at=published_at,
-#                 user_id=user_id, 
-#                 category_id=category_id, 
-#                 post_id=post_id
-#             )
-        
-#         db.session.add(post)
-#         db.session.commit()
-        
-#         # Mise à jour du post_id dans la catégorie correspondante
-#         from models.category import Category
-#         category = Category.query.get(category_id)
-#         if category:
-#             category.post_id = post.id
-#             db.session.commit()
-        
-#         return jsonify({'message': 'Post created successfully', 'post_id': post.id})
-    
-#     except KeyError as e:
-#         return jsonify({'error': f'Missing required field: {str(e)}'}), 400
-#     except Exception as e:
-#         db.session.rollback()
-#         return jsonify({'error': f'Failed to create post: {str(e)}'}), 500
+        db.session.commit()
+        print(f"Notifications envoyées aux followers de l'utilisateur {post.user_id} pour le post {post.id}.")
 
-
-
-
+    except Exception as e:
+        print(f"Erreur lors de la notification des followers: {e}")
 
 
 

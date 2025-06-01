@@ -3,7 +3,10 @@ from datetime import datetime
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
-    comments_id = db.Column(db.Integer, db.ForeignKey('comments.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
+    comments_id = db.Column(db.Integer, db.ForeignKey('comments.id'), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     date = db.Column(db.DateTime, default=datetime.utcnow)
+    follow_id = db.Column(db.Integer, db.ForeignKey('follow.id'), nullable=True)
+    replie_id = db.Column(db.Integer, db.ForeignKey('replies.id'), nullable=True)
+    type = db.Column(db.String(50), nullable=False)  # e.g., 'comment', 'reply', 'follow','post'

@@ -20,37 +20,29 @@ def create_replie():
     new_replie = Replie(content=content, comment_id=comment_id, user_id=user_id)
     db.session.add(new_replie)
     db.session.commit()
-    notify_user_on_new_reply(new_replie)
+    notify_user_on_new_replie(new_replie)
     return jsonify({'message': 'Replie created successfully', 'replie_id': new_replie.id}), 201
 
-def notify_user_on_new_reply(reply):
-    # Récupérer le commentaire associé à cette réponse
-    comment = Comment.query.get(reply.comment_id)
-    if not comment:
-        print("Commentaire introuvable pour la réponse donnée.")
-        return
+def notify_user_on_new_replie(replie):
+    try:
+        comment = Comment.query.get(replie.comment_id)
+        if comment:
+            notification = Notification(
+                post_id=comment.post_id,  
+                comments_id=comment.id,
+                user_id=comment.user_id,
+                replie_id=replie.id,
+                follow_id=None,
+                type="reply"
+            )
+            db.session.add(notification)
+            db.session.commit()
 
-    # Récupérer le post associé à ce commentaire
-    post = Post.query.get(comment.post_id)
-    if not post:
-        print("Post introuvable pour le commentaire donné.")
-        return
-
-    # Utilisateurs à notifier : créateur du post + créateur du commentaire
-    users_to_notify = set([post.user_id, comment.user_id])
-
-    for user_id in users_to_notify:
-        notification = Notification(
-            post_id=post.id,
-            comments_id=comment.id,
-            user_id=user_id,
-        )
-        db.session.add(notification)
-
-    db.session.commit()
-    print(f"Notifications créées pour les utilisateurs {users_to_notify} suite à un nouveau reply.")
-
-
+            print(f"Notification envoyée à l'utilisateur {comment.user_id} pour une réponse au commentaire {comment.id}.")
+        else:
+            print("Erreur : Impossible de récupérer le commentaire lié à la réponse.")
+    except Exception as e:
+        print(f"Erreur lors de la notification: {e}")
 
 
 @replies_api.route('/api/replies', methods=['GET'])

@@ -4,6 +4,8 @@ from models.notification import Notification
 from models.user import User
 from models.post import Post
 from models.comment import Comment
+from models.follow import Follow
+from models.replie import Replie  # Ajout pour les réponses
 
 notifications_api = Blueprint('notifications_api', __name__)
 
@@ -18,32 +20,47 @@ def get_user_notifications(user_id):
                 'id': notification.id,
                 'post_id': notification.post_id,
                 'comments_id': notification.comments_id,
+                'replie_id': notification.replie_id,
+                'follow_id': notification.follow_id,
                 'user_id': notification.user_id,
+                'type': notification.type,
                 'date': notification.date.isoformat() if notification.date else None
             }
 
-            if notification.post_id:
+            # Récupérer les informations selon le type de notification
+            if notification.type == "post" and notification.post_id:
                 post = Post.query.get(notification.post_id)
                 if post:
                     notification_data['post_title'] = post.title
                     notification_data['post_content'] = post.content
 
-            if notification.comments_id:
+            if notification.type == "comment" and notification.comments_id:
                 comment = Comment.query.get(notification.comments_id)
                 if comment:
                     notification_data['comment_content'] = comment.content
+                    notification_data['post_id'] = comment.post_id  
+
+            if notification.type == "reply" and notification.replie_id:
+                replie = Replie.query.get(notification.replie_id)
+                if replie:
+                    notification_data['replie_content'] = replie.content
+                    notification_data['comment_id'] = replie.comment_id  
+
+            if notification.type == "follow" and notification.follow_id:
+                follow = Follow.query.get(notification.follow_id)
+                if follow:
+                    followed_user = User.query.get(follow.followed_id)
+                    follower_user = User.query.get(follow.follower_id)
+                    notification_data['followed_user'] = followed_user.username if followed_user else None
+                    notification_data['follower_user'] = follower_user.username if follower_user else None
 
             result.append(notification_data)
 
         return jsonify(result)
 
     except Exception as e:
-        print(f"Erreur lors de la récupération des notifications: {e}")  # log serveur
+        print(f"Erreur lors de la récupération des notifications: {e}")  
         return jsonify({'error': f'Failed to fetch notifications: {str(e)}'}), 500
-    
-
-
-    
 
 @notifications_api.route('/api/user_notifications/<int:user_id>', methods=['DELETE'])
 def delete_all_user_notifications(user_id):
@@ -59,7 +76,6 @@ def delete_all_user_notifications(user_id):
         return jsonify({'message': 'All notifications deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': f'Failed to delete notifications: {str(e)}'}), 500
-
 
 @notifications_api.route('/api/user_notifications/<int:user_id>/<int:notification_id>', methods=['DELETE'])
 def delete_user_notification(user_id, notification_id):
@@ -86,20 +102,39 @@ def get_all_notifications():
                 'id': notification.id,
                 'post_id': notification.post_id,
                 'comments_id': notification.comments_id,
+                'replie_id': notification.replie_id,
+                'follow_id': notification.follow_id,
                 'user_id': notification.user_id,
+                'type': notification.type,
                 'date': notification.date.isoformat() if notification.date else None
             }
 
-            if notification.post_id:
+            # Gestion des types de notifications
+            if notification.type == "post" and notification.post_id:
                 post = Post.query.get(notification.post_id)
                 if post:
                     notification_data['post_title'] = post.title
                     notification_data['post_content'] = post.content
 
-            if notification.comments_id:
+            if notification.type == "comment" and notification.comments_id:
                 comment = Comment.query.get(notification.comments_id)
                 if comment:
                     notification_data['comment_content'] = comment.content
+                    notification_data['post_id'] = comment.post_id
+
+            if notification.type == "reply" and notification.replie_id:
+                replie = Replie.query.get(notification.replie_id)
+                if replie:
+                    notification_data['replie_content'] = replie.content
+                    notification_data['comment_id'] = replie.comment_id
+
+            if notification.type == "follow" and notification.follow_id:
+                follow = Follow.query.get(notification.follow_id)
+                if follow:
+                    followed_user = User.query.get(follow.followed_id)
+                    follower_user = User.query.get(follow.follower_id)
+                    notification_data['followed_user'] = followed_user.username if followed_user else None
+                    notification_data['follower_user'] = follower_user.username if follower_user else None
 
             result.append(notification_data)
 

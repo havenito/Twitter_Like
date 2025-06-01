@@ -5,7 +5,7 @@ from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token
 from models.follow import Follow
 from datetime import datetime
-
+from models.notification import Notification
 follows_api = Blueprint('follows_api', __name__)
 
 # Route pour récupérer les utilisateurs qu'une personne suit (following)
@@ -150,7 +150,9 @@ def follow_user():
         
         db.session.add(new_follow)
         db.session.commit()
-        
+
+        notify_user_on_new_follow(new_follow)
+
         return jsonify({
             'message': 'Relation de suivi créée avec succès',
             'follow': {
@@ -162,6 +164,34 @@ def follow_user():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Une erreur est survenue: {str(e)}'}), 500
+
+
+def notify_user_on_new_follow(follow):
+    try:
+        followed_user = User.query.get(follow.followed_id) 
+        follower_user = User.query.get(follow.follower_id) 
+
+        if not followed_user or not follower_user:
+            print("Erreur : Utilisateur suivi ou follower introuvable.")
+            return
+
+        notification = Notification(
+            post_id=None, 
+            comments_id=None,  
+            user_id=follow.followed_id,
+            replie_id=None,  
+            follow_id=follow.id,
+            type="follow"  
+        )
+
+        db.session.add(notification)
+        db.session.commit()
+
+        print(f"Notification envoyée à {followed_user.username} : {follower_user.username} vient de vous suivre.")
+
+    except Exception as e:
+        print(f"Erreur lors de la notification de suivi: {e}")
+
 
 # Route pour arrêter de suivre un utilisateur
 @follows_api.route('/api/follows', methods=['DELETE'])

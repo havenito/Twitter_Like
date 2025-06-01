@@ -27,15 +27,25 @@ def create_comment():
     return jsonify({'message': 'Comment created successfully', 'comment_id': new_comment.id}), 201
 
 def notify_user_on_new_comment(comment):
-    post = Post.query.get(comment.post_id)
-    if post:
-        notification = Notification(
-            post_id=post.id,
-            comments_id=comment.id,
-            user_id=post.user_id
-        )
-        db.session.add(notification)
-        db.session.commit()
+    try:
+        post = Post.query.get(comment.post_id)
+        if post:
+            notification = Notification(
+                post_id=post.id,
+                comments_id=comment.id,
+                user_id=post.user_id,
+                replie_id=None, 
+                follow_id=None, 
+                type="comment"
+            )
+            db.session.add(notification)
+            db.session.commit()
+
+            print(f"Notification envoyée à l'utilisateur {post.user_id} pour un commentaire sur le post {post.id}.")
+        else:
+            print("Erreur : Impossible de récupérer le post lié au commentaire.")
+    except Exception as e:
+        print(f"Erreur lors de la notification: {e}")
 
 
 @comments_api.route('/api/comments', methods=['GET'])
