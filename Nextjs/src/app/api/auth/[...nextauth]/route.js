@@ -67,14 +67,16 @@ export const authOptions = {
     async jwt({ token, user, account }) {
       // Persist the user id and role to the token right after signin
       if (account && user) { // User object is available on initial sign-in (credentials or OAuth)
-        token.userId = user.id; // Ensure 'id' comes from your Flask user object or Supabase
+        token.userId = user.id;
         token.userRoles = user.roles;
         token.email = user.email;
-        token.firstName = user.first_name; // Ensure consistent naming (first_name vs firstName)
+        token.firstName = user.first_name;
         token.lastName = user.last_name;
         token.pseudo = user.pseudo;
         token.profilePicture = user.profile_picture;
-        token.isPrivate = user.private; // Ensure 'private' is a boolean
+        token.isPrivate = user.private;
+        token.biography = user.biography; // Ajout de la biographie
+        token.banner = user.banner; // Ajout de la bannière
       }
       return token;
     },
@@ -87,6 +89,8 @@ export const authOptions = {
       session.user.pseudo = token.pseudo;
       session.user.profilePicture = token.profilePicture;
       session.user.isPrivate = token.isPrivate;
+      session.user.biography = token.biography; // Ajout de la biographie
+      session.user.banner = token.banner; // Ajout de la bannière
       // Ensure email is part of the session user if not already
       if (token.email && !session.user.email) {
         session.user.email = token.email;

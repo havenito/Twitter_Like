@@ -13,6 +13,9 @@ export async function POST(req) {
     const password = clientFormData.get('password');
     const isPublic = clientFormData.get('isPublic'); 
     const profilePictureFile = clientFormData.get('profile_picture');
+    
+    // Récupérer la biographie si elle existe (mais ne pas l'ajouter si vide)
+    const biography = clientFormData.get('biography');
 
     if (!firstName || !email || !pseudo || !password) {
       return NextResponse.json({
@@ -31,6 +34,11 @@ export async function POST(req) {
     flaskFormData.append('password', password);
     flaskFormData.append('isPublic', isPublic); 
     flaskFormData.append('roles', 'user');
+
+    // Ajouter la biographie seulement si elle existe et n'est pas vide
+    if (biography && biography.trim()) {
+      flaskFormData.append('biography', biography);
+    }
 
     if (profilePictureFile && profilePictureFile.size > 0) {
       flaskFormData.append('profile_picture', profilePictureFile);

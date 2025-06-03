@@ -2,37 +2,41 @@ from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_bcrypt import Bcrypt
-from flask_mail import Mail # Add this import
+from flask_mail import Mail
 
 from config import Config
 from models import db
-# Removed bcrypt from here as it's initialized in auth_bp
-from routes.auth import auth_bp # bcrypt is initialized within auth_bp
+from routes.auth import auth_bp, bcrypt
 from routes.posts import posts_bp
+from routes.replies import replies_api
+from routes.comments import comments_api
+from services.file_upload import init_cloudinary
+from routes.categories import categories_bp
+from routes.follows import follows_api
 from services.file_upload import init_cloudinary
 
-mail = Mail() # Initialize Mail instance
+mail = Mail()
 
 def create_app(config_class=Config):
-    # Initialize Flask app
     app = Flask(__name__)
     app.config.from_object(config_class)
     
-    # Initialize extensions
     db.init_app(app)
     jwt = JWTManager(app)
     CORS(app)
-    mail.init_app(app) # Initialize Mail with app context
+    mail.init_app(app)
     
-    # Initialize Cloudinary
     init_cloudinary(app)
     
-    # Register blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(posts_bp)
+    app.register_blueprint(categories_bp)
+    app.register_blueprint(replies_api)
+    app.register_blueprint(comments_api)
+    app.register_blueprint(follows_api)
     
-    # Create database tables
     with app.app_context():
+        from models.post_media import PostMedia
         db.create_all()
     
     return app

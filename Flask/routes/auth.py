@@ -30,7 +30,9 @@ def validate_password(password):
 @auth_bp.route('/api/users', methods=['POST'])
 def create_user():
     profile_picture_to_save = None
+    banner_image_to_save = None 
     data_source = None
+    biography_data = None
 
     if request.content_type and 'multipart/form-data' in request.content_type:
         data_source = request.form
@@ -40,6 +42,7 @@ def create_user():
         last_name_data = data_source.get('last_name')
         last_name = last_name_data.strip() if isinstance(last_name_data, str) else last_name_data
         pseudo = data_source.get('pseudo', '').strip()
+        biography_data = data_source.get('biography', '').strip() or None
         
         is_public_str = data_source.get('isPublic', 'true')
         private = not (is_public_str.lower() == 'true')
@@ -52,6 +55,13 @@ def create_user():
                 uploaded_url, _ = upload_file(file)
                 if uploaded_url:
                     profile_picture_to_save = uploaded_url
+        
+        if 'banner_image' in request.files: 
+            banner_file = request.files['banner_image']
+            if banner_file and banner_file.filename:
+                banner_url, _ = upload_file(banner_file)
+                if banner_url:
+                    banner_image_to_save = banner_url
     else:
         json_data = request.get_json()
         if not json_data:
@@ -64,10 +74,13 @@ def create_user():
         last_name_data = data_source.get('last_name')
         last_name = last_name_data.strip() if isinstance(last_name_data, str) else last_name_data
         profile_picture_to_save = data_source.get('profile_picture')
+        banner_image_to_save = data_source.get('banner')
         pseudo = data_source.get('pseudo', '').strip()
+        biography_data = data_source.get('biography', '').strip() or None
         private = data_source.get('private', False) 
         roles = data_source.get('roles', 'user').strip()
 
+    # Vérifier que les champs obligatoires sont présents
     if not all([email, password, first_name, pseudo]):
         return jsonify({'error': 'Les champs email, mot de passe, prénom et pseudo sont obligatoires'}), 400
     
@@ -89,7 +102,9 @@ def create_user():
         last_name=last_name,
         profile_picture=profile_picture_to_save,
         pseudo=pseudo, 
-        private=private
+        private=private,
+        biography=biography_data,
+        banner=banner_image_to_save
     )
     
     db.session.add(new_user)
@@ -98,7 +113,8 @@ def create_user():
     return jsonify({
         'message': 'Utilisateur créé avec succès', 
         'user_id': new_user.id,
-        'profile_picture': new_user.profile_picture
+        'profile_picture': new_user.profile_picture,
+        'banner': new_user.banner
     }), 201
 
 @auth_bp.route('/api/upload', methods=['POST'])
@@ -147,7 +163,9 @@ def login():
             'last_name': user.last_name,
             'pseudo': user.pseudo,
             'profile_picture': user.profile_picture,
-            'private': user.private 
+            'private': user.private,
+            'biography': user.biography,
+            'banner': user.banner
         }
         return jsonify({'message': 'Connexion réussie', 'user': user_data}), 200
     else:
@@ -169,7 +187,8 @@ def get_users():
             'pseudo': user_obj.pseudo,
             'private': user_obj.private,
             'created_at': user_obj.created_at.isoformat() if hasattr(user_obj, 'created_at') and user_obj.created_at else None,
-            'updated_at': user_obj.updated_at.isoformat() if hasattr(user_obj, 'updated_at') and user_obj.updated_at else None
+            'updated_at': user_obj.updated_at.isoformat() if hasattr(user_obj, 'updated_at') and user_obj.updated_at else None,
+            'banner': user_obj.banner 
         })
     
     return jsonify(result)
@@ -186,23 +205,47 @@ def update_user(user_id):
     if not user_to_update:
         return jsonify({'error': 'Utilisateur non trouvé'}), 404
     
+    # Initialize with current values
     profile_picture_url_to_set = user_to_update.profile_picture
+    banner_image_url_to_set = user_to_update.banner
     data_source = None
 
     if request.content_type and 'multipart/form-data' in request.content_type:
         data_source = request.form
-        if 'profile_picture' in request.files:
+
+        # Handle profile picture deletion or update
+        if data_source.get('delete_profile_picture') == 'true':
+            profile_picture_url_to_set = None
+        elif 'profile_picture' in request.files:
             file = request.files['profile_picture']
             if file and file.filename:
                 uploaded_url, _ = upload_file(file)
                 if uploaded_url:
                     profile_picture_url_to_set = uploaded_url
+        
+        # Handle banner image deletion or update
+        if data_source.get('delete_banner_image') == 'true':
+            banner_image_url_to_set = None
+        elif 'banner_image' in request.files:
+            banner_file = request.files['banner_image']
+            if banner_file and banner_file.filename:
+                banner_url, _ = upload_file(banner_file)
+                if banner_url:
+                    banner_image_url_to_set = banner_url
+
     elif request.is_json:
         data_source = request.get_json()
         if not data_source:
              return jsonify({'error': 'Invalid or missing JSON data'}), 400
-        if 'profile_picture' in data_source:
-            profile_picture_url_to_set = data_source.get('profile_picture')
+        
+        # For JSON, if 'profile_picture' is explicitly set to null or empty, consider it a deletion.
+        # Or, you could add 'delete_profile_picture': true to the JSON payload as well.
+        # Current logic assumes if 'profile_picture' key exists, it's an update to that URL.
+        # To allow deletion via JSON, you might send `profile_picture: null`.
+        if 'profile_picture' in data_source: # This could be a URL or null
+            profile_picture_url_to_set = data_source.get('profile_picture') 
+        if 'banner' in data_source: # This could be a URL or null
+            banner_image_url_to_set = data_source.get('banner')
     else:
         return jsonify({'error': 'Unsupported content type or no data provided'}), 415
 
@@ -228,20 +271,26 @@ def update_user(user_id):
         if 'pseudo' in data_source:
             new_pseudo = data_source.get('pseudo', '').strip()
             if new_pseudo != user_to_update.pseudo:
-                if new_pseudo:
+                if new_pseudo: # Ensure pseudo is not empty if trying to update
                     existing_user_pseudo = User.query.filter(User.pseudo == new_pseudo, User.id != user_id).first()
                     if existing_user_pseudo:
                         return jsonify({'error': 'Pseudo déjà utilisé par un autre utilisateur'}), 409
                 user_to_update.pseudo = new_pseudo
 
+
+        if 'biography' in data_source:
+            user_to_update.biography = data_source.get('biography', '').strip() # Allow empty biography
+
+        # Handle privacy setting from either JSON or form-data
         if request.is_json:
-            if 'private' in data_source:
+            if 'private' in data_source: # Expects boolean
                 user_to_update.private = bool(data_source.get('private'))
-        elif 'isPublic' in data_source:
+        elif 'isPublic' in data_source: # Expects 'true' or 'false' string from FormData
             is_public_str = data_source.get('isPublic')
             user_to_update.private = not (is_public_str.lower() == 'true')
-
+            
     user_to_update.profile_picture = profile_picture_url_to_set
+    user_to_update.banner = banner_image_url_to_set 
     
     db.session.commit()
     
@@ -253,9 +302,11 @@ def update_user(user_id):
             'first_name': user_to_update.first_name,
             'last_name': user_to_update.last_name,
             'roles': user_to_update.roles,
-            'profile_picture': user_to_update.profile_picture,
+            'profile_picture': user_to_update.profile_picture, # Will be None if deleted
             'pseudo': user_to_update.pseudo,
-            'private': user_to_update.private
+            'private': user_to_update.private,
+            'biography': user_to_update.biography,
+            'banner': user_to_update.banner # Will be None if deleted
         }
     }), 200
 
@@ -347,3 +398,72 @@ def reset_password_with_token():
     except Exception as e: 
         current_app.logger.error(f"Erreur lors de la réinitialisation du mot de passe : {e}")
         return jsonify({'error': 'Token invalide, expiré ou une erreur est survenue'}), 401
+
+@auth_bp.route('/api/users/profile/<string:pseudo>', methods=['GET'])
+def get_user_by_pseudo(pseudo):
+    user = User.query.filter_by(pseudo=pseudo).first()
+    
+    if not user:
+        return jsonify({'error': 'Utilisateur non trouvé'}), 404
+    
+    from models.follow import Follow
+    followers_count = Follow.query.filter_by(followed_id=user.id).count()
+    following_count = Follow.query.filter_by(follower_id=user.id).count()
+    
+    from models.post import Post
+    from models.post_media import PostMedia
+    
+    user_posts = Post.query.filter_by(user_id=user.id).order_by(Post.published_at.desc()).all()
+    posts = []
+    media = []
+    
+    for post in user_posts:
+        post_media_list = PostMedia.query.filter_by(post_id=post.id).all()
+        post_media = []
+        
+        for media_item in post_media_list:
+            media_data = {
+                'id': media_item.id,
+                'url': media_item.media_url,
+                'type': media_item.media_type,
+                'created_at': media_item.created_at.isoformat() if media_item.created_at else None
+            }
+            post_media.append(media_data)
+            
+            media.append(media_data)
+        
+        post_data = {
+            'id': post.id,
+            'title': post.title,
+            'content': post.content,
+            'published_at': post.published_at.isoformat() if post.published_at else None,
+            'media': post_media,  # Seulement le tableau media
+            'category_id': post.category_id,
+            'user_id': post.user_id
+        }
+        posts.append(post_data)
+    
+    # Pour les likes, vous devrez implémenter selon votre modèle de likes
+    likes = []  # À implémenter selon votre modèle de likes
+    
+    result = {
+        'id': user.id,
+        'email': user.email,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'roles': user.roles,
+        'profile_picture': user.profile_picture,
+        'pseudo': user.pseudo,
+        'private': user.private,
+        'biography': user.biography,
+        'banner': user.banner,
+        'created_at': user.created_at.isoformat() if hasattr(user, 'created_at') and user.created_at else None,
+        'updated_at': user.updated_at.isoformat() if hasattr(user, 'updated_at') and user.updated_at else None,
+        'followers_count': followers_count,
+        'following_count': following_count,
+        'posts': posts,
+        'media': media,
+        'likes': likes
+    }
+    
+    return jsonify(result)

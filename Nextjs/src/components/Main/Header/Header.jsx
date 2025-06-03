@@ -71,10 +71,10 @@ const Header = () => {
             <Image src="/minouverselogo.png" alt="Logo" width={50} height={50} className="rounded-full mx-4" />
           </Link>
           
-          <Link href="/subscriptions">
+          <Link href="/following">
             <button
               className={`text-sm font-semibold px-5 py-2 rounded-full transition-all duration-300 ${
-                pathname === "/subscriptions"
+                pathname === "/following"
                   ? "text-[#90EE90] bg-[#333] shadow-md"
                   : "text-gray-300 hover:text-[#90EE90] hover:bg-[#333]"
               }`}

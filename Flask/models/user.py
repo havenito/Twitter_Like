@@ -12,6 +12,8 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     private = db.Column(db.Boolean, default=False)
     pseudo = db.Column(db.String(50), nullable=True)
+    biography = db.Column(db.String(255), nullable=True)
+    banner = db.Column(db.String(255), nullable=True)
     
     def __repr__(self):
         return f'<User {self.first_name} {self.last_name}>'
