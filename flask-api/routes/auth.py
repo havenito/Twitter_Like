@@ -76,8 +76,11 @@ def upload_profile_image():
             return jsonify({'error': 'Failed to upload file'}), 500
 
 # Conserver les autres fonctions existantes
-@auth_bp.route('/api/login', methods=['POST'])
+@auth_bp.route('/api/login', methods=['POST', 'OPTIONS'])
 def login():
+    if request.method == 'OPTIONS':
+        return '', 200
+    
     data = request.get_json()
     email = data.get('email')
     password = data.get('password')
@@ -121,21 +124,28 @@ def login():
 
 @auth_bp.route('/api/users', methods=['GET'])
 def get_users():
-    users = User.query.all()
-    result = []
-    
-    for user in users:
-        result.append({
-            'id': user.id,
-            'email': user.email,
-            'first_name': user.first_name,
-            'last_name': user.last_name, 
-            'roles': user.roles,
-            'profile_picture': user.profile_picture,
-            'created_at': user.created_at.isoformat() if hasattr(user, 'created_at') and user.created_at else None
-        })
-    
-    return jsonify(result)
+    try:
+        users = User.query.all()
+        users_list = []
+        
+        for user in users:
+            users_list.append({
+                'id': user.id,
+                'email': user.email,
+                'first_name': getattr(user, 'first_name', ''),
+                'last_name': getattr(user, 'last_name', ''),
+                'username': getattr(user, 'username', '')
+            })
+        
+        return jsonify({
+            'success': True,
+            'users': users_list
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e)
+        }), 500
 
 @auth_bp.route('/api/users/<int:user_id>', methods=['PUT', 'OPTIONS'])
 def update_user(user_id):

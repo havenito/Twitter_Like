@@ -9,3 +9,4 @@ python-dotenv==1.0.0
 Werkzeug==2.3.7
 Cloudinary==1.36.0
 dotenv==0.9.9
+flask-socketio==5.3.2
