@@ -14,6 +14,7 @@ from services.file_upload import init_cloudinary
 from routes.categories import categories_bp
 from routes.follows import follows_api
 from services.file_upload import init_cloudinary
+from routes.subscriptions import subscriptions_bp
 
 mail = Mail()
 
@@ -34,9 +35,11 @@ def create_app(config_class=Config):
     app.register_blueprint(replies_api)
     app.register_blueprint(comments_api)
     app.register_blueprint(follows_api)
+    app.register_blueprint(subscriptions_bp)
     
     with app.app_context():
         from models.post_media import PostMedia
+        from models.subscription import Subscription
         db.create_all()
     
     return app

@@ -13,6 +13,15 @@ from services.file_upload import upload_file
 bcrypt = Bcrypt()
 auth_bp = Blueprint('auth', __name__)
 
+# CORRECTION : Constantes pour les valeurs ENUM
+SUBSCRIPTION_TYPES = ['free', 'plus', 'premium']
+
+def validate_subscription_type(subscription_type):
+    """Valide que le type d'abonnement est autorisé par l'ENUM"""
+    if subscription_type not in SUBSCRIPTION_TYPES:
+        raise ValueError(f"Type d'abonnement invalide: {subscription_type}. Valeurs autorisées: {SUBSCRIPTION_TYPES}")
+    return subscription_type
+
 # --- Password verification ---
 def validate_password(password):
     if len(password) < 8:
@@ -94,6 +103,11 @@ def create_user():
         return jsonify({'error': 'Pseudo déjà utilisé'}), 409
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    
+    # CORRECTION : Validation ENUM pour l'abonnement par défaut
+    default_subscription = 'free'
+    validate_subscription_type(default_subscription)
+    
     new_user = User(
         email=email,
         password=hashed_password,
@@ -104,7 +118,8 @@ def create_user():
         pseudo=pseudo, 
         private=private,
         biography=biography_data,
-        banner=banner_image_to_save
+        banner=banner_image_to_save,
+        subscription=default_subscription  # Validé par ENUM
     )
     
     db.session.add(new_user)
@@ -114,7 +129,8 @@ def create_user():
         'message': 'Utilisateur créé avec succès', 
         'user_id': new_user.id,
         'profile_picture': new_user.profile_picture,
-        'banner': new_user.banner
+        'banner': new_user.banner,
+        'subscription': new_user.subscription
     }), 201
 
 @auth_bp.route('/api/upload', methods=['POST'])
@@ -165,7 +181,8 @@ def login():
             'profile_picture': user.profile_picture,
             'private': user.private,
             'biography': user.biography,
-            'banner': user.banner
+            'banner': user.banner,
+            'subscription': user.subscription_level  # Ajout de l'abonnement dans la réponse
         }
         return jsonify({'message': 'Connexion réussie', 'user': user_data}), 200
     else:
@@ -188,7 +205,8 @@ def get_users():
             'private': user_obj.private,
             'created_at': user_obj.created_at.isoformat() if hasattr(user_obj, 'created_at') and user_obj.created_at else None,
             'updated_at': user_obj.updated_at.isoformat() if hasattr(user_obj, 'updated_at') and user_obj.updated_at else None,
-            'banner': user_obj.banner 
+            'banner': user_obj.banner,
+            'subscription': user_obj.subscription_level  # Ajout de l'abonnement
         })
     
     return jsonify(result)
@@ -239,17 +257,18 @@ def update_user(user_id):
              return jsonify({'error': 'Invalid or missing JSON data'}), 400
         
         # For JSON, if 'profile_picture' is explicitly set to null or empty, consider it a deletion.
-        # Or, you could add 'delete_profile_picture': true to the JSON payload as well.
-        # Current logic assumes if 'profile_picture' key exists, it's an update to that URL.
-        # To allow deletion via JSON, you might send `profile_picture: null`.
-        if 'profile_picture' in data_source: # This could be a URL or null
+        if 'profile_picture' in data_source:
             profile_picture_url_to_set = data_source.get('profile_picture') 
-        if 'banner' in data_source: # This could be a URL or null
+        if 'banner' in data_source:
             banner_image_url_to_set = data_source.get('banner')
     else:
         return jsonify({'error': 'Unsupported content type or no data provided'}), 415
 
     if data_source:
+        # CORRECTION : Empêcher la modification directe de l'abonnement
+        if 'subscription' in data_source:
+            return jsonify({'error': 'La modification de l\'abonnement n\'est pas autorisée via cette route. Utilisez les routes d\'abonnement dédiées.'}), 403
+        
         if 'email' in data_source and data_source.get('email', '').strip():
             new_email = data_source.get('email').strip().lower()
             if new_email != user_to_update.email:
@@ -271,21 +290,20 @@ def update_user(user_id):
         if 'pseudo' in data_source:
             new_pseudo = data_source.get('pseudo', '').strip()
             if new_pseudo != user_to_update.pseudo:
-                if new_pseudo: # Ensure pseudo is not empty if trying to update
+                if new_pseudo:
                     existing_user_pseudo = User.query.filter(User.pseudo == new_pseudo, User.id != user_id).first()
                     if existing_user_pseudo:
                         return jsonify({'error': 'Pseudo déjà utilisé par un autre utilisateur'}), 409
                 user_to_update.pseudo = new_pseudo
 
-
         if 'biography' in data_source:
-            user_to_update.biography = data_source.get('biography', '').strip() # Allow empty biography
+            user_to_update.biography = data_source.get('biography', '').strip()
 
         # Handle privacy setting from either JSON or form-data
         if request.is_json:
-            if 'private' in data_source: # Expects boolean
+            if 'private' in data_source:
                 user_to_update.private = bool(data_source.get('private'))
-        elif 'isPublic' in data_source: # Expects 'true' or 'false' string from FormData
+        elif 'isPublic' in data_source:
             is_public_str = data_source.get('isPublic')
             user_to_update.private = not (is_public_str.lower() == 'true')
             
@@ -302,11 +320,12 @@ def update_user(user_id):
             'first_name': user_to_update.first_name,
             'last_name': user_to_update.last_name,
             'roles': user_to_update.roles,
-            'profile_picture': user_to_update.profile_picture, # Will be None if deleted
+            'profile_picture': user_to_update.profile_picture,
             'pseudo': user_to_update.pseudo,
             'private': user_to_update.private,
             'biography': user_to_update.biography,
-            'banner': user_to_update.banner # Will be None if deleted
+            'banner': user_to_update.banner,
+            'subscription': user_to_update.subscription_level  # Ajout de l'abonnement dans la réponse
         }
     }), 200
 
@@ -437,14 +456,13 @@ def get_user_by_pseudo(pseudo):
             'title': post.title,
             'content': post.content,
             'published_at': post.published_at.isoformat() if post.published_at else None,
-            'media': post_media,  # Seulement le tableau media
+            'media': post_media,
             'category_id': post.category_id,
             'user_id': post.user_id
         }
         posts.append(post_data)
     
-    # Pour les likes, vous devrez implémenter selon votre modèle de likes
-    likes = []  # À implémenter selon votre modèle de likes
+    likes = []
     
     result = {
         'id': user.id,
@@ -463,7 +481,8 @@ def get_user_by_pseudo(pseudo):
         'following_count': following_count,
         'posts': posts,
         'media': media,
-        'likes': likes
+        'likes': likes,
+        'subscription': user.subscription_level  # Ajout de l'abonnement
     }
     
     return jsonify(result)

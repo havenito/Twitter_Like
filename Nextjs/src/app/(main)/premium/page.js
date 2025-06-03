@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Card from '../../../components/Main/Premium/Card';
 import { motion } from 'framer-motion';
 import Link from 'next/link'; 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; 
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons'; 
+import { useSession } from 'next-auth/react';
 
 const subscriptionPlans = [
   {
@@ -53,15 +54,128 @@ const subscriptionPlans = [
 
 export default function PremiumPage() {
   const [selectedPlanId, setSelectedPlanId] = useState(null);
-  // TODO: Remplacer 'free' par la logique pour récupérer l'abonnement actuel de l'utilisateur depuis la BDD
-  const [currentPlanId] = useState('free');
+  const [currentPlanId, setCurrentPlanId] = useState('free');
+  const [loading, setLoading] = useState(false);
+  const { data: session, update } = useSession(); // Ajout de 'update'
+
+  useEffect(() => {
+    // Récupérer l'abonnement actuel de l'utilisateur depuis la session
+    if (session?.user?.subscription) {
+      setCurrentPlanId(session.user.subscription);
+      console.log('Abonnement actuel de l\'utilisateur:', session.user.subscription);
+    } else {
+      // Si pas d'abonnement dans la session, récupérer depuis l'API
+      const fetchUserSubscription = async () => {
+        if (session?.user?.id) {
+          try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/user/${session.user.id}/subscription`);
+            const data = await response.json();
+            setCurrentPlanId(data.plan || 'free');
+          } catch (error) {
+            console.error('Erreur lors de la récupération de l\'abonnement:', error);
+            setCurrentPlanId('free');
+          }
+        }
+      };
+
+      fetchUserSubscription();
+    }
+  }, [session]);
+
+  // Gérer les paramètres de retour de Stripe
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    const canceled = urlParams.get('canceled');
+
+    if (success) {
+      // Afficher l'alerte une seule fois
+      alert('Paiement réussi ! Votre abonnement a été activé.');
+      
+      // Nettoyer l'URL pour éviter de redéclencher l'alerte
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+      
+      // SOLUTION 1 : Forcer la mise à jour de la session
+      const updateSession = async () => {
+        try {
+          // Récupérer les nouvelles données utilisateur
+          const response = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/user/${session.user.id}/subscription`);
+          const data = await response.json();
+          
+          // Mettre à jour la session avec les nouvelles données
+          await update({
+            subscription: data.plan || 'free'
+          });
+          
+          // Mettre à jour l'état local
+          setCurrentPlanId(data.plan || 'free');
+          console.log('Session mise à jour avec le nouvel abonnement:', data.plan);
+        } catch (error) {
+          console.error('Erreur lors de la mise à jour de la session:', error);
+        }
+      };
+
+      if (session?.user?.id) {
+        updateSession();
+      }
+    } else if (canceled) {
+      alert('Paiement annulé.');
+      
+      // Nettoyer l'URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, [session?.user?.id, update]); // Ajout des dépendances
 
   const handleCardClick = (planId) => {
     setSelectedPlanId(planId === selectedPlanId ? null : planId);
   };
 
+  const handleSubscribe = async (planId) => {
+    if (!session?.user?.id) {
+      alert('Vous devez être connecté pour vous abonner');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/create-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          planId: planId,
+          userId: session.user.id
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Rediriger vers Stripe Checkout
+        window.location.href = data.url;
+      } else {
+        alert(data.error || 'Erreur lors de la création de la session de paiement');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+      alert('Erreur lors de la création de la session de paiement');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#1f1f1f] py-12 px-4 sm:px-6 lg:px-8 text-white w-full relative">
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg">
+            <p className="text-black">Redirection vers le paiement...</p>
+          </div>
+        </div>
+      )}
 
       <Link href="/home" passHref>
         <motion.button
@@ -110,6 +224,7 @@ export default function PremiumPage() {
               isSelected={selectedPlanId === plan.id}
               isCurrent={currentPlanId === plan.id}
               onClick={() => handleCardClick(plan.id)}
+              onSubscribe={handleSubscribe}
               className="flex-1"
             />
           </motion.div>

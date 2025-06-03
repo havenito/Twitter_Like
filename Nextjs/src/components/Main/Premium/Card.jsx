@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 
-const Card = ({ plan, isSelected, isCurrent, onClick, className = '' }) => {
+const Card = ({ plan, isSelected, isCurrent, onClick, onSubscribe, className = '' }) => {
   const cardVariants = {
     normal: { scale: 1, zIndex: 1 },
     selected: { scale: 1.05, zIndex: 10 },
@@ -45,16 +45,22 @@ const Card = ({ plan, isSelected, isCurrent, onClick, className = '' }) => {
         <button
           onClick={(e) => {
             e.stopPropagation(); // Empêche le clic sur le bouton de déclencher le onClick de la carte
-            console.log(`Souscription à ${plan.name}`);
-            // TODO: Ajouter la logique de souscription
+            if (plan.id === 'free') {
+              console.log('Plan gratuit - pas d\'abonnement nécessaire');
+            } else if (onSubscribe) {
+              onSubscribe(plan.id);
+            } else {
+              console.log(`Souscription à ${plan.name}`);
+            }
           }}
           className={`w-full py-2 mt-auto rounded-full font-semibold transition-all duration-300 ${
             isSelected
               ? 'bg-[#90EE90] text-black hover:bg-[#7CD37C]'
               : 'bg-[#444] text-gray-300 hover:bg-[#555] hover:text-white'
-          }`}
+          } ${plan.id === 'free' ? 'cursor-not-allowed opacity-50' : ''}`}
+          disabled={plan.id === 'free'}
         >
-          Souscrire à l'abonnement
+          {plan.id === 'free' ? 'Gratuit' : 'Souscrire à l\'abonnement'}
         </button>
       )}
     </motion.div>

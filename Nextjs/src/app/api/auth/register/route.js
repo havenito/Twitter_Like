@@ -78,7 +78,8 @@ export async function POST(req) {
       {
         success: true,
         message: flaskApiData.message || 'Inscription réussie. Veuillez vous connecter.',
-        profile_picture: flaskApiData.profile_picture 
+        profile_picture: flaskApiData.profile_picture,
+        subscription: flaskApiData.subscription || 'free' // Ajout de l'abonnement dans la réponse
       },
       { status: flaskApiResponse.status }
     );

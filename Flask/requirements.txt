@@ -10,3 +10,4 @@ Werkzeug==2.3.7
 Cloudinary==1.36.0
 dotenv==1.1.0
 Flask-Mail==0.10.0
+stripe=12.2.0

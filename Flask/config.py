@@ -27,3 +27,7 @@ class Config:
 
     # Frontend URL
     FRONTEND_URL = os.environ.get('FRONTEND_URL') or 'http://localhost:3000'
+
+    # Stripe configuration
+    STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
+    STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
