@@ -122,6 +122,12 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
     setShowDeleteModal(false);
   };
 
+  // CORRECTION : Vérification plus robuste pour savoir si c'est le profil de l'utilisateur
+  const isUserOwnProfile = isOwnProfile || 
+    (session?.user?.id && profileData?.id && session.user.id === profileData.id) ||
+    (session?.user?.pseudo && profileData?.pseudo && session.user.pseudo === profileData.pseudo) ||
+    (session?.user?.email && profileData?.email && session.user.email === profileData.email);
+
   return (
     <>
       <div className="relative text-white">
@@ -165,7 +171,7 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3, duration: 0.5 }}
             >
-              {isOwnProfile ? (
+              {isUserOwnProfile ? (
                 <div className="flex gap-3 relative">
                   <Link href={`/${profileData.pseudo}/edit-profile`}>
                     <motion.button
@@ -178,7 +184,7 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
                     </motion.button>
                   </Link>
                   
-                  {/* Bouton menu avec options */}
+                  {/* Menu existant */}
                   <div className="relative">
                     <motion.button
                       onClick={handleMenuToggle}
@@ -189,7 +195,6 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
                       <FontAwesomeIcon icon={faEllipsis} />
                     </motion.button>
                     
-                    {/* Menu déroulant */}
                     <AnimatePresence>
                       {showProfileMenu && (
                         <motion.div
