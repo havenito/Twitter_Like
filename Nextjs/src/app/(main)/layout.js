@@ -16,6 +16,30 @@ export default function HomeLayout({ children }) {
     }
   }, [status, router]);
 
+  // AJOUT : Afficher les infos utilisateur dans la console
+  useEffect(() => {
+    if (session?.user) {
+      console.group('🔍 INFORMATIONS UTILISATEUR CONNECTÉ');
+      console.log('📧 Email:', session.user.email);
+      console.log('👤 ID:', session.user.id);
+      console.log('🏷️ Pseudo:', session.user.pseudo);
+      console.log('👨‍💼 Prénom:', session.user.firstName);
+      console.log('👨‍💼 Nom:', session.user.lastName);
+      console.log('🖼️ Photo de profil:', session.user.profilePicture);
+      console.log('🔒 Compte privé:', session.user.isPrivate);
+      console.log('📝 Biographie:', session.user.biography);
+      console.log('🎨 Bannière:', session.user.banner);
+      console.log('💎 Abonnement:', session.user.subscription);
+      console.log('⚡ Rôles:', session.user.roles);
+      console.log('📱 Session complète:', session);
+      console.groupEnd();
+    } else if (status === 'loading') {
+      console.log('⏳ Session en cours de chargement...');
+    } else {
+      console.log('❌ Aucun utilisateur connecté');
+    }
+  }, [session, status]);
+
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-[#1e1e1e] to-[#121212] text-white">

@@ -58,6 +58,20 @@ export default function PremiumPage() {
   const [loading, setLoading] = useState(false);
   const { data: session, update } = useSession(); // Ajout de 'update'
 
+  // AJOUT : Afficher les infos utilisateur dans la console spécifiquement pour la page Premium
+  useEffect(() => {
+    if (session?.user) {
+      console.group('💎 INFORMATIONS UTILISATEUR - PAGE PREMIUM');
+      console.log('📧 Email:', session.user.email);
+      console.log('👤 ID:', session.user.id);
+      console.log('🏷️ Pseudo:', session.user.pseudo);
+      console.log('💰 Abonnement actuel:', session.user.subscription);
+      console.log('💳 Type d\'abonnement détecté:', currentPlanId);
+      console.log('🔍 Session complète:', session);
+      console.groupEnd();
+    }
+  }, [session, currentPlanId]);
+
   useEffect(() => {
     // Récupérer l'abonnement actuel de l'utilisateur depuis la session
     if (session?.user?.subscription) {
