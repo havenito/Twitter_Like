@@ -13,7 +13,6 @@ const LikeButton = ({ postId, initialLikes = 0 }) => {
   const [loading, setLoading] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  // Vérifier le statut de like au chargement
   useEffect(() => {
     const checkLikeStatus = async () => {
       if (!session?.user?.id || !postId) return;
@@ -41,7 +40,6 @@ const LikeButton = ({ postId, initialLikes = 0 }) => {
       return;
     }
 
-    // Déclencher l'animation
     setIsAnimating(true);
     setTimeout(() => setIsAnimating(false), 600);
 
@@ -103,7 +101,6 @@ const LikeButton = ({ postId, initialLikes = 0 }) => {
           className="text-sm"
         />
         
-        {/* Particules d'animation lors du like */}
         <AnimatePresence>
           {isAnimating && isLiked && (
             <>

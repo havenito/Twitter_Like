@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faComment, faImage, faFileText, faTag, faEllipsis, faEdit, faTrash
-} from '@fortawesome/free-solid-svg-icons';
+import { faComment, faFileText, faTag, faEllipsis, faEdit, faTrash} from '@fortawesome/free-solid-svg-icons';
 import DeletePostModal from '../Main/Post/DeletePostModal';
 import EditPostModal from '../Main/Post/EditPostModal';
 import LikeButton from '../Main/Feed/LikeButton';
@@ -50,11 +49,9 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
 
   const handlePostUpdated = (updatedPost) => {
     console.log('Post modifié:', updatedPost);
-    // Appeler la callback si elle existe
     if (onPostUpdate) {
       onPostUpdate(updatedPost);
     }
-    // Recharger la page pour voir les changements
     setTimeout(() => {
       window.location.reload();
     }, 1000);
@@ -80,13 +77,11 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
 
       if (response.ok) {
         console.log('Post supprimé avec succès');
-        // Appeler la callback si elle existe
         if (onPostDelete) {
           onPostDelete(postToDelete.id);
         }
         setShowDeleteModal(false);
         setPostToDelete(null);
-        // Ou recharger la page
         window.location.reload();
       } else {
         const errorData = await response.json();
@@ -124,12 +119,10 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
   };
 
   const renderMedia = (post) => {
-    // Plus de logique de duplication ! Juste le tableau media
     const allMedia = Array.isArray(post.media) ? post.media : [];
 
     if (allMedia.length === 0) return null;
 
-    // Un seul média ?
     if (allMedia.length === 1) {
       const media = allMedia[0];
       const normalizedUrl = media.url.startsWith('http') 
@@ -164,7 +157,6 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
       }
     }
 
-    // Plusieurs médias → grille
     const gridCols = allMedia.length === 2 ? 'grid-cols-2' : 
                      allMedia.length === 3 ? 'grid-cols-3' : 'grid-cols-2';
 
@@ -224,7 +216,6 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
             variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
             className="bg-[#1e1e1e] p-4 sm:p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 border border-[#333] relative"
           >
-            {/* Menu déroulant - affiché seulement si c'est le profil de l'utilisateur */}
             {isOwnProfile && (
               <div className="absolute top-4 right-4">
                 <button
@@ -262,24 +253,19 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
               </div>
             )}
 
-            {/* Titre du post s'il existe */}
             {post.title && (
               <h3 className="text-white font-semibold text-lg mb-2 pr-10">{post.title}</h3>
             )}
             
-            {/* Contenu du post */}
             <p className="text-white whitespace-pre-wrap leading-relaxed mb-3 pr-10">{post.content}</p>
             
-            {/* Médias du post */}
             {renderMedia(post)}
             
-            {/* Footer avec date et interactions */}
             <div className="text-xs text-gray-500 mt-4 flex justify-between items-center pt-3 border-t border-[#333]">
               <div className="flex items-center space-x-3">
                 <span>
                   Publié le {formatDate(post.createdAt || post.publishedAt)}
                 </span>
-                {/* Badge de catégorie à côté de la date */}
                 {post.category?.name && (
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-[#90EE90] bg-opacity-20 text-[#90EE90] border border-[#90EE90] border-opacity-30">
                     <FontAwesomeIcon icon={faTag} className="mr-1 h-3 w-3" />
@@ -299,7 +285,6 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
         ))}
       </motion.div>
 
-      {/* Fermer le menu si on clique ailleurs */}
       {openMenuId && (
         <div 
           className="fixed inset-0 z-5" 
@@ -307,7 +292,6 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
         />
       )}
 
-      {/* Modal de modification */}
       <EditPostModal
         isOpen={showEditModal}
         onClose={handleEditModalClose}
@@ -315,7 +299,6 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
         post={postToEdit}
       />
 
-      {/* Modal de confirmation de suppression */}
       <DeletePostModal
         isOpen={showDeleteModal}
         onClose={handleDeleteModalClose}

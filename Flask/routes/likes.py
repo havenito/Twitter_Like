@@ -16,25 +16,20 @@ def toggle_like(post_id):
         if not user_id:
             return jsonify({'error': 'user_id requis'}), 400
             
-        # Vérifier que le post existe
         post = Post.query.get(post_id)
         if not post:
             return jsonify({'error': 'Post non trouvé'}), 404
             
-        # Vérifier que l'utilisateur existe
         user = User.query.get(user_id)
         if not user:
             return jsonify({'error': 'Utilisateur non trouvé'}), 404
             
-        # Vérifier si le like existe déjà
         existing_like = Like.query.filter_by(user_id=user_id, post_id=post_id).first()
         
         if existing_like:
-            # Supprimer le like (unlike)
             db.session.delete(existing_like)
             db.session.commit()
             
-            # Compter les likes restants
             likes_count = Like.query.filter_by(post_id=post_id).count()
             
             return jsonify({
@@ -43,12 +38,10 @@ def toggle_like(post_id):
                 'likes_count': likes_count
             }), 200
         else:
-            # Ajouter le like
             new_like = Like(user_id=user_id, post_id=post_id)
             db.session.add(new_like)
             db.session.commit()
             
-            # Compter les likes
             likes_count = Like.query.filter_by(post_id=post_id).count()
             
             return jsonify({
@@ -72,7 +65,6 @@ def get_post_likes(post_id):
         likes = Like.query.filter_by(post_id=post_id).all()
         likes_count = len(likes)
         
-        # Retourner la liste des utilisateurs qui ont liké
         users_who_liked = []
         for like in likes:
             user = User.query.get(like.user_id)

@@ -28,12 +28,10 @@ const PostCard = ({ post }) => {
   };
 
   const renderMedia = () => {
-    // Plus de logique complexe ! Seulement post.media
     const allMedia = Array.isArray(post.media) ? post.media : [];
     
     if (allMedia.length === 0) return null;
 
-    // Un seul média ?
     if (allMedia.length === 1) {
       const media = allMedia[0];
       const src = media.url.startsWith('http') ? media.url : `/${media.url}`;
@@ -42,7 +40,6 @@ const PostCard = ({ post }) => {
         : <img src={src} alt="" className="w-full rounded-lg max-h-96 object-cover" />;
     }
 
-    // Plusieurs médias → grille
     const cols = allMedia.length === 2 ? 'grid-cols-2' : allMedia.length === 3 ? 'grid-cols-3' : 'grid-cols-2';
     
     return (
@@ -68,11 +65,9 @@ const PostCard = ({ post }) => {
     );
   };
 
-  // Fonction pour afficher la photo de profil avec gestion d'erreur
   const renderProfilePicture = () => {
     const profilePicture = post.user?.profilePicture;
     
-    // Si pas de photo ou erreur de chargement, afficher l'image par défaut
     if (!profilePicture || imageError) {
       return (
         <Image
@@ -85,7 +80,6 @@ const PostCard = ({ post }) => {
       );
     }
 
-    // Vérifier si l'URL est valide pour Next.js Image
     const isValidImageUrl = profilePicture.startsWith('https://res.cloudinary.com') || profilePicture.startsWith('https://lh3.googleusercontent.com') || profilePicture.startsWith('https://avatars.githubusercontent.com') || profilePicture.startsWith('/');
 
     if (isValidImageUrl) {
@@ -97,11 +91,10 @@ const PostCard = ({ post }) => {
           height={48}
           className="w-12 h-12 rounded-full object-cover border-2 border-[#333]"
           onError={() => setImageError(true)}
-          unoptimized={!profilePicture.startsWith('/')} // Désactiver l'optimisation pour les URLs externes non configurées
+          unoptimized={!profilePicture.startsWith('/')}
         />
       );
     } else {
-      // Utiliser une balise img normale pour les URLs non configurées
       return (
         <img
           src={profilePicture}
@@ -113,23 +106,19 @@ const PostCard = ({ post }) => {
     }
   };
 
-  // Fonction pour déterminer le nom d'affichage
   const getDisplayName = () => {
     if (!post.user) return 'Utilisateur introuvable';
     
     const { firstName, lastName, pseudo } = post.user;
     
-    // Si on a firstName et lastName, les afficher ensemble
     if (firstName && lastName) {
       return `${firstName} ${lastName}`;
     }
     
-    // Si on a seulement firstName, l'afficher
     if (firstName) {
       return firstName;
     }
     
-    // Sinon, afficher le pseudo
     return pseudo || 'Utilisateur introuvable';
   };
 
@@ -139,9 +128,7 @@ const PostCard = ({ post }) => {
       animate={{ opacity: 1, y: 0 }}
       className="bg-[#1e1e1e] p-4 sm:p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 border border-[#333]"
     >
-      {/* Header avec photo de profil et pseudo */}
       <div className="flex items-center mb-4">
-        {/* Photo de profil */}
         <div className="flex-shrink-0 mr-3">
           {post.user?.pseudo ? (
             <Link href={`/${post.user.pseudo}`} className="block">
@@ -152,7 +139,6 @@ const PostCard = ({ post }) => {
           )}
         </div>
         
-        {/* Informations utilisateur */}
         <div className="flex flex-col flex-1 min-w-0">
           <div className="flex items-center space-x-2">
             {post.user?.pseudo ? (
@@ -181,7 +167,6 @@ const PostCard = ({ post }) => {
               {formatDate(post.publishedAt)}
             </span>
             
-            {/* Badge de catégorie */}
             {post.category?.name && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-[#90EE90] bg-opacity-20 text-[#90EE90] border border-[#90EE90] border-opacity-30">
                 <FontAwesomeIcon icon={faTag} className="mr-1 h-3 w-3" />
@@ -192,18 +177,14 @@ const PostCard = ({ post }) => {
         </div>
       </div>
 
-      {/* Titre du post s'il existe */}
       {post.title && (
         <h3 className="text-white font-semibold text-lg mb-2">{post.title}</h3>
       )}
       
-      {/* Contenu du post */}
       <p className="text-white whitespace-pre-wrap leading-relaxed mb-3">{post.content}</p>
       
-      {/* Médias du post */}
       {renderMedia()}
       
-      {/* Footer avec interactions */}
       <div className="text-xs text-gray-500 mt-4 flex justify-between items-center pt-3 border-t border-[#333]">
         <div className="flex items-center space-x-4">
           <button className="hover:text-[#90EE90] transition-colors flex items-center">
