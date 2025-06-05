@@ -10,7 +10,6 @@ class Subscription(db.Model):
     stripe_subscription_id = db.Column(db.String(255), unique=True, nullable=False)
     stripe_price_id = db.Column(db.String(255), nullable=False)
     plan = db.Column(db.String(20), nullable=True)  # CHANGÉ : nullable=True au cas où
-    plan_name = db.Column(db.String(100), nullable=True)
     status = db.Column(db.String(50), nullable=True)
     current_period_start = db.Column(db.DateTime, nullable=True)
     current_period_end = db.Column(db.DateTime, nullable=True)
@@ -28,7 +27,6 @@ class Subscription(db.Model):
             'stripe_subscription_id': self.stripe_subscription_id,
             'stripe_price_id': self.stripe_price_id,
             'plan': self.plan,
-            'plan_name': self.plan_name,
             'status': self.status,
             'current_period_start': self.current_period_start.isoformat() if self.current_period_start else None,
             'current_period_end': self.current_period_end.isoformat() if self.current_period_end else None,

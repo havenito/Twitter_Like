@@ -49,13 +49,13 @@ def create_checkout_session():
         if not user:
             return jsonify({'error': 'Utilisateur non trouvé'}), 404
 
-        # Vérifier si l'utilisateur a déjà un abonnement actif
+        # CORRECTION : Vérifier si l'utilisateur a déjà un abonnement actif (pas annulé)
         existing_subscription = Subscription.query.filter_by(
             user_id=user_id
         ).filter(Subscription.status.in_(['active', 'trialing'])).first()
 
         if existing_subscription:
-            return jsonify({'error': 'Vous avez déjà un abonnement actif'}), 400
+            return jsonify({'error': 'Vous avez déjà un abonnement actif. Veuillez d\'abord le résilier avant de souscrire à un nouveau plan.'}), 400
 
         # Créer la session Stripe
         session = stripe.checkout.Session.create(
@@ -157,14 +157,13 @@ def handle_checkout_completed(session):
                 stripe_subscription_id=subscription_id,
                 stripe_price_id=price_id,
                 plan=plan_key,  # 'plus' ou 'premium' - validé par ENUM
-                plan_name=f"Minouverse {plan_key.capitalize()}",  # 'Minouverse Plus' ou 'Minouverse Premium'
                 status='active',  # Valeur par défaut
                 current_period_start=datetime.utcnow(),  # Valeur par défaut
-                current_period_end=datetime.utcnow(),  # Valeur par défaut (sera mise à jour par les webhooks suivants)
+                current_period_end=None,  # Valeur par défaut (sera mise à jour par les webhooks suivants)
                 cancel_at_period_end=False
             )
 
-            current_app.logger.info(f"DEBUG - Subscription créée avec plan='{new_subscription.plan}', plan_name='{new_subscription.plan_name}'")
+            current_app.logger.info(f"DEBUG - Subscription créée avec plan='{new_subscription.plan}'")
 
             # CORRECTION : Mettre à jour directement la colonne subscription de l'utilisateur avec validation ENUM
             old_subscription = user.subscription
@@ -194,7 +193,6 @@ def handle_checkout_completed(session):
             current_app.logger.info(f"SUCCESS - Abonnement créé pour utilisateur {user_id}")
             current_app.logger.info(f"SUCCESS - User.subscription final: '{user_final.subscription}'")
             current_app.logger.info(f"SUCCESS - Subscription.plan final: '{subscription_final.plan if subscription_final else 'None'}'")
-            current_app.logger.info(f"SUCCESS - Subscription.plan_name final: '{subscription_final.plan_name if subscription_final else 'None'}'")
 
         except Exception as e:
             db.session.rollback()
@@ -233,52 +231,6 @@ def handle_payment_succeeded(invoice):
         current_app.logger.error(f"Erreur lors de la mise à jour du paiement: {e}")
         raise
 
-def handle_subscription_updated(subscription):
-    """Gérer la mise à jour d'un abonnement"""
-    try:
-        subscription_db = Subscription.query.filter_by(
-            stripe_subscription_id=subscription["id"]
-        ).first()
-        
-        if subscription_db:
-            # Mettre à jour l'abonnement de l'utilisateur avec validation ENUM
-            user = User.query.get(subscription_db.user_id)
-            if user and subscription_db.plan:
-                validate_subscription_type(subscription_db.plan)
-                user.update_subscription(subscription_db.plan, commit=False)
-            
-            db.session.commit()
-            current_app.logger.info(f"Abonnement mis à jour: {subscription['id']}")
-
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Erreur lors de la mise à jour de l'abonnement: {e}")
-        raise
-
-def handle_subscription_deleted(subscription):
-    """Gérer la suppression/annulation d'un abonnement"""
-    try:
-        subscription_db = Subscription.query.filter_by(
-            stripe_subscription_id=subscription["id"]
-        ).first()
-        
-        if subscription_db:
-            subscription_db.status = "canceled"
-            
-            # Remettre l'utilisateur en abonnement free (validé par ENUM)
-            user = User.query.get(subscription_db.user_id)
-            if user:
-                validate_subscription_type('free')  # Validation explicite
-                user.update_subscription('free', commit=False)
-            
-            db.session.commit()
-            current_app.logger.info(f"Abonnement annulé: {subscription['id']}")
-
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Erreur lors de l'annulation de l'abonnement: {e}")
-        raise
-
 @subscriptions_bp.route('/api/user/<int:user_id>/subscription', methods=['GET'])
 def get_user_subscription(user_id):
     """Récupérer l'abonnement actuel d'un utilisateur"""
@@ -300,7 +252,7 @@ def get_user_subscription(user_id):
 
 @subscriptions_bp.route('/api/user/<int:user_id>/cancel-subscription', methods=['POST'])
 def cancel_subscription(user_id):
-    """Annuler l'abonnement d'un utilisateur"""
+    """Annuler l'abonnement d'un utilisateur immédiatement"""
     try:
         subscription = Subscription.query.filter_by(
             user_id=user_id
@@ -309,48 +261,45 @@ def cancel_subscription(user_id):
         if not subscription:
             return jsonify({'error': 'Aucun abonnement actif trouvé'}), 404
 
-        # Annuler dans Stripe
-        stripe.Subscription.modify(
-            subscription.stripe_subscription_id,
-            cancel_at_period_end=True
-        )
+        current_app.logger.info(f"DEBUG - Annulation de l'abonnement {subscription.stripe_subscription_id} pour l'utilisateur {user_id}")
 
-        # Mettre à jour en base
+        # NOUVELLE LOGIQUE : Annuler immédiatement dans Stripe
+        try:
+            # Annuler immédiatement l'abonnement Stripe
+            canceled_subscription = stripe.Subscription.cancel(subscription.stripe_subscription_id)
+            current_app.logger.info(f"DEBUG - Abonnement Stripe annulé: {canceled_subscription.status}")
+        except Exception as stripe_error:
+            current_app.logger.error(f"ERREUR Stripe lors de l'annulation: {stripe_error}")
+            return jsonify({'error': 'Erreur lors de l\'annulation sur Stripe'}), 500
+
+        # Mettre à jour en base de données avec la date actuelle
+        current_time = datetime.utcnow()
+        subscription.status = "canceled"
         subscription.cancel_at_period_end = True
+        subscription.current_period_end = current_time  # Fin immédiate avec la date actuelle
+        
+        # Remettre l'utilisateur en abonnement free immédiatement
+        user = User.query.get(user_id)
+        if user:
+            old_subscription = user.subscription
+            validate_subscription_type('free')  # Validation explicite
+            user.subscription = 'free'
+            current_app.logger.info(f"DEBUG - Utilisateur {user_id} passé de '{old_subscription}' à 'free'")
+        
         db.session.commit()
-
-        return jsonify({'message': 'Abonnement programmé pour annulation'}), 200
+        
+        current_app.logger.info(f"SUCCESS - Abonnement annulé immédiatement pour l'utilisateur {user_id} à {current_time}")
+        
+        return jsonify({
+            'message': 'Abonnement résilié immédiatement avec succès',
+            'status': 'canceled',
+            'new_plan': 'free',
+            'canceled_at': current_time.isoformat()
+        }), 200
 
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Erreur lors de l'annulation: {e}")
+        import traceback
+        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({'error': 'Erreur lors de l\'annulation'}), 500
-
-@subscriptions_bp.route('/api/user/<int:user_id>/resume-subscription', methods=['POST'])
-def resume_subscription(user_id):
-    """Reprendre un abonnement annulé"""
-    try:
-        subscription = Subscription.query.filter_by(
-            user_id=user_id,
-            cancel_at_period_end=True
-        ).first()
-        
-        if not subscription:
-            return jsonify({'error': 'Aucun abonnement à reprendre'}), 404
-
-        # Reprendre dans Stripe
-        stripe.Subscription.modify(
-            subscription.stripe_subscription_id,
-            cancel_at_period_end=False
-        )
-
-        # Mettre à jour en base
-        subscription.cancel_at_period_end = False
-        db.session.commit()
-
-        return jsonify({'message': 'Abonnement repris avec succès'}), 200
-
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Erreur lors de la reprise: {e}")
-        return jsonify({'error': 'Erreur lors de la reprise'}), 500
