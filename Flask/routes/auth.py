@@ -13,7 +13,6 @@ from services.file_upload import upload_file
 bcrypt = Bcrypt()
 auth_bp = Blueprint('auth', __name__)
 
-# CORRECTION : Constantes pour les valeurs ENUM
 SUBSCRIPTION_TYPES = ['free', 'plus', 'premium']
 
 def validate_subscription_type(subscription_type):
@@ -89,7 +88,6 @@ def create_user():
         private = data_source.get('private', False) 
         roles = data_source.get('roles', 'user').strip()
 
-    # Vérifier que les champs obligatoires sont présents
     if not all([email, password, first_name, pseudo]):
         return jsonify({'error': 'Les champs email, mot de passe, prénom et pseudo sont obligatoires'}), 400
     
@@ -104,7 +102,6 @@ def create_user():
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     
-    # CORRECTION : Validation ENUM pour l'abonnement par défaut
     default_subscription = 'free'
     validate_subscription_type(default_subscription)
     
@@ -119,7 +116,7 @@ def create_user():
         private=private,
         biography=biography_data,
         banner=banner_image_to_save,
-        subscription=default_subscription  # Validé par ENUM
+        subscription=default_subscription
     )
     
     db.session.add(new_user)
@@ -182,7 +179,7 @@ def login():
             'private': user.private,
             'biography': user.biography,
             'banner': user.banner,
-            'subscription': user.subscription_level  # Ajout de l'abonnement dans la réponse
+            'subscription': user.subscription_level 
         }
         return jsonify({'message': 'Connexion réussie', 'user': user_data}), 200
     else:
@@ -206,7 +203,7 @@ def get_users():
             'created_at': user_obj.created_at.isoformat() if hasattr(user_obj, 'created_at') and user_obj.created_at else None,
             'updated_at': user_obj.updated_at.isoformat() if hasattr(user_obj, 'updated_at') and user_obj.updated_at else None,
             'banner': user_obj.banner,
-            'subscription': user_obj.subscription_level  # Ajout de l'abonnement
+            'subscription': user_obj.subscription_level
         })
     
     return jsonify(result)
@@ -223,7 +220,6 @@ def update_user(user_id):
     if not user_to_update:
         return jsonify({'error': 'Utilisateur non trouvé'}), 404
     
-    # Initialize with current values
     profile_picture_url_to_set = user_to_update.profile_picture
     banner_image_url_to_set = user_to_update.banner
     data_source = None
@@ -231,7 +227,6 @@ def update_user(user_id):
     if request.content_type and 'multipart/form-data' in request.content_type:
         data_source = request.form
 
-        # Handle profile picture deletion or update
         if data_source.get('delete_profile_picture') == 'true':
             profile_picture_url_to_set = None
         elif 'profile_picture' in request.files:
@@ -241,7 +236,6 @@ def update_user(user_id):
                 if uploaded_url:
                     profile_picture_url_to_set = uploaded_url
         
-        # Handle banner image deletion or update
         if data_source.get('delete_banner_image') == 'true':
             banner_image_url_to_set = None
         elif 'banner_image' in request.files:
@@ -256,7 +250,6 @@ def update_user(user_id):
         if not data_source:
              return jsonify({'error': 'Invalid or missing JSON data'}), 400
         
-        # For JSON, if 'profile_picture' is explicitly set to null or empty, consider it a deletion.
         if 'profile_picture' in data_source:
             profile_picture_url_to_set = data_source.get('profile_picture') 
         if 'banner' in data_source:
@@ -265,7 +258,6 @@ def update_user(user_id):
         return jsonify({'error': 'Unsupported content type or no data provided'}), 415
 
     if data_source:
-        # CORRECTION : Empêcher la modification directe de l'abonnement
         if 'subscription' in data_source:
             return jsonify({'error': 'La modification de l\'abonnement n\'est pas autorisée via cette route. Utilisez les routes d\'abonnement dédiées.'}), 403
         
@@ -299,7 +291,6 @@ def update_user(user_id):
         if 'biography' in data_source:
             user_to_update.biography = data_source.get('biography', '').strip()
 
-        # Handle privacy setting from either JSON or form-data
         if request.is_json:
             if 'private' in data_source:
                 user_to_update.private = bool(data_source.get('private'))
@@ -325,20 +316,83 @@ def update_user(user_id):
             'private': user_to_update.private,
             'biography': user_to_update.biography,
             'banner': user_to_update.banner,
-            'subscription': user_to_update.subscription_level  # Ajout de l'abonnement dans la réponse
+            'subscription': user_to_update.subscription_level
         }
     }), 200
 
 @auth_bp.route('/api/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
-    user_to_delete = User.query.get(user_id)
-    if not user_to_delete:
-        return jsonify({'error': 'Utilisateur non trouvé'}), 404
-    
-    db.session.delete(user_to_delete)
-    db.session.commit()
-    
-    return jsonify({'message': 'Utilisateur supprimé avec succès'}), 200
+    try:
+        user_to_delete = User.query.get(user_id)
+        if not user_to_delete:
+            return jsonify({'error': 'Utilisateur non trouvé'}), 404
+        
+        from models.subscription import Subscription
+        subscriptions = Subscription.query.filter_by(user_id=user_id).all()
+        for subscription in subscriptions:
+            if subscription.stripe_subscription_id:
+                try:
+                    import stripe
+                    import os
+                    stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+                    stripe.Subscription.cancel(subscription.stripe_subscription_id)
+                except Exception as stripe_error:
+                    print(f"Erreur lors de l'annulation de l'abonnement Stripe: {stripe_error}")
+            
+            db.session.delete(subscription)
+        
+        from models.like import Like
+        likes = Like.query.filter_by(user_id=user_id).all()
+        for like in likes:
+            db.session.delete(like)
+        
+        from models.follow import Follow
+        follows_as_follower = Follow.query.filter_by(follower_id=user_id).all()
+        follows_as_followed = Follow.query.filter_by(followed_id=user_id).all()
+        
+        for follow in follows_as_follower + follows_as_followed:
+            db.session.delete(follow)
+        
+        from models.comment import Comment
+        comments = Comment.query.filter_by(user_id=user_id).all()
+        for comment in comments:
+            db.session.delete(comment)
+        
+        from models.reply import Reply
+        replies = Reply.query.filter_by(user_id=user_id).all()
+        for reply in replies:
+            db.session.delete(reply)
+        
+        from models.post import Post
+        from models.post_media import PostMedia
+        posts = Post.query.filter_by(user_id=user_id).all()
+        for post in posts:
+            post_media = PostMedia.query.filter_by(post_id=post.id).all()
+            for media in post_media:
+                db.session.delete(media)
+            
+            post_likes = Like.query.filter_by(post_id=post.id).all()
+            for like in post_likes:
+                db.session.delete(like)
+            
+            post_comments = Comment.query.filter_by(post_id=post.id).all()
+            for comment in post_comments:
+                comment_replies = Reply.query.filter_by(comment_id=comment.id).all()
+                for reply in comment_replies:
+                    db.session.delete(reply)
+                db.session.delete(comment)
+            
+            db.session.delete(post)
+        
+        db.session.delete(user_to_delete)
+        db.session.commit()
+        
+        return jsonify({'message': 'Utilisateur et toutes ses données supprimés avec succès'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erreur lors de la suppression de l'utilisateur: {e}")
+        return jsonify({'error': f'Erreur lors de la suppression: {str(e)}'}), 500
 
 @auth_bp.route('/api/request-password-reset', methods=['POST'])
 def request_password_reset():
@@ -482,7 +536,7 @@ def get_user_by_pseudo(pseudo):
         'posts': posts,
         'media': media,
         'likes': likes,
-        'subscription': user.subscription_level  # Ajout de l'abonnement
+        'subscription': user.subscription_level
     }
     
     return jsonify(result)
