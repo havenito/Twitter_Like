@@ -6,10 +6,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComment, faHeart, faImage } from '@fortawesome/free-regular-svg-icons';
-import { faVideo, faTag } from '@fortawesome/free-solid-svg-icons';
+import { faVideo, faTag, faFlag } from '@fortawesome/free-solid-svg-icons';
+import ReportModal from '../../Signalement/Signalements'; 
 
 const PostCard = ({ post }) => {
   const [imageError, setImageError] = useState(false);
+  const [showReport, setShowReport] = useState(false);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Date inconnue';
@@ -223,6 +225,15 @@ const PostCard = ({ post }) => {
               <span>{post.media ? post.media.length : 1}</span>
             </span>
           ) : null}
+          {/* Bouton signaler */}
+          <button
+            className="hover:text-orange-400 transition-colors flex items-center"
+            onClick={() => setShowReport(true)}
+            title="Signaler ce post"
+          >
+            <FontAwesomeIcon icon={faFlag} className="mr-1" />
+            <span>Signaler</span>
+          </button>
         </div>
         
         {/* Description de la catégorie au survol */}
@@ -240,6 +251,13 @@ const PostCard = ({ post }) => {
           </div>
         )}
       </div>
+      {/* Modal de signalement */}
+      <ReportModal
+        isOpen={showReport}
+        onClose={() => setShowReport(false)}
+        userId={post.user?.id}
+        postId={post.id}
+      />
     </motion.div>
   );
 };

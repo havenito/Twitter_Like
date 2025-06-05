@@ -198,6 +198,7 @@ def get_post(post_id):
             'url': item.media_url,
             'type': item.media_type
         })
+    user = User.query.get(post.user_id)
         
     return jsonify({
         'id': post.id,
@@ -206,7 +207,8 @@ def get_post(post_id):
         'published_at': post.published_at,
         'media': media,
         'user_id': post.user_id,
-        'category_id': post.category_id
+        'category_id': post.category_id,
+        'user_pseudo': user.pseudo if user else 'Utilisateur supprimé'
     })
 
 @posts_bp.route('/api/posts/<int:post_id>', methods=['DELETE'])
