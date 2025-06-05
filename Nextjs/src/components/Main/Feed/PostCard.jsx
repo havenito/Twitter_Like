@@ -5,8 +5,9 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faComment, faHeart, faImage } from '@fortawesome/free-regular-svg-icons';
-import { faVideo, faTag } from '@fortawesome/free-solid-svg-icons';
+import { faComment } from '@fortawesome/free-regular-svg-icons';
+import { faTag } from '@fortawesome/free-solid-svg-icons';
+import LikeButton from './LikeButton';
 
 const PostCard = ({ post }) => {
   const [imageError, setImageError] = useState(false);
@@ -42,8 +43,7 @@ const PostCard = ({ post }) => {
     }
 
     // Plusieurs médias → grille
-    const cols = allMedia.length === 2 ? 'grid-cols-2' : 
-                 allMedia.length === 3 ? 'grid-cols-3' : 'grid-cols-2';
+    const cols = allMedia.length === 2 ? 'grid-cols-2' : allMedia.length === 3 ? 'grid-cols-3' : 'grid-cols-2';
     
     return (
       <div className={`mt-3 grid ${cols} gap-2`}>
@@ -86,10 +86,7 @@ const PostCard = ({ post }) => {
     }
 
     // Vérifier si l'URL est valide pour Next.js Image
-    const isValidImageUrl = profilePicture.startsWith('https://res.cloudinary.com') || 
-                           profilePicture.startsWith('https://lh3.googleusercontent.com') ||
-                           profilePicture.startsWith('https://avatars.githubusercontent.com') ||
-                           profilePicture.startsWith('/');
+    const isValidImageUrl = profilePicture.startsWith('https://res.cloudinary.com') || profilePicture.startsWith('https://lh3.googleusercontent.com') || profilePicture.startsWith('https://avatars.githubusercontent.com') || profilePicture.startsWith('/');
 
     if (isValidImageUrl) {
       return (
@@ -213,32 +210,9 @@ const PostCard = ({ post }) => {
             <FontAwesomeIcon icon={faComment} className="mr-1" /> 
             <span>{post.comments || 0}</span>
           </button>
-          <button className="hover:text-red-500 transition-colors flex items-center">
-            <FontAwesomeIcon icon={faHeart} className="mr-1" /> 
-            <span>{post.likes || 0}</span>
-          </button>
-          {(post.media && post.media.length > 0) || post.mediaUrl ? (
-            <span className="text-gray-600 flex items-center">
-              <FontAwesomeIcon icon={faImage} className="mr-1" />
-              <span>{post.media ? post.media.length : 1}</span>
-            </span>
-          ) : null}
+          <LikeButton postId={post.id} initialLikes={post.likes || 0} />
         </div>
-        
-        {/* Description de la catégorie au survol */}
-        {post.category?.description && (
-          <div className="hidden sm:block">
-            <span 
-              className="text-gray-600 text-xs italic"
-              title={post.category.description}
-            >
-              {post.category.description.length > 30 
-                ? `${post.category.description.substring(0, 30)}...`
-                : post.category.description
-              }
-            </span>
-          </div>
-        )}
+        <span>{formatDate(post.publishedAt)}</span>
       </div>
     </motion.div>
   );

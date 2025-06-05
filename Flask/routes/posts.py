@@ -4,6 +4,7 @@ from models.post import Post
 from models.user import User
 from models.category import Category
 from services.file_upload import upload_file, determine_media_type
+from models.like import Like
 
 posts_bp = Blueprint('posts', __name__)
 
@@ -246,6 +247,9 @@ def get_all_posts():
                 'type': m.media_type
             } for m in media_list]
             
+            # Compter les likes
+            likes_count = Like.query.filter_by(post_id=post.id).count()
+            
             result.append({
                 'id': post.id,
                 'title': post.title,
@@ -254,6 +258,7 @@ def get_all_posts():
                 'media': media,
                 'userId': post.user_id,
                 'categoryId': post.category_id,
+                'likes': likes_count,  # Ajout du compteur de likes
                 # Ajout des informations utilisateur
                 'user': {
                     'id': user.id if user else None,
@@ -315,6 +320,9 @@ def get_user_posts(user_id):
                     'type': item.media_type,
                     'created_at': item.created_at.isoformat() if item.created_at else None
                 })
+            
+            # Compter les likes
+            likes_count = Like.query.filter_by(post_id=post.id).count()
                 
             result.append({
                 'id': post.id,
@@ -327,6 +335,7 @@ def get_user_posts(user_id):
                 'userId': post.user_id,
                 'category_id': post.category_id,
                 'categoryId': post.category_id,
+                'likes': likes_count,  # Ajout du compteur de likes
                 # Ajout des informations utilisateur
                 'user': {
                     'id': user.id if user else None,
@@ -378,6 +387,9 @@ def get_foryou_posts():
                 'type': m.media_type
             } for m in media_list]
             
+            # Compter les likes
+            likes_count = Like.query.filter_by(post_id=post.id).count()
+            
             result.append({
                 'id': post.id,
                 'title': post.title,
@@ -386,6 +398,7 @@ def get_foryou_posts():
                 'media': media,
                 'userId': post.user_id,
                 'categoryId': post.category_id,
+                'likes': likes_count,  # Ajout du compteur de likes
                 # Ajout des informations utilisateur
                 'user': {
                     'id': user.id if user else None,
@@ -451,6 +464,9 @@ def get_following_posts(user_id):
                 'type': m.media_type
             } for m in media_list]
             
+            # Compter les likes
+            likes_count = Like.query.filter_by(post_id=post.id).count()
+            
             result.append({
                 'id': post.id,
                 'title': post.title,
@@ -459,6 +475,7 @@ def get_following_posts(user_id):
                 'media': media,
                 'userId': post.user_id,
                 'categoryId': post.category_id,
+                'likes': likes_count,  # Ajout du compteur de likes
                 # Ajout des informations utilisateur
                 'user': {
                     'id': user.id if user else None,

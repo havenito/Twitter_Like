@@ -1,23 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
-import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faPlusCircle, 
-  faComment, 
-  faHeart as faHeartSolid, 
-  faImage, 
-  faVideo, 
-  faFileText, 
-  faTag,
-  faEllipsis,
-  faEdit,
-  faTrash
+import { faComment, faImage, faFileText, faTag, faEllipsis, faEdit, faTrash
 } from '@fortawesome/free-solid-svg-icons';
-import { faHeart } from '@fortawesome/free-regular-svg-icons';
 import DeletePostModal from '../Main/Post/DeletePostModal';
 import EditPostModal from '../Main/Post/EditPostModal';
+import LikeButton from '../Main/Feed/LikeButton';
 
 const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate, onPostDelete }) => {
   const [openMenuId, setOpenMenuId] = useState(null);
@@ -219,20 +207,6 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
     );
   };
 
-  // Fonction pour afficher la catégorie
-  const renderCategory = (post) => {
-    if (!post.category) return null;
-    
-    return (
-      <div className="flex items-center mb-3">
-        <FontAwesomeIcon icon={faTag} className="text-[#90EE90] mr-2 text-sm" />
-        <span className="text-[#90EE90] text-sm font-medium bg-[#90EE90]/10 px-3 py-1 rounded-full border border-[#90EE90]/20">
-          {post.category.name}
-        </span>
-      </div>
-    );
-  };
-
   return (
     <>
       <motion.div
@@ -318,31 +292,7 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
                   <FontAwesomeIcon icon={faComment} className="mr-1" /> 
                   <span>{post.comments || 0}</span>
                 </button>
-                <button className="hover:text-red-500 transition-colors flex items-center">
-                  <FontAwesomeIcon icon={faHeart} className="mr-1" /> 
-                  <span>{post.likes || 0}</span>
-                </button>
-                {(() => {
-                  // Calculer le nombre total de médias
-                  const mediaCount = (post.mediaUrl ? 1 : 0) + (post.media ? post.media.length : 0);
-                  // Éviter les doublons en vérifiant les URLs si nécessaire
-                  let uniqueMediaCount = mediaCount;
-                  if (post.mediaUrl && post.media) {
-                    const mainUrl = post.mediaUrl.startsWith('http') ? post.mediaUrl : `/${post.mediaUrl}`;
-                    const duplicates = post.media.filter(m => {
-                      const mUrl = m.url.startsWith('http') ? m.url : `/${m.url}`;
-                      return mUrl === mainUrl;
-                    }).length;
-                    uniqueMediaCount = mediaCount - duplicates;
-                  }
-                  
-                  return uniqueMediaCount > 0 ? (
-                    <span className="text-gray-600 flex items-center">
-                      <FontAwesomeIcon icon={faImage} className="mr-1" />
-                      <span>{uniqueMediaCount}</span>
-                    </span>
-                  ) : null;
-                })()}
+                <LikeButton postId={post.id} initialLikes={post.likes || 0} />
               </div>
             </div>
           </motion.div>
