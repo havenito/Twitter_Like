@@ -1,131 +1,96 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Test des Notifications</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f0f2f5;
-            margin: 0;
-            padding: 20px;
-        }
-        .notification-container {
-            max-width: 800px;
-            margin: auto;
-        }
-        .notification {
-            background: white;
-            padding: 12px;
-            margin-bottom: 12px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        button {
-            padding: 8px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-left: 10px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .delete-btn {
-            background-color: #dc3545;
-        }
-        .delete-btn:hover {
-            background-color: #a71d2a;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Notifications de tous les utilisateurs</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    .notification { border: 1px solid #ccc; margin: 10px; padding: 10px; border-radius: 5px; }
+    .buttons { margin-top: 5px; }
+    button { margin-right: 5px; }
+  </style>
 </head>
 <body>
+  <h2>Notifications de tous les utilisateurs</h2>
+  <button onclick="deleteAllExceptFollowRequests()">Tout supprimer (hors demandes de suivi)</button>
+  <div id="notifications"></div>
 
-<h1>Test des Notifications</h1>
-<div class="notification-container" id="notifications-container"></div>
+  <script>
+    const API_BASE = 'http://localhost:5000'; // <-- adapte le port si nécessaire
 
-<script>
-    const API_BASE = 'http://localhost:5000/api';
-
-    async function fetchAllNotifications() {
-        try {
-            const res = await fetch(`${API_BASE}/notifications`);
-            const notifications = await res.json();
-
-            const container = document.getElementById('notifications-container');
-            container.innerHTML = '';
-
-            if (!notifications || notifications.length === 0) {
-                container.innerHTML = '<p>Aucune notification trouvée.</p>';
-                return;
-            }
-
-            notifications.forEach(notification => {
-                const notificationElement = document.createElement('div');
-                notificationElement.className = 'notification';
-
-                let message = "Nouvelle notification";
-                let link = "#";
-
-                // 🔹 Différenciation selon le type
-                switch (notification.type) {
-                    case "comment":
-                        message = `Quelqu'un a commenté votre post : "${notification.comment_content}"`;
-                        link = `/post/${notification.post_id}#comment-${notification.comments_id}`;
-                        break;
-                    case "reply":
-                        message = `Quelqu'un a répondu à votre commentaire : "${notification.replie_content}"`;
-                        link = `/post/${notification.post_id}#comment-${notification.comment_id}`;
-                        break;
-                    case "follow":
-                        message = `${notification.follower_user} vous suit maintenant !`;
-                        link = `/profile/${notification.follow_id}`;
-                        break;
-                    case "post":
-                        message = `Un nouveau post a été publié : "${notification.post_title}"`;
-                        link = `/post/${notification.post_id}`;
-                        break;
-                    default:
-                        message = `Notification inconnue`;
-                }
-
-                notificationElement.innerHTML = `
-                    <p>${message}</p>
-                    <button onclick="window.location.href='${link}'">Voir</button>
-                    <button class="delete-btn" onclick="deleteNotification(${notification.user_id}, ${notification.id})">Supprimer</button>
-                `;
-
-                container.appendChild(notificationElement);
-            });
-        } catch (error) {
-            console.error('Erreur lors de la récupération des notifications:', error);
-            alert("Erreur lors de la récupération des notifications.");
-        }
+    async function fetchNotifications() {
+      try {
+        const res = await fetch(`${API_BASE}/api/notifications`);
+        if (!res.ok) throw new Error('Erreur HTTP ' + res.status);
+        const notifications = await res.json();
+        displayNotifications(notifications);
+      } catch (err) {
+        console.error('Erreur fetch notifications:', err);
+      }
     }
 
-    async function deleteNotification(userId, notificationId) {
-        try {
-            const res = await fetch(`${API_BASE}/user_notifications/${userId}/${notificationId}`, {
-                method: 'DELETE'
-            });
-
-            const result = await res.json();
-            alert(result.message || "Notification supprimée");
-            fetchAllNotifications();  // Recharge la liste après suppression
-        } catch (error) {
-            console.error('Erreur lors de la suppression de la notification:', error);
-            alert("Erreur lors de la suppression.");
-        }
+    function getMessage(n) {
+      if (n.type === 'comment') return `Quelqu'un a commenté votre post : ${n.comment_content}`;
+      if (n.type === 'reply') return `Quelqu'un a répondu à votre commentaire : ${n.replie_content}`;
+      if (n.type === 'follow') return `Nouveau follower : ${n.follower_user}`;
+      if (n.type === 'follow_request') return `Demande de suivi de : ${n.follower_user}`;
+      if (n.type === 'post') return `Nouveau post publié : ${n.post_title}`;
+      return 'Notification inconnue';
     }
 
-    // Charger les notifications dès l'affichage de la page
-    fetchAllNotifications();
-</script>
+    function displayNotifications(list) {
+      const container = document.getElementById('notifications');
+      container.innerHTML = '';
+      list.forEach(n => {
+        const div = document.createElement('div');
+        div.className = 'notification';
+        div.innerHTML = `
+          <p><strong>User ${n.user_id}</strong> - ${getMessage(n)}</p>
+          <div class="buttons">
+            <button onclick="deleteNotification(${n.user_id}, ${n.id})">Supprimer</button>
+            ${n.type === 'follow_request' ? `
+              <button onclick="handleFollow(${n.follow_id}, 'accept')">Accepter</button>
+              <button onclick="handleFollow(${n.follow_id}, 'reject')">Refuser</button>
+            ` : ''}
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
 
+    async function deleteNotification(userId, notifId) {
+      try {
+        await fetch(`${API_BASE}/api/user_notifications/${userId}/${notifId}`, { method: 'DELETE' });
+        fetchNotifications();
+      } catch (err) {
+        console.error('Erreur suppression notification:', err);
+      }
+    }
+
+    async function handleFollow(followId, action) {
+      try {
+        await fetch(`${API_BASE}/api/follows/${followId}/${action}`, { method: 'PUT' });
+        fetchNotifications();
+      } catch (err) {
+        console.error('Erreur gestion follow:', err);
+      }
+    }
+
+    async function deleteAllExceptFollowRequests() {
+      try {
+        const res = await fetch(`${API_BASE}/api/notifications`);
+        const notifs = await res.json();
+        const userIds = [...new Set(notifs.map(n => n.user_id))];
+        for (const id of userIds) {
+          await fetch(`${API_BASE}/api/user_notifications/${id}`, { method: 'DELETE' });
+        }
+        fetchNotifications();
+      } catch (err) {
+        console.error('Erreur suppression globale:', err);
+      }
+    }
+
+    fetchNotifications();
+  </script>
 </body>
 </html>

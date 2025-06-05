@@ -118,22 +118,18 @@ def follow_user():
         follower_id = data.get('follower_id')
         followed_id = data.get('followed_id')
         
-        # Vérifier que les IDs sont fournis
         if not follower_id or not followed_id:
             return jsonify({'error': 'Les IDs follower_id et followed_id sont requis'}), 400
         
-        # Vérifier que l'utilisateur ne tente pas de se suivre lui-même
         if follower_id == followed_id:
             return jsonify({'error': 'Un utilisateur ne peut pas se suivre lui-même'}), 400
             
-        # Vérifier que les deux utilisateurs existent
         follower = User.query.get(follower_id)
         followed = User.query.get(followed_id)
         
         if not follower or not followed:
             return jsonify({'error': 'Un ou plusieurs utilisateurs n\'existent pas'}), 404
             
-        # Vérifier si la relation existe déjà
         existing_follow = Follow.query.filter_by(
             follower_id=follower_id,
             followed_id=followed_id
@@ -141,30 +137,70 @@ def follow_user():
         
         if existing_follow:
             return jsonify({'message': 'Cette relation de suivi existe déjà'}), 200
-            
-        # Créer la nouvelle relation de suivi
-        new_follow = Follow(
-            follower_id=follower_id,
-            followed_id=followed_id,
-        )
-        
-        db.session.add(new_follow)
-        db.session.commit()
+        if followed.private:
+            new_follow = Follow(
+                follower_id=follower_id,
+                followed_id=followed_id,
+                status='pending'
+            )
+            db.session.add(new_follow)
+            db.session.commit()
 
-        notify_user_on_new_follow(new_follow)
+            notify_user_on_follow_request(new_follow)
+            return jsonify({
+                'message': 'Demande de suivi envoyée avec succès',
+                'follow': {
+                    'follower_id': follower_id,
+                    'followed_id': followed_id,
+                    'status': 'pending'
+                }
+            }), 201
+        else:
+            new_follow = Follow(
+                follower_id=follower_id,
+                followed_id=followed_id,
+                status='accepted'
+            )
+            db.session.add(new_follow)
+            db.session.commit()
 
-        return jsonify({
-            'message': 'Relation de suivi créée avec succès',
-            'follow': {
-                'follower_id': follower_id,
-                'followed_id': followed_id,
-            }
-        }), 201
-        
+            notify_user_on_new_follow(new_follow)
+            return jsonify({
+                'message': 'Utilisateur suivi avec succès',
+                'follow': {
+                    'follower_id': follower_id,
+                    'followed_id': followed_id,
+                    'status': 'accepted'
+                }
+            }), 201
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Une erreur est survenue: {str(e)}'}), 500
 
+
+def notify_user_on_follow_request(follow):
+    try:
+        followed_user = User.query.get(follow.followed_id)
+        follower_user = User.query.get(follow.follower_id)
+
+        if not followed_user or not follower_user:
+            print("Erreur : Utilisateur suivi ou follower introuvable.")
+            return
+
+        notification = Notification(
+            user_id=followed_user.id,
+            follow_id=follow.id,
+            type="follow_request"
+        )
+
+        db.session.add(notification)
+        db.session.commit()
+
+        print(f"Notification de demande de suivi envoyée à {followed_user.username}.")
+
+    except Exception as e:
+        print(f"Erreur lors de la notification de demande de suivi: {e}")
 
 def notify_user_on_new_follow(follow):
     try:
@@ -227,4 +263,34 @@ def unfollow_user():
         return jsonify({'error': f'Une erreur est survenue: {str(e)}'}), 500
 
 
+# Route pour accepter ou rejeter une demande de suivi
+@follows_api.route('/api/follows/<int:follow_id>/<action>', methods=['PUT'])
+def handle_follow_request(follow_id, action):
+    try:
+        follow = Follow.query.get(follow_id)
+        if not follow:
+            return jsonify({'error': 'Relation de suivi non trouvée'}), 404
+
+        if action not in ['accept', 'reject']:
+            return jsonify({'error': 'Action non valide'}), 400
+
+        if action == 'accept':
+            follow.status = 'accepted'
+            db.session.commit()
+
+        else:  # action == 'reject'
+            db.session.delete(follow)
+
+            # Supprimer la notification associée de type follow_request
+            notification = Notification.query.filter_by(follow_id=follow_id, type='follow_request').first()
+            if notification:
+                db.session.delete(notification)
+
+            db.session.commit()
+
+        return jsonify({'message': f'Demande de suivi {action}ée avec succès'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Une erreur est survenue: {str(e)}'}), 500
 

@@ -22,7 +22,7 @@ def create_app(config_class=Config):
     db.init_app(app)
     jwt = JWTManager(app)
     CORS(app)
-    
+    # CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
     init_cloudinary(app)
     
     app.register_blueprint(auth_bp)

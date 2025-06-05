@@ -46,13 +46,15 @@ def get_user_notifications(user_id):
                     notification_data['replie_content'] = replie.content
                     notification_data['comment_id'] = replie.comment_id  
 
-            if notification.type == "follow" and notification.follow_id:
+            if notification.type in ["follow", "follow_request"] and notification.follow_id:
                 follow = Follow.query.get(notification.follow_id)
                 if follow:
-                    followed_user = User.query.get(follow.followed_id)
                     follower_user = User.query.get(follow.follower_id)
-                    notification_data['followed_user'] = followed_user.username if followed_user else None
-                    notification_data['follower_user'] = follower_user.username if follower_user else None
+                    if follower_user:
+                        notification_data.update({
+                            'follower_user': follower_user.pseudo,
+                            'follower_id': follower_user.id
+                        })
 
             result.append(notification_data)
 
@@ -65,7 +67,12 @@ def get_user_notifications(user_id):
 @notifications_api.route('/api/user_notifications/<int:user_id>', methods=['DELETE'])
 def delete_all_user_notifications(user_id):
     try:
-        notifications = Notification.query.filter_by(user_id=user_id).all()
+        # Supprimer uniquement les notifications qui ne sont pas de type 'follow_request'
+        notifications = Notification.query.filter(
+            Notification.user_id == user_id,
+            Notification.type != 'follow_request'
+        ).all()
+
         if not notifications:
             return jsonify({'message': 'No notifications to delete'}), 200
 
@@ -73,8 +80,10 @@ def delete_all_user_notifications(user_id):
             db.session.delete(notification)
 
         db.session.commit()
-        return jsonify({'message': 'All notifications deleted successfully'}), 200
+        return jsonify({'message': 'All non-follow-request notifications deleted successfully'}), 200
+
     except Exception as e:
+        db.session.rollback()
         return jsonify({'error': f'Failed to delete notifications: {str(e)}'}), 500
 
 @notifications_api.route('/api/user_notifications/<int:user_id>/<int:notification_id>', methods=['DELETE'])
@@ -131,11 +140,12 @@ def get_all_notifications():
             if notification.type == "follow" and notification.follow_id:
                 follow = Follow.query.get(notification.follow_id)
                 if follow:
-                    followed_user = User.query.get(follow.followed_id)
                     follower_user = User.query.get(follow.follower_id)
-                    notification_data['followed_user'] = followed_user.username if followed_user else None
-                    notification_data['follower_user'] = follower_user.username if follower_user else None
-
+                    if follower_user:
+                        notification_data.update({
+                            'follower_user': follower_user.pseudo,
+                            'follower_id': follower_user.id
+                        })
             result.append(notification_data)
 
         return jsonify(result)

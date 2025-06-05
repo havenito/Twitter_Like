@@ -1,368 +1,146 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test API Posts</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #222;
-            color: #fff;
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        h1,
-        h2 {
-            color: #90EE90;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #90EE90;
-        }
-
-        input,
-        textarea,
-        select {
-            width: 100%;
-            padding: 8px;
-            background-color: #333;
-            border: 1px solid #555;
-            color: white;
-            border-radius: 4px;
-        }
-
-        button {
-            background-color: #90EE90;
-            color: black;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 10px;
-            margin-top: 10px;
-        }
-
-        button:hover {
-            background-color: #7CD37C;
-        }
-
-        .card {
-            background-color: #333;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            border: 1px solid #444;
-        }
-
-        .media {
-            max-width: 100%;
-            max-height: 300px;
-            display: block;
-            margin-top: 10px;
-        }
-
-        .actions {
-            margin-top: 10px;
-        }
-
-        .error {
-            color: #ff6b6b;
-            margin-top: 10px;
-        }
-
-        .success {
-            color: #90EE90;
-            margin-top: 10px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Création et Affichage des Posts</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    form {
+      background: #fff;
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin: auto;
+    }
+    form input, form textarea, form select {
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    form button {
+      padding: 10px 20px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    form button:hover {
+      background: #0056b3;
+    }
+    .post {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin: 10px auto;
+      max-width: 800px;
+    }
+    .post img {
+      max-width: 100%;
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+    .meta {
+      font-size: 12px;
+      color: #666;
+    }
+  </style>
 </head>
-
 <body>
-    <h1>Test des API de Posts</h1>
 
-    <div id="form-container">
-        <h2>Créer un nouveau post</h2>
-        <div class="form-group">
-            <label for="title">Titre</label>
-            <input type="text" id="title" required>
-        </div>
-        <div class="form-group">
-            <label for="content">Contenu</label>
-            <textarea id="content" rows="4" required></textarea>
-        </div>
-        <div class="form-group">
-            <label for="user-id">ID Utilisateur</label>
-            <input type="number" id="user-id" value="1" required>
-        </div>
-        <div class="form-group">
-            <label for="category-id">ID Catégorie</label>
-            <input type="number" id="category-id" value="1" required>
-        </div>
-        <div class="form-group">
-            <label for="post-id">ID Post parent (optionnel)</label>
-            <input type="number" id="post-id">
-        </div>
-        <div class="form-group">
-            <label for="media">Média (optionnel)</label>
-            <input type="file" id="media">
-        </div>
-        <button id="create-post-btn">Créer Post</button>
-        <button id="update-post-btn" style="display: none;">Mettre à jour Post</button>
-        <button id="cancel-edit-btn" style="display: none;">Annuler</button>
-        <div id="form-status"></div>
-    </div>
+<h1>Créer un nouveau post</h1>
 
-    <h2>Posts existants</h2>
-    <button id="refresh-posts-btn">Rafraîchir la liste</button>
-    <div id="posts-container"></div>
+<form id="createPostForm">
+  <input type="text" name="title" placeholder="Titre" required>
+  <textarea name="content" placeholder="Contenu" required></textarea>
+  <input type="datetime-local" name="published_at" required>
+  <input type="number" name="user_id" placeholder="ID utilisateur" required>
+  <input type="number" name="category_id" placeholder="ID catégorie" required>
+  <input type="file" name="files[]" multiple>
+  <button type="submit">Publier</button>
+</form>
 
-    <script>
-        const API_BASE_URL = 'http://localhost:5000/api';
-        let currentEditId = null;
+<h2>Liste des posts</h2>
+<div id="postsContainer"></div>
 
-        // Fonction pour créer un nouveau post
-        async function createPost() {
-            const formData = new FormData();
-            formData.append('title', document.getElementById('title').value);
-            formData.append('content', document.getElementById('content').value);
-            formData.append('user_id', document.getElementById('user-id').value);
-            formData.append('category_id', document.getElementById('category-id').value);
-            formData.append('published_at', new Date().toISOString());
+<script>
+  const API_BASE = 'http://localhost:5000/api';
 
-            const postId = document.getElementById('post-id').value;
-            if (postId) {
-                formData.append('post_id', postId);
-            }
+  document.getElementById('createPostForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
 
-            const mediaInput = document.getElementById('media');
-            if (mediaInput.files.length > 0) {
-                formData.append('file', mediaInput.files[0]);
-            }
+    try {
+      const res = await fetch(`${API_BASE}/create_post`, {
+        method: 'POST',
+        body: formData
+      });
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/create_post`, {
-                    method: 'POST',
-                    body: formData
-                });
+      const result = await res.json();
+      alert(result.message || 'Post créé.');
+      form.reset();
+      fetchPosts();
+    } catch (err) {
+      console.error('Erreur création post:', err);
+      alert('Échec de la création du post.');
+    }
+  });
 
-                const result = await response.json();
-                if (response.ok) {
-                    document.getElementById('form-status').className = 'success';
-                    document.getElementById('form-status').textContent = 'Post créé avec succès!';
-                    resetForm();
-                    fetchPosts();
-                } else {
-                    document.getElementById('form-status').className = 'error';
-                    document.getElementById('form-status').textContent = `Erreur: ${result.error}`;
-                }
-            } catch (error) {
-                document.getElementById('form-status').className = 'error';
-                document.getElementById('form-status').textContent = `Erreur: ${error.message}`;
-            }
-        }
+  async function fetchPosts() {
+    try {
+      const res = await fetch(`${API_BASE}/posts`);
+      const posts = await res.json();
+      displayPosts(posts);
+    } catch (err) {
+      console.error('Erreur récupération posts:', err);
+    }
+  }
 
-        // Fonction pour mettre à jour un post existant
-        async function updatePost() {
-            const formData = new FormData();
-            formData.append('title', document.getElementById('title').value);
-            formData.append('content', document.getElementById('content').value);
-            formData.append('category_id', document.getElementById('category-id').value);
+  function displayPosts(posts) {
+    const container = document.getElementById('postsContainer');
+    container.innerHTML = '';
 
-            const mediaInput = document.getElementById('media');
-            if (mediaInput.files.length > 0) {
-                formData.append('file', mediaInput.files[0]);
-            }
+    if (!posts || posts.length === 0) {
+      container.innerHTML = '<p>Aucun post trouvé.</p>';
+      return;
+    }
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/update_post/${currentEditId}`, {
-                    method: 'POST',
-                    body: formData
-                });
+    posts.forEach(post => {
+      const div = document.createElement('div');
+      div.className = 'post';
 
-                const result = await response.json();
-                if (response.ok) {
-                    document.getElementById('form-status').className = 'success';
-                    document.getElementById('form-status').textContent = 'Post mis à jour avec succès!';
-                    resetForm();
-                    fetchPosts();
-                } else {
-                    document.getElementById('form-status').className = 'error';
-                    document.getElementById('form-status').textContent = `Erreur: ${result.error}`;
-                }
-            } catch (error) {
-                document.getElementById('form-status').className = 'error';
-                document.getElementById('form-status').textContent = `Erreur: ${error.message}`;
-            }
-        }
+      div.innerHTML = `
+        <h3>${post.title}</h3>
+        <p>${post.content}</p>
+        <div class="meta">Posté par ${post.user?.pseudo || 'Inconnu'} dans ${post.category?.name || 'N/A'} le ${new Date(post.publishedAt).toLocaleString()}</div>
+        ${post.media && post.media.length > 0 ? post.media.map(media => {
+          if (media.type.startsWith('image')) {
+            return `<img src="${media.url}" alt="image">`;
+          }
+          return '';
+        }).join('') : ''}
+      `;
 
-        // Fonction pour récupérer tous les posts
-        async function fetchPosts() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/posts`);
+      container.appendChild(div);
+    });
+  }
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
+  fetchPosts();
+  setInterval(fetchPosts, 10000); // Rafraîchir toutes les 10s
+</script>
 
-                const posts = await response.json();
-                const postsContainer = document.getElementById('posts-container');
-
-                if (posts.length > 0) {
-                    postsContainer.innerHTML = '';
-                    posts.forEach(post => {
-                        postsContainer.appendChild(createPostCard(post));
-                    });
-                } else {
-                    postsContainer.innerHTML = '<p>Aucun post trouvé. Essayez d\'en créer un!</p>';
-                }
-            } catch (error) {
-                console.error("Erreur lors de la récupération des posts:", error);
-                document.getElementById('posts-container').innerHTML = `
-                    <p class="error">Erreur: ${error.message}</p>
-                    <p>Vérifiez la console pour plus de détails.</p>
-                `;
-            }
-        }
-
-        // Fonction pour supprimer un post
-        async function deletePost(id) {
-            if (!confirm('Êtes-vous sûr de vouloir supprimer ce post?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/posts/${id}`, {
-                    method: 'DELETE'
-                });
-
-                const result = await response.json();
-                if (response.ok) {
-                    document.getElementById('form-status').className = 'success';
-                    document.getElementById('form-status').textContent = 'Post supprimé avec succès!';
-                    fetchPosts();
-                } else {
-                    document.getElementById('form-status').className = 'error';
-                    document.getElementById('form-status').textContent = `Erreur: ${result.error}`;
-                }
-            } catch (error) {
-                document.getElementById('form-status').className = 'error';
-                document.getElementById('form-status').textContent = `Erreur: ${error.message}`;
-            }
-        }
-
-        // Fonction pour préparer le formulaire pour l'édition
-        async function prepareEditForm(id) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/posts/${id}`);
-                const post = await response.json();
-
-                if (response.ok) {
-                    document.getElementById('title').value = post.title;
-                    document.getElementById('content').value = post.content;
-                    document.getElementById('category-id').value = post.category_id;
-                    document.getElementById('user-id').value = post.user_id;
-
-                    if (post.post_id) {
-                        document.getElementById('post-id').value = post.post_id;
-                    } else {
-                        document.getElementById('post-id').value = '';
-                    }
-
-                    // On ne peut pas préremplir l'input de fichier pour des raisons de sécurité
-                    document.getElementById('create-post-btn').style.display = 'none';
-                    document.getElementById('update-post-btn').style.display = 'inline-block';
-                    document.getElementById('cancel-edit-btn').style.display = 'inline-block';
-
-                    currentEditId = id;
-                    document.getElementById('form-status').textContent = '';
-                } else {
-                    document.getElementById('form-status').className = 'error';
-                    document.getElementById('form-status').textContent = `Erreur: ${post.error}`;
-                }
-            } catch (error) {
-                document.getElementById('form-status').className = 'error';
-                document.getElementById('form-status').textContent = `Erreur: ${error.message}`;
-            }
-        }
-
-        // Créer une carte pour afficher un post
-        function createPostCard(post) {
-            const card = document.createElement('div');
-            card.className = 'card';
-
-            const title = document.createElement('h3');
-            title.textContent = post.title;
-            card.appendChild(title);
-
-            const content = document.createElement('p');
-            content.textContent = post.content;
-            card.appendChild(content);
-
-            const meta = document.createElement('p');
-            meta.innerHTML = `<small>ID: ${post.id} | User: ${post.user_id} | Category: ${post.category_id}</small>`;
-            card.appendChild(meta);
-
-            if (post.media_url) {
-                const media = document.createElement(post.media_type === 'image' ? 'img' : 'video');
-                media.src = post.media_url;
-                media.className = 'media';
-                if (post.media_type === 'video') {
-                    media.controls = true;
-                }
-                card.appendChild(media);
-            }
-
-            const actions = document.createElement('div');
-            actions.className = 'actions';
-
-            const editBtn = document.createElement('button');
-            editBtn.textContent = 'Modifier';
-            editBtn.onclick = () => prepareEditForm(post.id);
-            actions.appendChild(editBtn);
-
-            const deleteBtn = document.createElement('button');
-            deleteBtn.textContent = 'Supprimer';
-            deleteBtn.onclick = () => deletePost(post.id);
-            actions.appendChild(deleteBtn);
-
-            card.appendChild(actions);
-
-            return card;
-        }
-
-        // Réinitialiser le formulaire
-        function resetForm() {
-            document.getElementById('title').value = '';
-            document.getElementById('content').value = '';
-            document.getElementById('post-id').value = '';
-            document.getElementById('media').value = '';
-
-            document.getElementById('create-post-btn').style.display = 'inline-block';
-            document.getElementById('update-post-btn').style.display = 'none';
-            document.getElementById('cancel-edit-btn').style.display = 'none';
-
-            currentEditId = null;
-        }
-
-        // Ajouter des écouteurs d'événements
-        document.getElementById('create-post-btn').addEventListener('click', createPost);
-        document.getElementById('update-post-btn').addEventListener('click', updatePost);
-        document.getElementById('cancel-edit-btn').addEventListener('click', resetForm);
-        document.getElementById('refresh-posts-btn').addEventListener('click', fetchPosts);
-
-        // Charger les posts au chargement de la page
-        fetchPosts();
-    </script>
 </body>
-
 </html>
