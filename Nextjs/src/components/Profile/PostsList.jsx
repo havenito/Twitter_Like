@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faComment, faFileText, faTag, faEllipsis, faEdit, faTrash} from '@fortawesome/free-solid-svg-icons';
-import DeletePostModal from '../Main/Post/DeletePostModal';
-import EditPostModal from '../Main/Post/EditPostModal';
+import { faFileText, faEllipsis, faEdit, faTrash, faComment, faTag, faPlay } from '@fortawesome/free-solid-svg-icons';
 import LikeButton from '../Main/Post/LikeButton';
 import FavoriteButton from '../Main/Post/FavoriteButton';
+import EditPostModal from '../Main/Post/EditPostModal';
+import DeletePostModal from '../Main/Post/DeletePostModal';
+import MediaModal from '../MediaModal';
 
 const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate, onPostDelete }) => {
   const [openMenuId, setOpenMenuId] = useState(null);
@@ -14,6 +15,9 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
   const [postToDelete, setPostToDelete] = useState(null);
   const [postToEdit, setPostToEdit] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showMediaModal, setShowMediaModal] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState([]);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
 
   if (!posts || posts.length === 0) {
     return (
@@ -24,9 +28,7 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
       >
         <FontAwesomeIcon icon={faFileText} className="text-3xl mb-3 text-gray-500" />
         <p className="text-lg">
-          {isOwnProfile 
-            ? "Vous n'avez encore rien publié." 
-            : `@${userPseudo} n'a pas encore partagé de publications.`}
+          {isOwnProfile ? "Vous n'avez encore rien publié." : `@${userPseudo} n'a pas encore partagé de publications.`}
         </p>
       </motion.div>
     );
@@ -77,16 +79,15 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
       });
 
       if (response.ok) {
-        console.log('Post supprimé avec succès');
         if (onPostDelete) {
           onPostDelete(postToDelete.id);
         }
-        setShowDeleteModal(false);
-        setPostToDelete(null);
-        window.location.reload();
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       } else {
         const errorData = await response.json();
-        console.error('Erreur lors de la suppression:', errorData.error);
+        console.error('Erreur lors de la suppression:', errorData);
         alert('Erreur lors de la suppression du post');
       }
     } catch (error) {
@@ -119,6 +120,12 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
     }
   };
 
+  const handleMediaClick = (postMedia, index) => {
+    setSelectedMedia(postMedia);
+    setSelectedMediaIndex(index);
+    setShowMediaModal(true);
+  };
+
   const renderMedia = (post) => {
     const allMedia = Array.isArray(post.media) ? post.media : [];
 
@@ -136,21 +143,31 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
 
       if (isVideo) {
         return (
-          <div className="mt-3 rounded-lg overflow-hidden">
+          <div 
+            className="mt-3 rounded-lg overflow-hidden cursor-pointer group relative"
+            onClick={() => handleMediaClick(allMedia, 0)}
+          >
             <video
-              controls
               src={normalizedUrl}
               className="w-full h-auto object-cover max-h-96"
+              muted
+              preload="metadata"
             />
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 group-hover:bg-opacity-50 transition-colors">
+              <FontAwesomeIcon icon={faPlay} className="text-white text-4xl" />
+            </div>
           </div>
         );
       } else {
         return (
-          <div className="mt-3 rounded-lg overflow-hidden">
+          <div 
+            className="mt-3 rounded-lg overflow-hidden cursor-pointer group"
+            onClick={() => handleMediaClick(allMedia, 0)}
+          >
             <img
               src={normalizedUrl}
               alt="Media du post"
-              className="w-full h-auto object-cover max-h-96"
+              className="w-full h-auto object-cover max-h-96 group-hover:scale-105 transition-transform duration-300"
               onError={e => e.currentTarget.style.display = 'none'}
             />
           </div>
@@ -173,19 +190,29 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
           const isVideo = media.type === 'video';
 
           return (
-            <div key={media.id || index} className="relative rounded-lg overflow-hidden h-32">
+            <div 
+              key={media.id || index} 
+              className="relative rounded-lg overflow-hidden h-32 cursor-pointer group"
+              onClick={() => handleMediaClick(allMedia, index)}
+            >
               {isVideo ? (
-                <video
-                  controls
-                  src={normalizedUrl}
-                  className="w-full h-32 object-cover"
-                />
+                <div className="relative w-full h-full">
+                  <video
+                    src={normalizedUrl}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    muted
+                    preload="metadata"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 group-hover:bg-opacity-50 transition-colors">
+                    <FontAwesomeIcon icon={faPlay} className="text-white text-2xl" />
+                  </div>
+                </div>
               ) : (
                 <img
                   src={normalizedUrl}
                   alt={`Media ${index + 1}`}
-                  className="w-full h-32 object-cover"
-                  onError={e => e.target.style.display = 'none'}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={e => e.currentTarget.style.display = 'none'}
                 />
               )}
               {allMedia.length > 4 && index === 3 && (
@@ -193,6 +220,7 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
                   <span className="text-white font-semibold">+{allMedia.length - 3}</span>
                 </div>
               )}
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-colors" />
             </div>
           );
         })}
@@ -307,6 +335,14 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
         onConfirm={confirmDeletePost}
         isLoading={deleteLoading}
         postTitle={postToDelete?.title}
+      />
+
+      <MediaModal
+        isOpen={showMediaModal}
+        onClose={() => setShowMediaModal(false)}
+        media={selectedMedia}
+        currentIndex={selectedMediaIndex}
+        onNavigate={setSelectedMediaIndex}
       />
     </>
   );

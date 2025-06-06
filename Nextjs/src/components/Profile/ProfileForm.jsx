@@ -46,16 +46,16 @@ const ProfileForm = ({ initialData, onSubmit, loading, error: submissionError, s
         setProfilePicturePreview(reader.result);
       };
       reader.readAsDataURL(file);
-      setDeleteProfilePicture(false); // If a new file is chosen, we are not deleting
+      setDeleteProfilePicture(false);
     }
   };
 
   const handleRemoveProfilePicture = () => {
     setProfilePictureFile(null);
-    setProfilePicturePreview(null); // Or set to a default placeholder if you have one
+    setProfilePicturePreview(null);
     setDeleteProfilePicture(true);
     if (profilePictureInputRef.current) {
-      profilePictureInputRef.current.value = ""; // Clear the file input
+      profilePictureInputRef.current.value = "";
     }
   };
 
@@ -68,16 +68,16 @@ const ProfileForm = ({ initialData, onSubmit, loading, error: submissionError, s
         setBannerPreview(reader.result);
       };
       reader.readAsDataURL(file);
-      setDeleteBanner(false); // If a new file is chosen, we are not deleting
+      setDeleteBanner(false);
     }
   };
 
   const handleRemoveBanner = () => {
     setBannerFile(null);
-    setBannerPreview(null); // Or set to a default placeholder
+    setBannerPreview(null); 
     setDeleteBanner(true);
     if (bannerInputRef.current) {
-      bannerInputRef.current.value = ""; // Clear the file input
+      bannerInputRef.current.value = "";
     }
   };
 
@@ -118,7 +118,6 @@ const ProfileForm = ({ initialData, onSubmit, loading, error: submissionError, s
       animate="show"
       variants={{ show: { transition: { staggerChildren: 0.1 }}}}
     >
-      {/* Profile Picture */}
       <motion.div variants={fieldVariant} className="flex flex-col items-center space-y-3">
         <label className="block text-sm font-medium text-[#90EE90] self-start mb-1">Photo de profil</label>
         <div 
@@ -161,7 +160,6 @@ const ProfileForm = ({ initialData, onSubmit, loading, error: submissionError, s
         </div>
       </motion.div>
 
-      {/* Banner Image */}
       <motion.div variants={fieldVariant} className="space-y-2">
         <label className="block text-sm font-medium text-[#90EE90] mb-1">Bannière du profil</label>
         <div 
@@ -207,7 +205,6 @@ const ProfileForm = ({ initialData, onSubmit, loading, error: submissionError, s
         </div>
       </motion.div>
 
-      {/* First Name and Last Name - Side by side */}
       <motion.div variants={fieldVariant} className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
         <div>
           <label htmlFor="firstName" className="block text-sm font-medium text-[#90EE90]">
@@ -248,7 +245,6 @@ const ProfileForm = ({ initialData, onSubmit, loading, error: submissionError, s
         </div>
       </motion.div>
 
-      {/* Pseudo */}
       <motion.div variants={fieldVariant}>
         <label htmlFor="pseudo" className="block text-sm font-medium text-[#90EE90]">
           Pseudo
@@ -269,7 +265,6 @@ const ProfileForm = ({ initialData, onSubmit, loading, error: submissionError, s
         </div>
       </motion.div>
 
-      {/* Biography */}
       <motion.div variants={fieldVariant}>
         <label htmlFor="biography" className="block text-sm font-medium text-[#90EE90]">
           Biographie <span className="text-gray-400 text-xs">(Max. 255 caractères)</span>
@@ -291,7 +286,6 @@ const ProfileForm = ({ initialData, onSubmit, loading, error: submissionError, s
          <p className="text-xs text-gray-400 mt-1 text-right">{biography.length}/255</p>
       </motion.div>
 
-      {/* Account Privacy */}
       <motion.div variants={fieldVariant}>
         <label className="block text-sm font-medium text-[#90EE90] mb-2">
           Confidentialité du compte

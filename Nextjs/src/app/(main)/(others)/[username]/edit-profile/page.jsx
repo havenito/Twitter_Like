@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSession }       from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import Link                from 'next/link';
-import ProfileForm         from '@/components/Settings/ProfileForm';
+import ProfileForm         from '@/components/Profile/ProfileForm';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner, faLock, faExclamationTriangle, faCheckCircle, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { motion }          from 'framer-motion';
