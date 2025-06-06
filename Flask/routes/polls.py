@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from models import db
 from models.poll import Poll
 import sqlalchemy as sa
+from models.pollvote import PollVote
 
 polls_bp = Blueprint('polls', __name__)
 
@@ -53,10 +54,19 @@ def vote_poll(poll_id):
 
     data = request.get_json()
     option = data.get('option')
+    user_id = data.get('user_id')
     if option is None or not isinstance(option, int) or option < 0 or option >= len(poll.options):
         return jsonify({'error': 'Option invalide'}), 400
+    if not user_id:
+        return jsonify({'error': 'user_id requis'}), 400
+
+    # Vérifie si ce user a déjà voté pour ce poll
+    existing_vote = PollVote.query.filter_by(poll_id=poll_id, user_id=int(user_id)).first()
+    if existing_vote:
+        return jsonify({'error': 'Vous avez déjà voté pour ce sondage.'}), 400
 
     poll.votes[option] += 1
-    sa.orm.attributes.flag_modified(poll, "votes")  # <-- Ajoute cette ligne
+    sa.orm.attributes.flag_modified(poll, "votes")
+    db.session.add(PollVote(poll_id=poll_id, user_id=int(user_id), option=option))
     db.session.commit()
     return jsonify({'poll': poll.to_dict()})

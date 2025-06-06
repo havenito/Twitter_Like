@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 const API_URL = process.env.NEXT_PUBLIC_FLASK_API_URL || "http://localhost:5000";
 const PAGE_SIZE = 3;
@@ -9,6 +10,19 @@ const getUserId = () => {
 };
 
 export default function PollsPage() {
+  const { data: session } = useSession();
+
+  // Synchronise le user_id du localStorage avec la session NextAuth
+  useEffect(() => {
+    if (session?.user?.id) {
+      localStorage.setItem("user_id", session.user.id);
+    }
+    // Si NextAuth stocke l'id dans sub, utilise session.user.sub à la place
+    // if (session?.user?.sub) {
+    //   localStorage.setItem("user_id", session.user.sub);
+    // }
+  }, [session]);
+
   const [polls, setPolls] = useState([]);
   const [selectedPoll, setSelectedPoll] = useState(null);
   const [voted, setVoted] = useState({});
@@ -50,7 +64,7 @@ export default function PollsPage() {
     await fetch(`${API_URL}/api/polls/${pollId}/vote`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ option: optionIdx }),
+      body: JSON.stringify({ option: optionIdx, user_id: getUserId() }),
     });
     await fetchPolls(page);
 
