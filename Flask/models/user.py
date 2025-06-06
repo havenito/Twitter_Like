@@ -1,5 +1,6 @@
 from models import db
 from sqlalchemy.dialects.postgresql import ENUM
+from sqlalchemy import Column, DateTime
 
 class User(db.Model):
     __tablename__ = 'user'
@@ -19,6 +20,7 @@ class User(db.Model):
     subscription = db.Column(ENUM('free', 'plus', 'premium', name='subscription-type'), nullable=False, default='free')
     warn_count = db.Column(db.Integer, default=0)  
     is_banned = db.Column(db.Boolean, default=False)  
+    ban_until = Column(DateTime, nullable=True)
 
     def __repr__(self):
         return f'<User {self.first_name} {self.last_name}>'

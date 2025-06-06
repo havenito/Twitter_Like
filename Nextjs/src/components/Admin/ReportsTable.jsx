@@ -1,6 +1,13 @@
 import ReportRow from "./ReportRow";
 
-export default function ReportsTable({ reports, handleUpdateStatus, handleWarnUser, handleBanUser }) {
+export default function ReportsTable({
+  reports,
+  handleUpdateStatus,
+  handleWarnUser,
+  handleBanUser,
+  handleUnbanUser,
+  filter
+}) {
   return (
     <div className="overflow-x-auto bg-[#23272f] rounded-2xl shadow-2xl border border-[#23272f]/60">
       <table className="w-full min-w-[1000px] text-sm text-left">
@@ -20,6 +27,8 @@ export default function ReportsTable({ reports, handleUpdateStatus, handleWarnUs
                 handleUpdateStatus={handleUpdateStatus}
                 handleWarnUser={handleWarnUser}
                 handleBanUser={handleBanUser}
+                handleUnbanUser={handleUnbanUser}
+                filter={filter}
               />
             ))
           ) : (

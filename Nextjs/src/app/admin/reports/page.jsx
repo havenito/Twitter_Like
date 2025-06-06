@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import ReportsTable from "@/components/Admin/ReportsTable";
 import Pagination from "@/components/Admin/Pagination";
+import BanModal from "@/components/Admin/BanModal";
 
 const ITEMS_PER_PAGE = 7;
 
@@ -12,6 +13,10 @@ export default function AdminReportsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
+
+  // Pour le ban modal
+  const [banModalOpen, setBanModalOpen] = useState(false);
+  const [banUserId, setBanUserId] = useState(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -36,6 +41,7 @@ export default function AdminReportsPage() {
     let filtered = reports;
     if (filter === "En attente") filtered = reports.filter(r => r.statut === false);
     else if (filter === "Traités") filtered = reports.filter(r => r.statut === true);
+    else if (filter === "Bannis") filtered = reports.filter(r => r.reported_user_is_banned);
     setFilteredReports(filtered);
     setPage(1);
   }, [reports, filter]);
@@ -73,19 +79,42 @@ export default function AdminReportsPage() {
     }
   };
 
-  const handleBanUser = async (userId) => {
+  // Ouvre le modal de ban avec l'id utilisateur
+  const openBanModal = (userId) => {
+    setBanUserId(userId);
+    setBanModalOpen(true);
+  };
+
+  // Ban avec durée
+  const handleBanUser = async (userId, duration) => {
+    setBanModalOpen(false);
     if (!userId) {
       alert("ID utilisateur non défini pour ce bannissement.");
       return;
     }
-    if (window.confirm("Êtes-vous sûr de vouloir bannir cet utilisateur ?")) {
-      try {
-        const response = await fetch(`${API_URL}/api/ban/${userId}`, { method: "POST" });
-        if (!response.ok) throw new Error("Erreur lors du bannissement de l'utilisateur");
-        fetchReports();
-      } catch (err) {
-        alert(`Erreur: ${err.message}`);
-      }
+    try {
+      const response = await fetch(`${API_URL}/api/ban/${userId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ duration }), // durée en jours, 0 = à vie
+      });
+      if (!response.ok) throw new Error("Erreur lors du bannissement de l'utilisateur");
+      fetchReports();
+    } catch (err) {
+      alert(`Erreur: ${err.message}`);
+    }
+  };
+
+  // Déban
+  const handleUnbanUser = async (userId) => {
+    if (!userId) return;
+    if (!window.confirm("Débannir cet utilisateur ?")) return;
+    try {
+      const response = await fetch(`${API_URL}/api/unban/${userId}`, { method: "POST" });
+      if (!response.ok) throw new Error("Erreur lors du débannissement");
+      fetchReports();
+    } catch (err) {
+      alert(`Erreur: ${err.message}`);
     }
   };
 
@@ -104,7 +133,7 @@ export default function AdminReportsPage() {
           <h1 className="text-3xl font-extrabold text-green-400 drop-shadow-lg">Gestion des signalements</h1>
         </div>
         <div className="flex space-x-3">
-          {["Tous", "En attente", "Traités"].map(f => (
+          {["Tous", "En attente", "Traités", "Bannis"].map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -121,13 +150,21 @@ export default function AdminReportsPage() {
         reports={paginatedReports}
         handleUpdateStatus={handleUpdateStatus}
         handleWarnUser={handleWarnUser}
-        handleBanUser={handleBanUser}
+        handleBanUser={openBanModal}
+        handleUnbanUser={handleUnbanUser}
+        filter={filter}
       />
 
       <Pagination
         page={page}
         totalPages={totalPages}
         setPage={setPage}
+      />
+
+      <BanModal
+        isOpen={banModalOpen}
+        onClose={() => setBanModalOpen(false)}
+        onConfirm={(duration) => handleBanUser(banUserId, duration)}
       />
 
       <footer className="mt-8 text-sm text-gray-500 text-center">

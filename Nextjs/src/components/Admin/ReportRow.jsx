@@ -1,8 +1,8 @@
-import { ArrowPathIcon, NoSymbolIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, NoSymbolIcon, CheckCircleIcon, ExclamationTriangleIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 import StatusPill from "./StatusPill";
 import TypePill from "./TypePill";
 
-export default function ReportRow({ report, handleUpdateStatus, handleWarnUser, handleBanUser }) {
+export default function ReportRow({ report, handleUpdateStatus, handleWarnUser, handleBanUser, handleUnbanUser, filter }) {
   return (
     <tr className="border-b border-[#333] hover:bg-[#1a1d22]/60 transition-colors">
       <td className="px-6 py-4">{report.id}</td>
@@ -41,16 +41,29 @@ export default function ReportRow({ report, handleUpdateStatus, handleWarnUser, 
             <ArrowPathIcon className="w-4 h-4 mr-1" /> En attente
           </button>
         )}
-        <button
-          onClick={() => handleWarnUser(report.reported_user_id)}
-          disabled={report.reported_user_warns >= 3 || report.reported_user_is_banned}
-          className={`flex items-center px-2.5 py-1.5 text-xs bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-300 hover:to-orange-400 rounded font-semibold text-black shadow transition-colors
-            ${report.reported_user_warns >= 3 || report.reported_user_is_banned ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-          <ExclamationTriangleIcon className="w-4 h-4 mr-1" /> Warn
-        </button>
-        {!report.reported_user_is_banned && (
-          <button onClick={() => handleBanUser(report.reported_user_id)} className="flex items-center px-2.5 py-1.5 text-xs bg-gradient-to-r from-red-500 to-red-700 hover:from-red-400 hover:to-red-600 rounded font-semibold text-white shadow transition-colors">
+        {/* Affiche le bouton Warn seulement si on n'est PAS dans la catégorie "Bannis" */}
+        {filter !== "Bannis" && (
+          <button
+            onClick={() => handleWarnUser(report.reported_user_id)}
+            disabled={report.reported_user_warns >= 3 || report.reported_user_is_banned}
+            className={`flex items-center px-2.5 py-1.5 text-xs bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-300 hover:to-orange-400 rounded font-semibold text-black shadow transition-colors
+              ${report.reported_user_warns >= 3 || report.reported_user_is_banned ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <ExclamationTriangleIcon className="w-4 h-4 mr-1" /> Warn
+          </button>
+        )}
+        {report.reported_user_is_banned ? (
+          <button
+            onClick={() => handleUnbanUser(report.reported_user_id)}
+            className="flex items-center px-2.5 py-1.5 text-xs bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 rounded font-semibold text-white shadow transition-colors"
+          >
+            <ArrowUturnLeftIcon className="w-4 h-4 mr-1" /> Déban
+          </button>
+        ) : (
+          <button
+            onClick={() => handleBanUser(report.reported_user_id)}
+            className="flex items-center px-2.5 py-1.5 text-xs bg-gradient-to-r from-red-500 to-red-700 hover:from-red-400 hover:to-red-600 rounded font-semibold text-white shadow transition-colors"
+          >
             <NoSymbolIcon className="w-4 h-4 mr-1" /> Bannir
           </button>
         )}
