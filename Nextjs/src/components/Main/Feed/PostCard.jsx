@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComment, faHeart, faImage } from '@fortawesome/free-regular-svg-icons';
 import { faVideo, faTag, faFlag } from '@fortawesome/free-solid-svg-icons';
-import ReportModal from '../../Signalement/Signalements'; 
+import ReportModal from '../../Signalement/Signalement';
 
 const PostCard = ({ post }) => {
   const [imageError, setImageError] = useState(false);
