@@ -47,7 +47,7 @@ def get_user_notifications(user_id):
                     notification_data['replie_content'] = replie.content
                     notification_data['comment_id'] = replie.comment_id  
 
-            if notification.type in ["follow", "follow_request"] and notification.follow_id:
+            if notification.type in ["follow", "follow_request","follow_request_accepted"] and notification.follow_id:
                 follow = Follow.query.get(notification.follow_id)
                 if follow:
                     follower_user = User.query.get(follow.follower_id)
@@ -69,12 +69,11 @@ def get_user_notifications(user_id):
 
     except Exception as e:
         print(f"Erreur lors de la récupération des notifications: {e}")  
-        return jsonify({'error': f'Failed to fetch notifications: {str(e)}'}), 500
+        return jsonify({'error': f'Failed to fetch notifications: {str(e)}'}), 500    
 
 @notifications_api.route('/api/user_notifications/<int:user_id>', methods=['DELETE'])
 def delete_all_user_notifications(user_id):
     try:
-        # Supprimer uniquement les notifications qui ne sont pas de type 'follow_request'
         notifications = Notification.query.filter(
             Notification.user_id == user_id,
             Notification.type != 'follow_request'
@@ -102,7 +101,6 @@ def delete_user_notification(user_id, notification_id):
 
         db.session.delete(notification)
         db.session.commit()
-
         return jsonify({'message': 'Notification deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': f'Failed to delete notification: {str(e)}'}), 500
@@ -144,7 +142,7 @@ def get_all_notifications():
                     notification_data['replie_content'] = replie.content
                     notification_data['comment_id'] = replie.comment_id
 
-            if notification.type == "follow" and notification.follow_id:
+            if notification.type in ["follow", "follow_request","follow_request_accepted"] and notification.follow_id:
                 follow = Follow.query.get(notification.follow_id)
                 if follow:
                     follower_user = User.query.get(follow.follower_id)

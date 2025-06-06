@@ -133,6 +133,7 @@
       if (n.type === 'follow_request') return `Demande de suivi de : ${n.follower_user}`;
       if (n.type === 'post') return `Nouveau post publié : ${n.post_title}`;
       if (n.type === 'signalement') return `Nouveau signalement pour le post "${n.post_title}" : ${n.report_type} - ${n.signalement_content}`;
+      if (n.type === 'follow_request_accepted') return `${n.follower_user} à accepter votre de demande de suivie`
       return 'Notification inconnue';
     }
 

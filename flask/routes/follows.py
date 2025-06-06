@@ -178,7 +178,25 @@ def follow_user():
         db.session.rollback()
         return jsonify({'error': f'Une erreur est survenue: {str(e)}'}), 500
 
-
+def notify_user_on__accept_follow_request(follow):
+    try:
+        followed_user = User.query.get(follow.followed_id)
+        follower_user = User.query.get(follow.follower_id)
+        if not followed_user or not follower_user:
+            print("Erreur : Utilisateur suivi ou follower introuvable.")
+            return
+        
+        notification = Notification(
+            user_id=follower_user.id,
+            follow_id=follow.id,
+            type="follow_request_accepted"
+        )
+        db.session.add(notification)
+        db.session.commit()
+        print(f"Notification acceptation d'une invitation envoyée à {follower_user.pseudo}.")
+    except Exception as e:
+        print(f"Erreur lors de la notification de demande de suivi: {e}")
+    
 def notify_user_on_follow_request(follow):
     try:
         followed_user = User.query.get(follow.followed_id)
@@ -197,7 +215,7 @@ def notify_user_on_follow_request(follow):
         db.session.add(notification)
         db.session.commit()
 
-        print(f"Notification de demande de suivi envoyée à {followed_user.username}.")
+        print(f"Notification de demande de suivi envoyée à {followed_user.pseudo}.")
 
     except Exception as e:
         print(f"Erreur lors de la notification de demande de suivi: {e}")
@@ -277,6 +295,7 @@ def handle_follow_request(follow_id, action):
         if action == 'accept':
             follow.status = 'accepted'
             db.session.commit()
+            notify_user_on__accept_follow_request(follow)
 
         else:  # action == 'reject'
             db.session.delete(follow)
