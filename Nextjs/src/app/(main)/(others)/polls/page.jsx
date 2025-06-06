@@ -25,7 +25,6 @@ export default function PollsPage() {
 
   const [polls, setPolls] = useState([]);
   const [selectedPoll, setSelectedPoll] = useState(null);
-  const [voted, setVoted] = useState({});
   const [selectedOption, setSelectedOption] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [question, setQuestion] = useState("");
@@ -51,27 +50,26 @@ export default function PollsPage() {
 
   useEffect(() => {
     fetchPolls(page);
-    const stored = localStorage.getItem("polls_voted");
-    if (stored) setVoted(JSON.parse(stored));
   }, [page]);
 
   const handleVote = async (pollId, optionIdx) => {
-    setVoted(prev => {
-      const updated = { ...prev, [pollId]: optionIdx };
-      localStorage.setItem("polls_voted", JSON.stringify(updated));
-      return updated;
-    });
-    await fetch(`${API_URL}/api/polls/${pollId}/vote`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ option: optionIdx, user_id: getUserId() }),
-    });
-    await fetchPolls(page);
-
-    // Récupère le sondage à jour après le vote
-    const res = await fetch(`${API_URL}/api/polls/${pollId}`);
-    const data = await res.json();
-    setSelectedPoll(data.poll);
+    setError(""); // reset error
+    try {
+      const res = await fetch(`${API_URL}/api/polls/${pollId}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ option: optionIdx, user_id: getUserId() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Erreur lors du vote");
+        return;
+      }
+      // Met à jour le sondage sélectionné
+      setSelectedPoll(data.poll);
+    } catch (err) {
+      setError("Erreur lors du vote");
+    }
   };
 
   const addOption = () => {
@@ -225,72 +223,63 @@ export default function PollsPage() {
             ← Retour à la liste
           </button>
           <div className="font-bold text-lg mb-4 text-center" style={{ color: "#90EE90" }}>{selectedPoll.question}</div>
-          {voted[selectedPoll.id] === undefined ? (
-            <>
-              <div className="flex flex-wrap gap-4 justify-center mb-6 w-full">
-                {selectedPoll.options.map((opt, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedOption(idx)}
-                    className={`px-6 py-2 rounded-full font-semibold transition
-                      ${selectedOption === idx
-                        ? "shadow-lg"
-                        : "border border-[#90EE90] hover:bg-[#90EE90] hover:text-[#181c24]"}
-                    `}
-                    style={{
-                      background: selectedOption === idx ? "#90EE90" : "#181c24",
-                      color: selectedOption === idx ? "#181c24" : "#90EE90",
-                      borderColor: "#90EE90"
-                    }}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
+          {error && <div className="text-red-400 mb-2">{error}</div>}
+          <div className="flex flex-wrap gap-4 justify-center mb-6 w-full">
+            {selectedPoll.options.map((opt, idx) => (
               <button
-                disabled={selectedOption === null}
-                onClick={() => handleVote(selectedPoll.id, selectedOption)}
-                className="w-full py-3 rounded-full font-bold text-lg transition"
+                key={idx}
+                onClick={() => setSelectedOption(idx)}
+                className={`px-6 py-2 rounded-full font-semibold transition
+                  ${selectedOption === idx
+                    ? "shadow-lg"
+                    : "border border-[#90EE90] hover:bg-[#90EE90] hover:text-[#181c24]"}
+                `}
                 style={{
-                  background: selectedOption !== null ? "#90EE90" : "#23272f",
-                  color: selectedOption !== null ? "#181c24" : "#90EE90",
-                  cursor: selectedOption !== null ? "pointer" : "not-allowed"
+                  background: selectedOption === idx ? "#90EE90" : "#181c24",
+                  color: selectedOption === idx ? "#181c24" : "#90EE90",
+                  borderColor: "#90EE90"
                 }}
               >
-                Valider
+                {opt}
               </button>
-            </>
-          ) : (
-            <div className="flex flex-col items-center w-full">
-              <div className="flex gap-4 justify-center w-full mb-4">
-                {selectedPoll.options.map((opt, idx) => {
-                  const totalVotes = selectedPoll.votes.reduce((a, b) => a + b, 0) || 1;
-                  const percent = Math.round((selectedPoll.votes[idx] / totalVotes) * 100);
-                  return (
-                    <div key={idx} className="flex flex-col items-center w-16">
+            ))}
+          </div>
+          <button
+            disabled={selectedOption === null}
+            onClick={() => handleVote(selectedPoll.id, selectedOption)}
+            className="w-full py-3 rounded-full font-bold text-lg transition"
+            style={{
+              background: selectedOption !== null ? "#90EE90" : "#23272f",
+              color: selectedOption !== null ? "#181c24" : "#90EE90",
+              cursor: selectedOption !== null ? "pointer" : "not-allowed"
+            }}
+          >
+            Valider
+          </button>
+          <div className="flex flex-col items-center w-full mt-6">
+            <div className="flex gap-4 justify-center w-full mb-4">
+              {selectedPoll.options.map((opt, idx) => {
+                const totalVotes = selectedPoll.votes.reduce((a, b) => a + b, 0) || 1;
+                const percent = Math.round((selectedPoll.votes[idx] / totalVotes) * 100);
+                return (
+                  <div key={idx} className="flex flex-col items-center w-16">
+                    <div
+                      className="relative flex items-end justify-center h-32 w-full bg-[#181c24] rounded-t-xl"
+                      style={{ overflow: "hidden" }}
+                    >
                       <div
-                        className="relative flex items-end justify-center h-32 w-full bg-[#181c24] rounded-t-xl"
-                        style={{ overflow: "hidden" }}
-                      >
-                        <div
-                          className="absolute bottom-0 left-0 right-0 rounded-t-xl transition-all"
-                          style={{ background: "#90EE90", height: `${percent}%`, minHeight: 8 }}
-                        />
-                        {voted[selectedPoll.id] === idx && (
-                          <span className="absolute top-2 left-1/2 -translate-x-1/2 text-xs font-bold text-green-700 bg-green-200 px-2 py-0.5 rounded-full shadow">
-                            Votre choix
-                          </span>
-                        )}
-                      </div>
-                      <span className="mt-2 font-semibold text-sm text-center" style={{ color: "#90EE90" }}>{opt}</span>
-                      <span className="text-xs text-gray-300">{selectedPoll.votes[idx]} vote(s)</span>
+                        className="absolute bottom-0 left-0 right-0 rounded-t-xl transition-all"
+                        style={{ background: "#90EE90", height: `${percent}%`, minHeight: 8 }}
+                      />
                     </div>
-                  );
-                })}
-              </div>
-              <div className="text-xs text-gray-400">{selectedPoll.votes.reduce((a, b) => a + b, 0)} vote(s) au total</div>
+                    <span className="mt-2 font-semibold text-sm text-center" style={{ color: "#90EE90" }}>{opt}</span>
+                    <span className="text-xs text-gray-300">{selectedPoll.votes[idx]} vote(s)</span>
+                  </div>
+                );
+              })}
             </div>
-          )}
+            <div className="text-xs text-gray-400">{selectedPoll.votes.reduce((a, b) => a + b, 0)} vote(s) au total</div>
+          </div>
         </div>
       )}
     </div>
