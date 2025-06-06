@@ -167,6 +167,9 @@ def login():
     if not user:
         return jsonify({'error': "Aucun compte n'existe avec cet email."}), 401 
     
+    if user.is_banned:
+        return jsonify({'error': 'Votre compte a été banni.'}), 403
+    
     if user.password is None: 
         return jsonify({'error': 'Ce compte a été créé via un fournisseur externe (Google/GitHub). Veuillez vous connecter en utilisant le bouton correspondant.'}), 401
     
@@ -182,7 +185,7 @@ def login():
             'private': user.private,
             'biography': user.biography,
             'banner': user.banner,
-            'subscription': user.subscription_level  # Ajout de l'abonnement dans la réponse
+            'subscription': user.subscription_level
         }
         return jsonify({'message': 'Connexion réussie', 'user': user_data}), 200
     else:
