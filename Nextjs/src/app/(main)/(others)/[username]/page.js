@@ -65,6 +65,8 @@ export default function UserProfilePage() {
           
           let userPosts = [];
           let userMedia = [];
+          let userFavorites = [];
+          let userLikes = [];
           
           if (fetchedData.id) {
             try {
@@ -106,6 +108,32 @@ export default function UserProfilePage() {
             } catch (postsError) {
               console.error('Erreur lors de la récupération des posts:', postsError);
             }
+
+            // Récupérer les favoris si c'est notre profil ou si le profil est public/suivi
+            if (isOwnProfile || (!fetchedData.private || isFollowing)) {
+              try {
+                const favoritesResponse = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/${fetchedData.id}/favorites`);
+                
+                if (favoritesResponse.ok) {
+                  const favoritesData = await favoritesResponse.json();
+                  userFavorites = favoritesData.favorites || [];
+                }
+              } catch (favoritesError) {
+                console.error('Erreur lors de la récupération des favoris:', favoritesError);
+              }
+
+              // Récupérer les likes
+              try {
+                const likesResponse = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/${fetchedData.id}/likes`);
+                
+                if (likesResponse.ok) {
+                  const likesData = await likesResponse.json();
+                  userLikes = likesData.likes || [];
+                }
+              } catch (likesError) {
+                console.error('Erreur lors de la récupération des likes:', likesError);
+              }
+            }
           }
           
           fetchedData = {
@@ -122,7 +150,8 @@ export default function UserProfilePage() {
             following: fetchedData.following_count || 0,
             posts: userPosts,
             media: userMedia,
-            likes: fetchedData.likes || [],
+            likes: userLikes,
+            favorites: userFavorites,
           };
           
         } catch (err) {
@@ -144,6 +173,7 @@ export default function UserProfilePage() {
               posts: [],
               media: [],
               likes: [],
+              favorites: [],
             };
           } else {
             setError("Profil introuvable.");

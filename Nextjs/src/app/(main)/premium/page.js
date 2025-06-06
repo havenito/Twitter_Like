@@ -46,7 +46,6 @@ const subscriptionPlans = [
     features: [
       'Tout de Minouverse Plus',
       'Badge "Premium" exclusif',
-      'Boost de vos "Miaous"',
       'Choix de thèmes personnalisés',
       'Support 24/7',
       'Aucune publicité',

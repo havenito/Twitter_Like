@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComment } from '@fortawesome/free-regular-svg-icons';
 import { faTag } from '@fortawesome/free-solid-svg-icons';
 import LikeButton from './LikeButton';
+import FavoriteButton from './FavoriteButton';
 
 const PostCard = ({ post }) => {
   const [imageError, setImageError] = useState(false);
@@ -192,6 +193,7 @@ const PostCard = ({ post }) => {
             <span>{post.comments || 0}</span>
           </button>
           <LikeButton postId={post.id} initialLikes={post.likes || 0} />
+          <FavoriteButton postId={post.id} />
         </div>
         <span>{formatDate(post.publishedAt)}</span>
       </div>

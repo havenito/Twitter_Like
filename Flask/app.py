@@ -15,6 +15,7 @@ from routes.follows import follows_api
 from services.file_upload import init_cloudinary
 from routes.subscriptions import subscriptions_bp
 from routes.likes import likes_bp
+from routes.favorites import favorites_bp
 
 mail = Mail()
 
@@ -37,10 +38,12 @@ def create_app(config_class=Config):
     app.register_blueprint(follows_api)
     app.register_blueprint(subscriptions_bp)
     app.register_blueprint(likes_bp)
+    app.register_blueprint(favorites_bp)
     
     with app.app_context():
         from models.post_media import PostMedia
         from models.subscription import Subscription
+        from models.favorite import Favorite
         db.create_all()
     
     return app

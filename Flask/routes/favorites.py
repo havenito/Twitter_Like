@@ -1,15 +1,17 @@
+# filepath: c:\Users\alexd\Bureau\Deuxième année - B2\Projet de Groupe\Code\Twitter_Like\Flask\routes\favorites.py
 from flask import Blueprint, request, jsonify
 from models import db
-from models.like import Like
+from models.favorite import Favorite
 from models.post import Post
 from models.user import User
 from models.category import Category
+from models.like import Like
 
-likes_bp = Blueprint('likes', __name__)
+favorites_bp = Blueprint('favorites', __name__)
 
-@likes_bp.route('/api/posts/<int:post_id>/like', methods=['POST'])
-def toggle_like(post_id):
-    """Toggle like sur un post"""
+@favorites_bp.route('/api/posts/<int:post_id>/favorite', methods=['POST'])
+def toggle_favorite(post_id):
+    """Toggle favorite sur un post"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
@@ -25,89 +27,53 @@ def toggle_like(post_id):
         if not user:
             return jsonify({'error': 'Utilisateur non trouvé'}), 404
             
-        existing_like = Like.query.filter_by(user_id=user_id, post_id=post_id).first()
+        existing_favorite = Favorite.query.filter_by(user_id=user_id, post_id=post_id).first()
         
-        if existing_like:
-            db.session.delete(existing_like)
+        if existing_favorite:
+            db.session.delete(existing_favorite)
             db.session.commit()
             
-            likes_count = Like.query.filter_by(post_id=post_id).count()
-            
             return jsonify({
-                'message': 'Like retiré',
-                'liked': False,
-                'likes_count': likes_count
+                'message': 'Favori retiré',
+                'favorited': False
             }), 200
         else:
-            new_like = Like(user_id=user_id, post_id=post_id)
-            db.session.add(new_like)
+            new_favorite = Favorite(user_id=user_id, post_id=post_id)
+            db.session.add(new_favorite)
             db.session.commit()
             
-            likes_count = Like.query.filter_by(post_id=post_id).count()
-            
             return jsonify({
-                'message': 'Post liké',
-                'liked': True,
-                'likes_count': likes_count
+                'message': 'Post ajouté aux favoris',
+                'favorited': True
             }), 201
             
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Erreur serveur: {str(e)}'}), 500
 
-@likes_bp.route('/api/posts/<int:post_id>/likes', methods=['GET'])
-def get_post_likes(post_id):
-    """Obtenir les likes d'un post"""
+@favorites_bp.route('/api/users/<int:user_id>/posts/<int:post_id>/favorite-status', methods=['GET'])
+def check_favorite_status(user_id, post_id):
+    """Vérifier si un utilisateur a mis un post en favori"""
     try:
-        post = Post.query.get(post_id)
-        if not post:
-            return jsonify({'error': 'Post non trouvé'}), 404
-            
-        likes = Like.query.filter_by(post_id=post_id).all()
-        likes_count = len(likes)
-        
-        users_who_liked = []
-        for like in likes:
-            user = User.query.get(like.user_id)
-            if user:
-                users_who_liked.append({
-                    'id': user.id,
-                    'pseudo': user.pseudo,
-                    'profile_picture': user.profile_picture
-                })
-        
+        favorite = Favorite.query.filter_by(user_id=user_id, post_id=post_id).first()
         return jsonify({
-            'post_id': post_id,
-            'likes_count': likes_count,
-            'users': users_who_liked
-        }), 200
-        
-    except Exception as e:
-        return jsonify({'error': f'Erreur serveur: {str(e)}'}), 500
-
-@likes_bp.route('/api/users/<int:user_id>/posts/<int:post_id>/like-status', methods=['GET'])
-def check_like_status(user_id, post_id):
-    """Vérifier si un utilisateur a liké un post"""
-    try:
-        like = Like.query.filter_by(user_id=user_id, post_id=post_id).first()
-        return jsonify({
-            'liked': like is not None
+            'favorited': favorite is not None
         }), 200
     except Exception as e:
         return jsonify({'error': f'Erreur serveur: {str(e)}'}), 500
 
-@likes_bp.route('/api/users/<int:user_id>/likes', methods=['GET'])
-def get_user_likes(user_id):
-    """Obtenir les posts likés par un utilisateur"""
+@favorites_bp.route('/api/users/<int:user_id>/favorites', methods=['GET'])
+def get_user_favorites(user_id):
+    """Obtenir les posts favoris d'un utilisateur"""
     try:
         user = User.query.get(user_id)
         if not user:
             return jsonify({'error': 'Utilisateur non trouvé'}), 404
             
-        likes = db.session.query(Like, Post).join(Post, Like.post_id == Post.id).filter(Like.user_id == user_id).order_by(Like.id.desc()).all()
+        favorites = db.session.query(Favorite, Post).join(Post, Favorite.post_id == Post.id).filter(Favorite.user_id == user_id).order_by(Favorite.id.desc()).all()
         
         result = []
-        for like, post in likes:
+        for favorite, post in favorites:
             post_user = User.query.get(post.user_id)
             category = Category.query.get(post.category_id)
             
@@ -130,7 +96,6 @@ def get_user_likes(user_id):
                 'userId': post.user_id,
                 'categoryId': post.category_id,
                 'likes': likes_count,
-                'likedAt': like.id,  # On utilise l'ID du like comme référence temporelle
                 'user': {
                     'id': post_user.id if post_user else None,
                     'pseudo': post_user.pseudo if post_user else 'Utilisateur supprimé',
@@ -146,7 +111,7 @@ def get_user_likes(user_id):
             })
         
         return jsonify({
-            'likes': result
+            'favorites': result
         }), 200
         
     except Exception as e:

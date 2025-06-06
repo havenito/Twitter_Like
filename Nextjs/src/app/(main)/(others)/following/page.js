@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import PostCard from '../../../../components/Main/Feed/PostCard';
+import PostCard from '../../../../components/Main/Post/PostCard';
 import { useInfiniteScroll } from '../../../../hooks/useInfiniteScroll';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner, faExclamationTriangle, faUserPlus } from '@fortawesome/free-solid-svg-icons';

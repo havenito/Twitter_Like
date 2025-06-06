@@ -4,7 +4,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComment, faFileText, faTag, faEllipsis, faEdit, faTrash} from '@fortawesome/free-solid-svg-icons';
 import DeletePostModal from '../Main/Post/DeletePostModal';
 import EditPostModal from '../Main/Post/EditPostModal';
-import LikeButton from '../Main/Feed/LikeButton';
+import LikeButton from '../Main/Post/LikeButton';
+import FavoriteButton from '../Main/Post/FavoriteButton';
 
 const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate, onPostDelete }) => {
   const [openMenuId, setOpenMenuId] = useState(null);
@@ -279,6 +280,7 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
                   <span>{post.comments || 0}</span>
                 </button>
                 <LikeButton postId={post.id} initialLikes={post.likes || 0} />
+                <FavoriteButton postId={post.id} />
               </div>
             </div>
           </motion.div>
