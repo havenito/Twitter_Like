@@ -17,6 +17,7 @@ from services.file_upload import init_cloudinary
 from routes.subscriptions import subscriptions_bp
 from routes.signalement import bp_signalement 
 from routes.warn import warn_bp
+from routes.polls import polls_bp
 
 mail = Mail()
 
@@ -40,6 +41,7 @@ def create_app(config_class=Config):
     app.register_blueprint(subscriptions_bp)
     app.register_blueprint(bp_signalement) 
     app.register_blueprint(warn_bp)
+    app.register_blueprint(polls_bp)
 
     
     with app.app_context():

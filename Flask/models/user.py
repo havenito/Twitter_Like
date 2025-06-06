@@ -17,8 +17,8 @@ class User(db.Model):
     biography = db.Column(db.String(255), nullable=True)
     banner = db.Column(db.String(255), nullable=True)
     subscription = db.Column(ENUM('free', 'plus', 'premium', name='subscription-type'), nullable=False, default='free')
-    warn_count = db.Column(db.Integer, default=0)  # Ajouté pour les warns
-    is_banned = db.Column(db.Boolean, default=False)  # Ajouté pour le ban
+    warn_count = db.Column(db.Integer, default=0)  
+    is_banned = db.Column(db.Boolean, default=False)  
 
     def __repr__(self):
         return f'<User {self.first_name} {self.last_name}>'

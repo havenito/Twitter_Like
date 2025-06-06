@@ -11,7 +11,6 @@ const motifs = [
   "Autre"
 ];
 
-// Toast moderne avec icône et croix de fermeture
 function Toast({ message, onClose }) {
   return (
     <div className="fixed top-8 left-1/2 z-[100] -translate-x-1/2 flex items-center gap-3 bg-green-300 text-black px-6 py-3 rounded-xl shadow-2xl text-base font-semibold animate-fade-in-pop border border-green-400 min-w-[260px]">

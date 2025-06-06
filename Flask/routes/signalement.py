@@ -55,7 +55,6 @@ def get_signalements():
         })
     return jsonify(result)
 
-# Alias pour supporter /api/signalements (avec "s")
 @bp_signalement.route('/api/signalements', methods=['GET'])
 def get_signalements_alias():
     return get_signalements()
