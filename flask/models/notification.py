@@ -10,3 +10,4 @@ class Notification(db.Model):
     follow_id = db.Column(db.Integer, db.ForeignKey('follows.id'), nullable=True)
     replie_id = db.Column(db.Integer, db.ForeignKey('replies.id'), nullable=True)
     type = db.Column(db.String(50), nullable=False)  # e.g., 'comment', 'reply', 'follow','post'
+    signalement_id = db.Column(db.Integer, db.ForeignKey('signalement.id'), nullable=True)

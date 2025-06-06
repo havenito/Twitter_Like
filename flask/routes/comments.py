@@ -54,6 +54,7 @@ def get_comments():
     comments_list = [{'id': comment.id, 'content': comment.content, 'post_id': comment.post_id, 'user_id': comment.user_id} for comment in comments]
     
     return jsonify({'comments': comments_list}), 200
+
 @comments_api.route('/api/comments/<int:comment_id>', methods=['PUT'])
 def update_comment(comment_id):
     data = request.get_json()

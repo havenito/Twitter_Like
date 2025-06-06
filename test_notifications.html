@@ -1,3 +1,100 @@
+<!-- <!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Notifications de tous les utilisateurs</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    .notification { border: 1px solid #ccc; margin: 10px; padding: 10px; border-radius: 5px; }
+    .buttons { margin-top: 5px; }
+    button { margin-right: 5px; }
+  </style>
+</head>
+<body>
+  <h2>Notifications de tous les utilisateurs</h2>
+  <button onclick="deleteAllExceptFollowRequests()">Tout supprimer (hors demandes de suivi)</button>
+  <div id="notifications"></div>
+
+  <script>
+    const API_BASE = 'http://localhost:5000'; // <-- adapte le port si nécessaire
+
+    async function fetchNotifications() {
+      try {
+        const res = await fetch(`${API_BASE}/api/notifications`);
+        if (!res.ok) throw new Error('Erreur HTTP ' + res.status);
+        const notifications = await res.json();
+        displayNotifications(notifications);
+      } catch (err) {
+        console.error('Erreur fetch notifications:', err);
+      }
+    }
+
+    function getMessage(n) {
+      if (n.type === 'comment') return `Quelqu'un a commenté votre post : ${n.comment_content}`;
+      if (n.type === 'reply') return `Quelqu'un a répondu à votre commentaire : ${n.replie_content}`;
+      if (n.type === 'follow') return `Nouveau follower : ${n.follower_user}`;
+      if (n.type === 'follow_request') return `Demande de suivi de : ${n.follower_user}`;
+      if (n.type === 'post') return `Nouveau post publié : ${n.post_title}`;
+      if (n.type === 'signalement') return `Nouveau signalement : ${n.report_type} - ${n.signalement_content} `;
+      return 'Notification inconnue';
+    }
+
+    function displayNotifications(list) {
+      const container = document.getElementById('notifications');
+      container.innerHTML = '';
+      list.forEach(n => {
+        const div = document.createElement('div');
+        div.className = 'notification';
+        div.innerHTML = `
+          <p><strong>User ${n.user_id}</strong> - ${getMessage(n)}</p>
+          <div class="buttons">
+            <button onclick="deleteNotification(${n.user_id}, ${n.id})">Supprimer</button>
+            ${n.type === 'follow_request' ? `
+              <button onclick="handleFollow(${n.follow_id}, 'accept')">Accepter</button>
+              <button onclick="handleFollow(${n.follow_id}, 'reject')">Refuser</button>
+            ` : ''}
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function deleteNotification(userId, notifId) {
+      try {
+        await fetch(`${API_BASE}/api/user_notifications/${userId}/${notifId}`, { method: 'DELETE' });
+        fetchNotifications();
+      } catch (err) {
+        console.error('Erreur suppression notification:', err);
+      }
+    }
+
+    async function handleFollow(followId, action) {
+      try {
+        await fetch(`${API_BASE}/api/follows/${followId}/${action}`, { method: 'PUT' });
+        fetchNotifications();
+      } catch (err) {
+        console.error('Erreur gestion follow:', err);
+      }
+    }
+
+    async function deleteAllExceptFollowRequests() {
+      try {
+        const res = await fetch(`${API_BASE}/api/notifications`);
+        const notifs = await res.json();
+        const userIds = [...new Set(notifs.map(n => n.user_id))];
+        for (const id of userIds) {
+          await fetch(`${API_BASE}/api/user_notifications/${id}`, { method: 'DELETE' });
+        }
+        fetchNotifications();
+      } catch (err) {
+        console.error('Erreur suppression globale:', err);
+      }
+    }
+
+    fetchNotifications();
+  </script>
+</body>
+</html> -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -35,6 +132,7 @@
       if (n.type === 'follow') return `Nouveau follower : ${n.follower_user}`;
       if (n.type === 'follow_request') return `Demande de suivi de : ${n.follower_user}`;
       if (n.type === 'post') return `Nouveau post publié : ${n.post_title}`;
+      if (n.type === 'signalement') return `Nouveau signalement pour le post "${n.post_title}" : ${n.report_type} - ${n.signalement_content}`;
       return 'Notification inconnue';
     }
 

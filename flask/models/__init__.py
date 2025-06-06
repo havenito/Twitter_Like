@@ -12,5 +12,3 @@ from .replie import Replie
 from .notification import Notification
 
 
-
-

@@ -5,7 +5,8 @@ from models.user import User
 from models.post import Post
 from models.comment import Comment
 from models.follow import Follow
-from models.replie import Replie  # Ajout pour les réponses
+from models.replie import Replie  
+from models.signalement import Signalement  
 
 notifications_api = Blueprint('notifications_api', __name__)
 
@@ -55,6 +56,12 @@ def get_user_notifications(user_id):
                             'follower_user': follower_user.pseudo,
                             'follower_id': follower_user.id
                         })
+            if notification.type == "signalement" and notification.signalement_id:
+                signalement = Signalement.query.get(notification.signalement_id)
+                if signalement:
+                    notification_data['signalement_content'] = signalement.content
+                    notification_data['signalement_id'] = signalement.id
+                    notification_data['report_type'] = signalement.report_type
 
             result.append(notification_data)
 
@@ -146,6 +153,16 @@ def get_all_notifications():
                             'follower_user': follower_user.pseudo,
                             'follower_id': follower_user.id
                         })
+
+            if notification.type == "signalement" and notification.signalement_id:
+                signalement = Signalement.query.get(notification.signalement_id)
+                if signalement:
+                    notification_data['signalement_content'] = signalement.content
+                    notification_data['signalement_id'] = signalement.id
+                    notification_data['report_type'] = signalement.report_type
+                    post = Post.query.get(signalement.post_id)
+                    if post:
+                        notification_data['post_title'] = post.title
             result.append(notification_data)
 
         return jsonify(result)

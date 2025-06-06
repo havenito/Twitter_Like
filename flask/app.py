@@ -11,6 +11,7 @@ from routes.comments import comments_api
 from routes.replies import replies_api
 from routes.notifications import notifications_api
 from routes.follows import follows_api
+from routes.signalement import bp_signalement
 
 from services.file_upload import init_cloudinary
 from routes.categories import categories_bp
@@ -32,6 +33,7 @@ def create_app(config_class=Config):
     app.register_blueprint(replies_api)
     app.register_blueprint(notifications_api)
     app.register_blueprint(follows_api)
+    app.register_blueprint(bp_signalement)
 
     
     with app.app_context():
