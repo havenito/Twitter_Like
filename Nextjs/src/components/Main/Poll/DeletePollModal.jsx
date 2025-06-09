@@ -53,7 +53,7 @@ const DeletePollModal = ({ isOpen, onClose, onConfirm, isLoading, pollTitle }) =
             
             {isLoading ? (
               <div className="flex justify-center items-center py-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#90EE90]"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-500"></div>
                 <span className="ml-3 text-gray-300">Suppression en cours...</span>
               </div>
             ) : (
