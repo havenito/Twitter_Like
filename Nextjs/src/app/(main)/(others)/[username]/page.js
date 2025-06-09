@@ -67,6 +67,7 @@ export default function UserProfilePage() {
           let userMedia = [];
           let userFavorites = [];
           let userLikes = [];
+          let userPolls = [];
           
           if (fetchedData.id) {
             try {
@@ -109,7 +110,6 @@ export default function UserProfilePage() {
               console.error('Erreur lors de la récupération des posts:', postsError);
             }
 
-            // Récupérer les favoris si c'est notre profil ou si le profil est public/suivi
             if (isOwnProfile || (!fetchedData.private || isFollowing)) {
               try {
                 const favoritesResponse = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/${fetchedData.id}/favorites`);
@@ -122,7 +122,6 @@ export default function UserProfilePage() {
                 console.error('Erreur lors de la récupération des favoris:', favoritesError);
               }
 
-              // Récupérer les likes
               try {
                 const likesResponse = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/${fetchedData.id}/likes`);
                 
@@ -132,6 +131,17 @@ export default function UserProfilePage() {
                 }
               } catch (likesError) {
                 console.error('Erreur lors de la récupération des likes:', likesError);
+              }
+
+              try {
+                const pollsResponse = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/${fetchedData.id}/polls`);
+                
+                if (pollsResponse.ok) {
+                  const pollsData = await pollsResponse.json();
+                  userPolls = pollsData.polls || [];
+                }
+              } catch (pollsError) {
+                console.error('Erreur lors de la récupération des sondages:', pollsError);
               }
             }
           }
@@ -152,6 +162,7 @@ export default function UserProfilePage() {
             media: userMedia,
             likes: userLikes,
             favorites: userFavorites,
+            polls: userPolls,
           };
           
         } catch (err) {

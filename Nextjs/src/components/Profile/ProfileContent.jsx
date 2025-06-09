@@ -4,6 +4,7 @@ import PostsList from './PostsList';
 import MediaGrid from './MediaGrid';
 import LikesList from './LikesList';
 import FavoritesList from './FavoritesList';
+import PollsList from './PollsList';
 
 const ProfileContent = ({ profileData, isOwnProfile }) => {
   const [activeTab, setActiveTab] = useState('posts');
@@ -16,7 +17,8 @@ const ProfileContent = ({ profileData, isOwnProfile }) => {
     { id: 'posts', label: 'Publications' },
     { id: 'media', label: 'Média' },
     { id: 'likes', label: 'J\'aime' },
-    { id: 'favorite', label: 'Favoris'}
+    { id: 'favorite', label: 'Favoris'},
+    { id: 'polls', label: 'Sondages'}
   ];
 
   return (
@@ -51,6 +53,7 @@ const ProfileContent = ({ profileData, isOwnProfile }) => {
         {activeTab === 'media' && <MediaGrid posts={profileData.posts} userPseudo={profileData.pseudo} isOwnProfile={isOwnProfile} />}
         {activeTab === 'likes' && <LikesList likes={profileData.likes} userPseudo={profileData.pseudo} isOwnProfile={isOwnProfile} />}
         {activeTab === 'favorite' && <FavoritesList favorites={profileData.favorites} userPseudo={profileData.pseudo} isOwnProfile={isOwnProfile} />}
+        {activeTab === 'polls' && <PollsList polls={profileData.polls || []} userPseudo={profileData.pseudo} isOwnProfile={isOwnProfile} />}
       </div>
     </div>
   );
