@@ -327,34 +327,37 @@
 
         // Fonction pour créer un nouveau post
         async function createPost() {
-            const formData = new FormData();
-            formData.append('title', document.getElementById('title').value);
-            formData.append('content', document.getElementById('content').value);
-            formData.append('user_id', document.getElementById('user-id').value);
-            formData.append('category_id', document.getElementById('category-id').value);
+            const postData = {
+                title: document.getElementById('title').value,
+                content: document.getElementById('content').value,
+                user_id: document.getElementById('user-id').value,
+                category_id: document.getElementById('category-id').value,
+            };
 
             const postId = document.getElementById('post-id').value;
             if (postId) {
-                formData.append('post_id', postId);
-            }
-
-            // Ajouter les fichiers sélectionnés
-            if (selectedFiles.length > 0) {
-                selectedFiles.forEach((file) => {
-                    formData.append('files[]', file);
-                });
+                postData.post_id = postId;
             }
 
             try {
                 const response = await fetch(`${API_BASE_URL}/create_post`, {
                     method: 'POST',
-                    body: formData, // Utiliser FormData pour envoyer les fichiers
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(postData),
                 });
 
                 const result = await response.json();
                 if (response.ok) {
                     document.getElementById('form-status').className = 'success';
                     document.getElementById('form-status').textContent = 'Post créé avec succès!';
+
+                    // Si un post parent est renseigné, ajouter une entrée dans la table Repost
+                    if (postId) {
+                        await createRepost(postId, document.getElementById('user-id').value);
+                    }
+
                     resetForm();
                     fetchPosts();
                 } else {
@@ -561,6 +564,7 @@
 
             const card = document.createElement('div');
             card.className = 'post-card';
+            card.setAttribute('data-id', post.id); // Ajouter l'attribut data-id
 
             const title = document.createElement('h3');
             title.textContent = post.title || 'Titre non renseigné';
@@ -679,6 +683,7 @@
                     throw new Error(`Erreur HTTP : ${response.status}`);
                 }
                 const data = await response.json();
+                console.log('Réponse de l\'API pour le compteur de reposts:', data); // Log de la réponse
                 repostCountElement.textContent = `Reposts : ${data.repost_count}`;
             } catch (error) {
                 console.error('Erreur lors de la récupération du compteur de reposts:', error);
@@ -966,6 +971,12 @@
                 if (repostResponse.ok) {
                     console.log('Repost créé avec succès:', result);
                     fetchPosts(); // Rafraîchir la liste des posts
+                    const repostCountElement = document.querySelector(`.post-card[data-id="${postId}"] .repost-count`);
+                    if (repostCountElement) {
+                        updateRepostCount(postId, repostCountElement);
+                    } else {
+                        console.error('Élément de compteur de repost introuvable pour le post ID:', postId);
+                    }
                 } else {
                     alert(`Erreur lors de la création du repost : ${result.error}`); // Afficher une alerte en cas d'erreur
                 }
