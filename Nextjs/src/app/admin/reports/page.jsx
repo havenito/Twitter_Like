@@ -49,6 +49,23 @@ export default function AdminReportsPage() {
   const totalPages = Math.ceil(filteredReports.length / ITEMS_PER_PAGE);
   const paginatedReports = filteredReports.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
+  // Ajout du nom de l'utilisateur signalé dans une propriété dédiée pour l'affichage
+  const reportsWithUserName = paginatedReports.map(report => {
+    let reportedUserName = "";
+    if (report.reported_user && report.reported_user.pseudo) {
+      reportedUserName = report.reported_user.pseudo;
+    } else if (report.reported_user_pseudo) {
+      reportedUserName = report.reported_user_pseudo;
+    }
+    if (report.reported_user_id && !report.post_id) {
+      return {
+        ...report,
+        reported_user_display: reportedUserName || report.reported_user_id
+      };
+    }
+    return report;
+  });
+
   const handleUpdateStatus = async (reportId, newStatus) => {
     const statutBool = newStatus === "Traité";
     try {
@@ -147,7 +164,7 @@ export default function AdminReportsPage() {
       </header>
 
       <ReportsTable
-        reports={paginatedReports}
+        reports={reportsWithUserName}
         handleUpdateStatus={handleUpdateStatus}
         handleWarnUser={handleWarnUser}
         handleBanUser={openBanModal}
