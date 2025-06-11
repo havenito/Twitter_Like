@@ -10,13 +10,17 @@ def create_signalement():
     data = request.json
     user_id = data.get('user_id')
     post_id = data.get('post_id')
+    reported_user_id = data.get('reported_user_id')
+    comment_id = data.get('comment_id')
     report_type = data.get('report_type')
     content = data.get('content')
-    if not user_id or not content or not post_id or not report_type:
+    if not user_id or not content or not report_type:
         return jsonify({'error': 'Missing fields'}), 400
     signalement = Signalement(
         user_id=user_id,
         post_id=post_id,
+        reported_user_id=reported_user_id,
+        comment_id=comment_id,
         report_type=report_type,
         content=content
     )

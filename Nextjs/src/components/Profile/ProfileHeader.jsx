@@ -3,10 +3,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserPen, faCalendarAlt, faLock, faGlobe, faUsers, faUserPlus, faUserMinus, faTrash, faEllipsis } from '@fortawesome/free-solid-svg-icons';
+import { faUserPen, faCalendarAlt, faLock, faGlobe, faUsers, faUserPlus, faUserMinus, faTrash, faEllipsis, faFlag } from '@fortawesome/free-solid-svg-icons';
 import { useSession, signOut } from 'next-auth/react';
 import UnfollowPrivateConfirmModal from './UnfollowPrivateConfirmModal';
 import DeleteAccountModal from './DeleteAccountModal';
+import Signalement from '../Signalement/Signalement';
 
 const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing }) => {
   const { data: session } = useSession();
@@ -15,6 +16,7 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const formattedDate = profileData.joinDate 
     ? new Date(profileData.joinDate).toLocaleDateString('fr-FR', {
@@ -35,12 +37,10 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
 
   const handleFollowToggle = async () => {
     if (!session?.user?.id || !profileData?.id || followLoading) return;
-    
     if (isFollowing && !profileData.isPublic) {
       setShowUnfollowModal(true);
       return;
     }
-    
     await performFollowToggle();
   };
 
@@ -91,9 +91,7 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
 
   const confirmDeleteAccount = async () => {
     if (!session?.user?.id) return;
-    
     setDeleteLoading(true);
-    
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/${session.user.id}`, {
         method: 'DELETE',
@@ -103,7 +101,6 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
       });
 
       if (response.ok) {
-        // Déconnecter l'utilisateur et rediriger vers la page d'accueil
         await signOut({ callbackUrl: '/' });
       } else {
         const errorData = await response.json();
@@ -122,7 +119,6 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
     setShowDeleteModal(false);
   };
 
-  // CORRECTION : Vérification plus robuste pour savoir si c'est le profil de l'utilisateur
   const isUserOwnProfile = isOwnProfile || 
     (session?.user?.id && profileData?.id && session.user.id === profileData.id) ||
     (session?.user?.pseudo && profileData?.pseudo && session.user.pseudo === profileData.pseudo) ||
@@ -166,7 +162,7 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
             </motion.div>
             
             <motion.div 
-              className="mt-4 sm:mt-0"
+              className="mt-4 sm:mt-0 flex flex-col items-end gap-2"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3, duration: 0.5 }}
@@ -183,7 +179,6 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
                       Modifier le profil
                     </motion.button>
                   </Link>
-                  
                   {/* Menu existant */}
                   <div className="relative">
                     <motion.button
@@ -194,7 +189,6 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
                     >
                       <FontAwesomeIcon icon={faEllipsis} />
                     </motion.button>
-                    
                     <AnimatePresence>
                       {showProfileMenu && (
                         <motion.div
@@ -216,36 +210,66 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
                   </div>
                 </div>
               ) : session?.user && (
-                <motion.button
-                  onClick={handleFollowToggle}
-                  disabled={followLoading}
-                  whileHover={{ scale: followLoading ? 1 : 1.05 }}
-                  whileTap={{ scale: followLoading ? 1 : 0.95 }}
-                  className={`px-6 py-2 rounded-full font-semibold text-sm flex items-center transition-all duration-200 min-w-[140px] justify-center ${
-                    isFollowing
-                      ? 'bg-[#222222] text-white hover:bg-red-600 hover:text-white'
-                      : 'bg-[#90EE90] text-black hover:bg-[#7CD37C]'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {followLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
-                      Chargement...
-                    </>
-                  ) : (
-                    <>
-                      <FontAwesomeIcon 
-                        icon={isFollowing ? faUserMinus : faUserPlus} 
-                        className="mr-2" 
-                      />
-                      {isFollowing ? 'Se désabonner' : 'Suivre'}
-                    </>
-                  )}
-                </motion.button>
+                <div className="flex gap-3 items-center">
+                  <motion.button
+                    onClick={handleFollowToggle}
+                    disabled={followLoading}
+                    whileHover={{ scale: followLoading ? 1 : 1.05 }}
+                    whileTap={{ scale: followLoading ? 1 : 0.95 }}
+                    className={`px-6 py-2 rounded-full font-semibold text-sm flex items-center transition-all duration-200 min-w-[140px] justify-center ${
+                      isFollowing
+                        ? 'bg-[#222222] text-white hover:bg-red-600 hover:text-white'
+                        : 'bg-[#90EE90] text-black hover:bg-[#7CD37C]'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {followLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                        Chargement...
+                      </>
+                    ) : (
+                      <>
+                        <FontAwesomeIcon 
+                          icon={isFollowing ? faUserMinus : faUserPlus} 
+                          className="mr-2" 
+                        />
+                        {isFollowing ? 'Se désabonner' : 'Suivre'}
+                      </>
+                    )}
+                  </motion.button>
+                  {/* Menu trois points avec signalement */}
+                  <div className="relative">
+                    <motion.button
+                      onClick={handleMenuToggle}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="bg-[#333] text-white px-4 py-3 rounded-full font-semibold text-sm flex items-center hover:bg-[#444] transition-colors"
+                    >
+                      <FontAwesomeIcon icon={faEllipsis} />
+                    </motion.button>
+                    <AnimatePresence>
+                      {showProfileMenu && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                          className="absolute right-0 top-full mt-2 bg-[#2a2a2a] border border-[#444] rounded-lg shadow-lg z-10 min-w-[180px]"
+                        >
+                          <button
+                            onClick={() => setShowReportModal(true)}
+                            className="w-full text-left px-4 py-3 text-red-400 hover:bg-[#333] transition-colors flex items-center rounded-lg"
+                          >
+                            <FontAwesomeIcon icon={faFlag} className="mr-3" />
+                            Signaler cet utilisateur
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
               )}
             </motion.div>
           </div>
-          
           <motion.div 
             className="mt-4"
             initial={{ opacity: 0, y: 20 }}
@@ -256,13 +280,11 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
               {profileData.firstName || profileData.pseudo} {profileData.lastName}
             </h1>
             <p className="text-gray-400 text-sm sm:text-base">@{profileData.pseudo}</p>
-            
             {profileData.bio && (
               <p className="mt-3 text-gray-300 max-w-xl text-sm sm:text-base leading-relaxed">
                 {profileData.bio}
               </p>
             )}
-            
             <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3 text-sm text-gray-400 items-center">
               <span className="flex items-center">
                 <FontAwesomeIcon icon={faCalendarAlt} className="mr-1.5" />
@@ -273,7 +295,6 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
                 {profileData.isPublic ? 'Public' : 'Privé'}
               </span>
             </div>
-            
             <motion.div 
               className="flex gap-2 mt-4"
               initial={{ opacity: 0, y: 10 }}
@@ -300,7 +321,6 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
                   </span>
                 </motion.div>
               </Link>
-              
               <Link 
                 href={`/${profileData.pseudo}/followers`} 
                 className="group hover:bg-[#1a1a1a] rounded-lg px-3 py-2 transition-all duration-200"
@@ -326,7 +346,6 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
         </div>
       </div>
 
-      {/* Fermer le menu si on clique ailleurs */}
       {showProfileMenu && (
         <div 
           className="fixed inset-0 z-5" 
@@ -334,7 +353,6 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
         />
       )}
 
-      {/* Modal de confirmation pour le désabonnement des comptes privés */}
       <UnfollowPrivateConfirmModal
         isOpen={showUnfollowModal}
         onClose={handleUnfollowCancel}
@@ -344,13 +362,20 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
         isPrivateAccount={!profileData.isPublic}
       />
 
-      {/* Modal de confirmation pour la suppression du compte */}
       <DeleteAccountModal
         isOpen={showDeleteModal}
         onClose={cancelDeleteAccount}
         onConfirm={confirmDeleteAccount}
         isLoading={deleteLoading}
         userEmail={session?.user?.email || ''}
+      />
+
+      {/* Modal de signalement utilisateur */}
+      <Signalement
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        userId={session?.user?.id}
+        reportedUserId={profileData?.id}
       />
     </>
   );

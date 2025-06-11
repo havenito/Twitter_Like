@@ -31,22 +31,26 @@ function Toast({ message, onClose }) {
   );
 }
 
-export default function Signalement({ isOpen, onClose, userId, postId }) {
+export default function Signalement({ isOpen, onClose, userId, postId, reportedUserId, commentId }) {
   const [motif, setMotif] = useState(motifs[0]);
   const [details, setDetails] = useState('');
   const [status, setStatus] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const body = {
+      user_id: userId,
+      report_type: motif,
+      content: details,
+    };
+    if (postId) body.post_id = postId;
+    if (reportedUserId) body.reported_user_id = reportedUserId;
+    if (commentId) body.comment_id = commentId;
+
     const res = await fetch('http://localhost:5000/api/signalement', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: userId,
-        post_id: postId,
-        report_type: motif,
-        content: details
-      })
+      body: JSON.stringify(body)
     });
     if (res.ok) setStatus('Signalement envoyé !');
     else setStatus('Erreur lors de l\'envoi');
