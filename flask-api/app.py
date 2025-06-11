@@ -13,6 +13,7 @@ from services.file_upload import init_cloudinary
 from routes.categories import categories_bp
 from routes.follows import follows_api
 from routes.chat import chats_bp
+from routes.reposts import reposts_bp
 
 # Importer la fonction d'initialisation WebSocket
 from routes.websocket_chat import init_socketio
@@ -37,6 +38,7 @@ def create_app(config_class=Config):
     app.register_blueprint(comments_api)
     app.register_blueprint(follows_api)
     app.register_blueprint(chats_bp)
+    app.register_blueprint(reposts_bp)
 
     # Initialiser SocketIO avec CORS
     socketio = init_socketio(app)

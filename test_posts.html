@@ -199,6 +199,11 @@
             margin: 0;
             color: #fff;
         }
+        .repost-count {
+            display: block;
+            margin-top: 10px;
+            color: #90EE90;
+        }
     </style>
 </head>
 <body>
@@ -409,21 +414,22 @@
         async function fetchPosts() {
             try {
                 const response = await fetch(`${API_BASE_URL}/posts`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                
                 const data = await response.json();
-                console.log('Données reçues de l\'API:', data); // Vérifiez les données reçues
+                console.log('Données des posts récupérées:', data.posts); // Log des données récupérées
+
                 const posts = data.posts || [];
-                
                 const postsContainer = document.getElementById('posts-container');
-                
+
                 if (posts.length > 0) {
-                    postsContainer.innerHTML = '';
+                    postsContainer.innerHTML = ''; // Vider le conteneur avant d'ajouter les posts
                     posts.forEach(post => {
-                        postsContainer.appendChild(createPostCard(post));
+                        console.log('Post actuel:', post); // Log des données du post
+                        const postElement = createPostCard(post); // Appeler createPostCard
+                        if (postElement && postElement.nodeType === 1) {
+                            postsContainer.appendChild(postElement); // Ajouter l'élément DOM retourné
+                        } else {
+                            console.error('createPostCard a retourné une valeur invalide pour le post:', post);
+                        }
                     });
                 } else {
                     postsContainer.innerHTML = '<p>Aucun post trouvé. Essayez d\'en créer un!</p>';
@@ -546,19 +552,26 @@
 
         // Créer une carte pour afficher un post
         function createPostCard(post) {
+            console.log('Création de la carte pour le post:', post);
+
+            if (!post || !post.id || !post.title || !post.content) {
+                console.error('Données du post invalides:', post);
+                return null; // Retourne null si les données sont invalides
+            }
+
             const card = document.createElement('div');
             card.className = 'post-card';
 
             const title = document.createElement('h3');
-            title.textContent = post.title;
+            title.textContent = post.title || 'Titre non renseigné';
             card.appendChild(title);
 
             const content = document.createElement('p');
-            content.textContent = post.content;
+            content.textContent = post.content || 'Contenu non renseigné';
             card.appendChild(content);
 
             const metadata = document.createElement('small');
-            metadata.textContent = `Publié par l'utilisateur ${post.userId} dans la catégorie ${post.categoryId}`;
+            metadata.textContent = `Publié par l'utilisateur ${post.userId || 'Inconnu'} dans la catégorie ${post.categoryId || 'Inconnue'}`;
             card.appendChild(metadata);
 
             // Ajouter les médias du post principal
@@ -588,17 +601,16 @@
                 card.appendChild(mediaGallery);
             }
 
-            // Ajouter le post parent si renseigné
+            // Ajouter les médias du post parent
             if (post.parentPost) {
-                const parentPost = document.createElement('div');
-                parentPost.className = 'parent-post';
-                parentPost.innerHTML = `
+                const parentPostElement = document.createElement('div');
+                parentPostElement.className = 'parent-post';
+                parentPostElement.innerHTML = `
                     <h4>Post Parent :</h4>
-                    <p>${post.parentPost.title}</p>
-                    <p>${post.parentPost.content}</p>
+                    <p>${post.parentPost.title || 'Titre non renseigné'}</p>
+                    <p>${post.parentPost.content || 'Contenu non renseigné'}</p>
                 `;
 
-                // Ajouter les médias du post parent
                 if (post.parentPost.media && post.parentPost.media.length > 0) {
                     const parentMediaGallery = document.createElement('div');
                     parentMediaGallery.className = 'media-gallery';
@@ -622,11 +634,17 @@
                         parentMediaGallery.appendChild(mediaItem);
                     });
 
-                    parentPost.appendChild(parentMediaGallery);
+                    parentPostElement.appendChild(parentMediaGallery);
                 }
 
-                card.appendChild(parentPost);
+                card.appendChild(parentPostElement);
             }
+
+            // Ajouter le compteur de reposts
+            const repostCount = document.createElement('small');
+            repostCount.className = 'repost-count';
+            repostCount.textContent = 'Reposts : Chargement...';
+            card.appendChild(repostCount);
 
             // Ajouter les boutons d'action
             const actions = document.createElement('div');
@@ -642,9 +660,173 @@
             deleteBtn.onclick = () => deletePost(post.id);
             actions.appendChild(deleteBtn);
 
+            const repostBtn = document.createElement('button');
+            repostBtn.textContent = 'Repost';
+            repostBtn.onclick = () => createRepost(post.id, localStorage.getItem('userId'));
+            actions.appendChild(repostBtn);
+
             card.appendChild(actions);
 
-            return card;
+            console.log('Carte créée avec succès:', card);
+            return card; // Retourne un élément DOM valide
+        }
+
+        // Fonction pour mettre à jour le compteur de reposts
+        async function updateRepostCount(postId, repostCountElement) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/posts/${postId}/repost_count`);
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP : ${response.status}`);
+                }
+                const data = await response.json();
+                repostCountElement.textContent = `Reposts : ${data.repost_count}`;
+            } catch (error) {
+                console.error('Erreur lors de la récupération du compteur de reposts:', error);
+                repostCountElement.textContent = 'Reposts : Erreur';
+            }
+        }
+
+        // Appeler `updateRepostCount` après la création de la carte
+        async function fetchPosts() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/posts`);
+                const data = await response.json();
+                console.log('Données des posts récupérées:', data.posts);
+
+                const posts = data.posts || [];
+                const postsContainer = document.getElementById('posts-container');
+
+                if (posts.length > 0) {
+                    postsContainer.innerHTML = '';
+                    posts.forEach(post => {
+                        const postElement = createPostCard(post);
+                        if (postElement && postElement.nodeType === 1) {
+                            postsContainer.appendChild(postElement);
+
+                            // Mettre à jour le compteur de reposts
+                            const repostCountElement = postElement.querySelector('.repost-count');
+                            updateRepostCount(post.id, repostCountElement);
+                        } else {
+                            console.error('createPostCard a retourné une valeur invalide pour le post:', post);
+                        }
+                    });
+                } else {
+                    postsContainer.innerHTML = '<p>Aucun post trouvé. Essayez d\'en créer un!</p>';
+                }
+            } catch (error) {
+                console.error("Erreur lors de la récupération des posts:", error);
+                document.getElementById('posts-container').innerHTML = `
+                    <p class="error">Erreur: ${error.message}</p>
+                    <p>Vérifiez la console pour plus de détails.</p>
+                `;
+            }
+        }
+
+        // Fonction pour supprimer un post
+        async function deletePost(id) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer ce post?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/posts/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    document.getElementById('form-status').className = 'success';
+                    document.getElementById('form-status').textContent = 'Post supprimé avec succès!';
+                    fetchPosts();
+                } else {
+                    document.getElementById('form-status').className = 'error';
+                    document.getElementById('form-status').textContent = `Erreur: ${result.error}`;
+                }
+            } catch (error) {
+                document.getElementById('form-status').className = 'error';
+                document.getElementById('form-status').textContent = `Erreur: ${error.message}`;
+            }
+        }
+
+        // Fonction pour préparer le formulaire pour l'édition
+        async function prepareEditForm(id) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/posts/${id}`);
+                const post = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('title').value = post.title;
+                    document.getElementById('content').value = post.content;
+                    document.getElementById('category-id').value = post.category_id;
+                    document.getElementById('user-id').value = post.user_id;
+                    
+                    if (post.post_id) {
+                        document.getElementById('post-id').value = post.post_id;
+                    } else {
+                        document.getElementById('post-id').value = '';
+                    }
+                    
+                    // Réinitialiser la liste des médias à supprimer et les fichiers sélectionnés
+                    mediaToRemove = [];
+                    selectedFiles = [];
+                    document.getElementById('media-preview').innerHTML = '';
+                    
+                    // Afficher les médias existants
+                    displayExistingMedia(post);
+                    
+                    // On ne peut pas préremplir l'input de fichier pour des raisons de sécurité
+                    document.getElementById('create-post-btn').style.display = 'none';
+                    document.getElementById('update-post-btn').style.display = 'inline-block';
+                    document.getElementById('cancel-edit-btn').style.display = 'inline-block';
+                    
+                    currentEditId = id;
+                    document.getElementById('form-status').textContent = '';
+                } else {
+                    document.getElementById('form-status').className = 'error';
+                    document.getElementById('form-status').textContent = `Erreur: ${post.error}`;
+                }
+            } catch (error) {
+                document.getElementById('form-status').className = 'error';
+                document.getElementById('form-status').textContent = `Erreur: ${error.message}`;
+            }
+        }
+
+        // Fonction pour afficher les médias existants d'un post
+        function displayExistingMedia(post) {
+            const container = document.getElementById('existing-media');
+            const mediaList = document.getElementById('existing-media-list');
+            mediaList.innerHTML = '';
+
+            if (post.media && post.media.length > 0) {
+                container.style.display = 'block';
+
+                post.media.forEach((item) => {
+                    const mediaItem = document.createElement('div');
+                    mediaItem.className = 'existing-media-item';
+                    mediaItem.dataset.id = item.id;
+
+                    const mediaElement = document.createElement(item.type === 'image' ? 'img' : 'video');
+                    mediaElement.src = item.url;
+                    if (item.type === 'video') {
+                        mediaElement.controls = true;
+                    }
+
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-media-btn';
+                    removeBtn.innerHTML = '×';
+                    removeBtn.onclick = function () {
+                        mediaToRemove.push(item.id);
+                        mediaItem.style.opacity = '0.3';
+                        removeBtn.disabled = true;
+                    };
+
+                    mediaItem.appendChild(mediaElement);
+                    mediaItem.appendChild(removeBtn);
+                    mediaList.appendChild(mediaItem);
+                });
+            } else {
+                container.style.display = 'none';
+            }
         }
 
         // Réinitialiser le formulaire
@@ -706,10 +888,19 @@
                     parentPostElement.className = 'parent-post';
                     parentPostElement.innerHTML = `
                         <h4>Post Parent :</h4>
-                        <p>${post.parentPost.title}</p>
-                        <p>${post.parentPost.content}</p>
+                        <p>${post.parentPost.title || 'Titre non renseigné'}</p>
+                        <p>${post.parentPost.content || 'Contenu non renseigné'}</p>
+                        ${post.parentPost.media && post.parentPost.media.length > 0 ? `
+                            <div class="media-gallery">
+                                ${post.parentPost.media.map(media => `
+                                    <div class="media-gallery-item">
+                                        ${media.type === 'image' ? `<img src="${media.url}" alt="Media">` : `<video src="${media.url}" controls></video>`}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
                     `;
-                    postElement.appendChild(parentPostElement);
+                    card.appendChild(parentPostElement);
                 }
 
                 postsContainer.appendChild(postElement);
@@ -741,6 +932,45 @@
                 console.log('Retweet créé avec succès:', result);
             } catch (error) {
                 console.error('Erreur lors de la création du retweet:', error);
+            }
+        }
+
+        async function createRepost(postId, userId) {
+            try {
+                userId = 26; // Assurez-vous que l'ID utilisateur est correctement défini
+                const response = await fetch(`${API_BASE_URL}/posts/${postId}`);
+                const post = await response.json();
+
+                if (post.post_id) {
+                    alert('Vous avez déjà reposté ce post.'); // Afficher une alerte à l'utilisateur
+                    return; // Ne pas créer le repost
+                }
+
+                const repostResponse = await fetch(`${API_BASE_URL}/repost`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        post_id: postId
+                    })
+                });
+
+                console.log('Données envoyées pour le repost:', {
+                    user_id: userId,
+                    post_id: postId
+                });
+
+                const result = await repostResponse.json();
+                if (repostResponse.ok) {
+                    console.log('Repost créé avec succès:', result);
+                    fetchPosts(); // Rafraîchir la liste des posts
+                } else {
+                    alert(`Erreur lors de la création du repost : ${result.error}`); // Afficher une alerte en cas d'erreur
+                }
+            } catch (error) {
+                alert(`Erreur lors de la création du repost : ${error.message}`); // Afficher une alerte en cas d'erreur
             }
         }
     </script>

@@ -196,14 +196,25 @@ def delete_post(post_id):
 @posts_bp.route('/api/posts', methods=['GET'])
 def get_all_posts():
     try:
+        print("Récupération des posts...")  # Log de début
         posts = Post.query.order_by(Post.published_at.desc()).all()
+        print(f"Nombre de posts récupérés : {len(posts)}")  # Log du nombre de posts
+
         result = []
-        
+
         for post in posts:
-            # Inclure les données du post parent uniquement si post_id est renseigné
-            parent_post_data = post.parent_post.to_dict() if post.post_id and post.parent_post else None
-            
-            result.append({
+            parent_post_data = None
+            if post.parent_post:
+                parent_post_data = {
+                    'id': post.parent_post.id,
+                    'title': post.parent_post.title,
+                    'content': post.parent_post.content,
+                    'media': [media.to_dict() for media in post.parent_post.media] if post.parent_post.media else [],
+                    'userId': post.parent_post.user_id,
+                    'categoryId': post.parent_post.category_id
+                }
+
+            post_data = {
                 'id': post.id,
                 'title': post.title,
                 'content': post.content,
@@ -211,13 +222,14 @@ def get_all_posts():
                 'media': [media.to_dict() for media in post.media] if post.media else [],
                 'userId': post.user_id,
                 'categoryId': post.category_id,
-                'parentPost': parent_post_data  # Inclure le post parent
-            })
-        
+                'parentPost': parent_post_data
+            }
+            result.append(post_data)
+
         return jsonify({'posts': result}), 200
     except Exception as e:
-        print(f"Erreur lors de la récupération des posts : {e}")
-        return jsonify({'error': str(e)}), 500
+        print(f"Erreur dans get_all_posts: {e}")  # Log de l'erreur
+        return jsonify({'error': f'Erreur serveur: {str(e)}'}), 500
 
 @posts_bp.route('/api/media/<int:media_id>', methods=['DELETE'])
 def delete_media(media_id):
