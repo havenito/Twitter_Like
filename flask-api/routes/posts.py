@@ -1,8 +1,10 @@
 from flask import Blueprint, request, jsonify
 from models import db
 from models.post import Post
+from models.user import User
+from models.category import Category
 from services.file_upload import upload_file, determine_media_type
-import os
+from models.likes import Like
 
 posts_bp = Blueprint('posts', __name__)
 
@@ -22,93 +24,42 @@ def upload_file_route():
 @posts_bp.route('/api/create_post', methods=['POST'])
 def create_post():
     try:
-        title = request.form['title']
-        content = request.form['content']
-        published_at = request.form['published_at']
-        post_id = request.form.get('post_id')
-        user_id = request.form['user_id']
-        category_id = request.form['category_id']
-        
-        # Valeurs par défaut pour media_url et media_type
-        default_media_url = None
-        default_media_type = None
-        
-        # Créer le post avec des valeurs par défaut pour les colonnes NOT NULL
-        post = Post(
-            title=title, 
-            content=content, 
-            published_at=published_at,
-            user_id=user_id, 
-            category_id=category_id, 
-            post_id=post_id,
-            media_url=default_media_url,
-            media_type=default_media_type
+        # Vérifier que le Content-Type est 'application/json'
+        if not request.is_json:
+            return jsonify({'error': 'Content-Type must be application/json'}), 415
+
+        data = request.get_json()
+        title = data.get('title', '')  # Les retweets peuvent ne pas avoir de titre
+        content = data.get('content', '')  # Les retweets peuvent ne pas avoir de contenu
+        user_id = data.get('user_id')
+        category_id = data.get('category_id')
+        post_id = data.get('post_id')  # ID du post parent (retweet)
+
+        if not user_id or not category_id:
+            return jsonify({'error': 'Champs requis manquants'}), 400
+
+        # Vérifier si le post parent existe
+        parent_post = None
+        if post_id:
+            parent_post = Post.query.get(post_id)
+            if not parent_post:
+                return jsonify({'error': 'Post parent non trouvé'}), 404
+
+        # Créer le post
+        new_post = Post(
+            title=title,
+            content=content,
+            user_id=user_id,
+            category_id=category_id,
+            post_id=post_id  # Associer le post parent
         )
-        
-        db.session.add(post)
+        db.session.add(new_post)
         db.session.commit()
-        
-        # Maintenant traiter les médias
-        media_files = []
-        
-        # Cas 1: Un seul fichier avec la clé 'file'
-        if 'file' in request.files:
-            file = request.files['file']
-            if file.filename:
-                media_files.append(file)
-                
-        # Cas 2: Plusieurs fichiers avec les clés 'files[]'
-        if 'files[]' in request.files:
-            files = request.files.getlist('files[]')
-            for file in files:
-                if file.filename:
-                    media_files.append(file)
-        
-        # Traiter chaque fichier média
-        first_media_url = None
-        first_media_type = None
-        
-        for file in media_files:
-            url, file_type = upload_file(file)
-            
-            if not url:
-                continue  # Ignorer les fichiers qui échouent
-                
-            media_type = determine_media_type(file_type)
-            if not media_type:
-                continue  # Ignorer les fichiers de type non supporté
-            
-            # Garder le premier média pour mettre à jour le post
-            if first_media_url is None:
-                first_media_url = url
-                first_media_type = media_type
-                
-            # Créer un enregistrement PostMedia
-            from models.post_media import PostMedia
-            post_media = PostMedia(
-                post_id=post.id,
-                media_url=url,
-                media_type=media_type
-            )
-            db.session.add(post_media)
-        
-        # Mettre à jour le post avec le premier média si disponible
-        if first_media_url:
-            post.media_url = first_media_url
-            post.media_type = first_media_type
-            db.session.commit()
-        
-        return jsonify({
-            'message': 'Post created successfully', 
-            'post_id': post.id,
-            'media_count': len(media_files)
-        })
-    
-    except KeyError as e:
-        return jsonify({'error': f'Missing required field: {str(e)}'}), 400
+
+        return jsonify({'message': 'Post créé avec succès', 'post_id': new_post.id}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': f'Failed to create post: {str(e)}'}), 500
+        return jsonify({'error': str(e)}), 500
 
 @posts_bp.route('/api/update_post/<int:post_id>', methods=['PUT', 'POST'])
 def update_post(post_id):
@@ -126,50 +77,44 @@ def update_post(post_id):
         if 'category_id' in request.form:
             post.category_id = request.form['category_id']
         
-        # Gestion des nouveaux fichiers
+        if 'delete_media_ids' in request.form:
+            import json
+            from models.post_media import PostMedia
+            try:
+                media_ids_to_delete = json.loads(request.form['delete_media_ids'])
+                
+                if isinstance(media_ids_to_delete, list):
+                    for media_id in media_ids_to_delete:
+                        media_to_delete = PostMedia.query.get(media_id)
+                        if media_to_delete and media_to_delete.post_id == post.id:
+                            db.session.delete(media_to_delete)
+                            
+            except (json.JSONDecodeError, ValueError) as e:
+                print(f"Erreur lors du parsing des IDs de médias à supprimer: {e}")
+        
         media_files = []
         
-        # Cas 1: Un seul fichier avec la clé 'file'
         if 'file' in request.files:
             file = request.files['file']
             if file.filename:
                 media_files.append(file)
                 
-        # Cas 2: Plusieurs fichiers avec les clés 'files[]'
-        if 'files[]' in request.files:
-            files = request.files.getlist('files[]')
+        if 'new_files[]' in request.files:
+            files = request.files.getlist('new_files[]')
             for file in files:
                 if file.filename:
                     media_files.append(file)
         
-        # Suppression de médias
-        if 'remove_media_ids' in request.form:
-            from models.post_media import PostMedia
-            media_ids_to_remove = request.form.getlist('remove_media_ids')
-            for media_id in media_ids_to_remove:
-                media_to_delete = PostMedia.query.get(media_id)
-                if media_to_delete:
-                    db.session.delete(media_to_delete)
-        
-        # Si demande de supprimer tous les médias
-        if request.form.get('remove_all_media') == 'true':
-            from models.post_media import PostMedia
-            PostMedia.query.filter_by(post_id=post.id).delete()
-            post.media_url = None
-            post.media_type = None
-        
-        # Traiter chaque nouveau fichier média
         for file in media_files:
             url, file_type = upload_file(file)
             
             if not url:
                 continue
-                
+                 
             media_type = determine_media_type(file_type)
             if not media_type:
                 continue
-                
-            # Créer un enregistrement PostMedia
+                 
             from models.post_media import PostMedia
             post_media = PostMedia(
                 post_id=post.id,
@@ -177,18 +122,9 @@ def update_post(post_id):
                 media_type=media_type
             )
             db.session.add(post_media)
-        
-        # Mise à jour de media_url et media_type pour rétrocompatibilité
-        if media_files and hasattr(post, 'media_url'):
-            from models.post_media import PostMedia
-            first_media = PostMedia.query.filter_by(post_id=post.id).first()
-            if first_media:
-                post.media_url = first_media.media_url
-                post.media_type = first_media.media_type
 
         db.session.commit()
         
-        # Récupérer tous les médias pour la réponse
         from models.post_media import PostMedia
         media_list = PostMedia.query.filter_by(post_id=post.id).all()
         media = []
@@ -206,8 +142,6 @@ def update_post(post_id):
                 'id': post.id,
                 'title': post.title,
                 'content': post.content,
-                'media_url': post.media_url,
-                'media_type': post.media_type,
                 'media': media
             }
         })
@@ -222,7 +156,6 @@ def get_post(post_id):
     if not post:
         return jsonify({'error': 'Post not found'}), 404
     
-    # Récupérer les médias associés au post
     from models.post_media import PostMedia
     media_list = PostMedia.query.filter_by(post_id=post.id).all()
     media = []
@@ -239,9 +172,7 @@ def get_post(post_id):
         'title': post.title,
         'content': post.content,
         'published_at': post.published_at,
-        'media_url': post.media_url,  # Pour rétrocompatibilité
-        'media_type': post.media_type,  # Pour rétrocompatibilité
-        'media': media,  # Nouvelle liste de tous les médias
+        'media': media,
         'user_id': post.user_id,
         'category_id': post.category_id
     })
@@ -269,7 +200,53 @@ def get_all_posts():
         result = []
         
         for post in posts:
-            # Récupérer les médias pour chaque post
+            # Inclure les données du post parent uniquement si post_id est renseigné
+            parent_post_data = post.parent_post.to_dict() if post.post_id and post.parent_post else None
+            
+            result.append({
+                'id': post.id,
+                'title': post.title,
+                'content': post.content,
+                'publishedAt': post.published_at.isoformat() if post.published_at else None,
+                'media': [media.to_dict() for media in post.media] if post.media else [],
+                'userId': post.user_id,
+                'categoryId': post.category_id,
+                'parentPost': parent_post_data  # Inclure le post parent
+            })
+        
+        return jsonify({'posts': result}), 200
+    except Exception as e:
+        print(f"Erreur lors de la récupération des posts : {e}")
+        return jsonify({'error': str(e)}), 500
+
+@posts_bp.route('/api/media/<int:media_id>', methods=['DELETE'])
+def delete_media(media_id):
+    try:
+        from models.post_media import PostMedia
+        media_to_delete = PostMedia.query.get(media_id)
+        
+        if not media_to_delete:
+            return jsonify({'error': 'Média non trouvé'}), 404
+        
+        db.session.delete(media_to_delete)
+        db.session.commit()
+        
+        return jsonify({'message': 'Média supprimé avec succès'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Erreur lors de la suppression du média: {str(e)}'}), 500
+
+@posts_bp.route('/api/users/<int:user_id>/posts', methods=['GET'])
+def get_user_posts(user_id):
+    try:
+        posts = Post.query.filter_by(user_id=user_id).order_by(Post.published_at.desc()).all()
+        result = []
+        
+        user = User.query.get(user_id)
+        
+        for post in posts:
+            category = Category.query.get(post.category_id)
+            
             from models.post_media import PostMedia
             media_list = PostMedia.query.filter_by(post_id=post.id).all()
             media = []
@@ -278,68 +255,174 @@ def get_all_posts():
                 media.append({
                     'id': item.id,
                     'url': item.media_url,
-                    'type': item.media_type
+                    'type': item.media_type,
+                    'created_at': item.created_at.isoformat() if item.created_at else None
                 })
+            
+            likes_count = Like.query.filter_by(post_id=post.id).count()
                 
             result.append({
                 'id': post.id,
                 'title': post.title,
                 'content': post.content,
-                'published_at': post.published_at,
-                'media_url': post.media_url,
-                'media_type': post.media_type,
+                'published_at': post.published_at.isoformat() if post.published_at else None,
+                'publishedAt': post.published_at.isoformat() if post.published_at else None,
                 'media': media,
                 'user_id': post.user_id,
-                'category_id': post.category_id
+                'userId': post.user_id,
+                'category_id': post.category_id,
+                'categoryId': post.category_id,
+                'likes': likes_count,
+                'user': {
+                    'id': user.id if user else None,
+                    'pseudo': user.pseudo if user else 'Utilisateur supprimé',
+                    'profilePicture': user.profile_picture if user else None,
+                    'firstName': user.first_name if user else None,
+                    'lastName': user.last_name if user else None
+                },
+                'category': {
+                    'id': category.id if category else None,
+                    'name': category.name if category else 'Catégorie supprimée',
+                    'description': category.description if category else None
+                }
             })
         
-        return jsonify(result)
+        return jsonify({'posts': result})
     except Exception as e:
-        return jsonify({'error': f'Failed to fetch posts: {str(e)}'}), 500
+        return jsonify({'error': f'Failed to fetch user posts: {str(e)}'}), 500
 
-@posts_bp.route('/api/media/<int:media_id>', methods=['DELETE'])
-def delete_media(media_id):
+@posts_bp.route('/api/posts/foryou', methods=['GET'])
+def get_foryou_posts():
     try:
-        from models.post_media import PostMedia
-        
-        # Récupérer le média par son ID
-        media = PostMedia.query.get(media_id)
-        if not media:
-            return jsonify({'error': 'Média non trouvé'}), 404
-        
-        # Tenter de supprimer le fichier physique
-        if media.media_url:
-            file_path = os.path.join(os.getcwd(), media.media_url.lstrip('/'))
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            else:
-                # Si le chemin absolu ne fonctionne pas, essayer avec le chemin relatif
-                relative_path = media.media_url.lstrip('/')
-                if os.path.exists(relative_path):
-                    os.remove(relative_path)
-        
-        # Stocker l'ID du post pour la mise à jour éventuelle
-        post_id = media.post_id
-        
-        # Supprimer l'enregistrement de la base de données
-        db.session.delete(media)
-        db.session.commit()
-        
-        # Mettre à jour le post parent si nécessaire (pour rétrocompatibilité)
-        post = Post.query.get(post_id)
-        if post and post.media_url == media.media_url:
-            # Le média supprimé était le média principal du post, mise à jour nécessaire
-            first_media = PostMedia.query.filter_by(post_id=post_id).first()
-            if first_media:
-                post.media_url = first_media.media_url
-                post.media_type = first_media.media_type
-            else:
-                post.media_url = None
-                post.media_type = None
-            db.session.commit()
-        
-        return jsonify({'message': 'Média supprimé avec succès'}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': f'Erreur lors de la suppression du média: {str(e)}'}), 500
+        page = request.args.get('page', 1, type=int)
+        per_page = 20
 
+        # Uniquement les posts des comptes publics
+        posts = (
+            Post.query
+                .join(User, Post.user_id == User.id)
+                .filter(User.private == False)
+                .order_by(Post.published_at.desc())
+                .paginate(page=page, per_page=per_page, error_out=False)
+        )
+
+        result = []
+        for post in posts.items:
+            user = User.query.get(post.user_id)
+            
+            category = Category.query.get(post.category_id)
+            
+            from models.post_media import PostMedia
+            media_list = PostMedia.query.filter_by(post_id=post.id).all()
+            media = [{
+                'id': m.id,
+                'url': m.media_url,
+                'type': m.media_type
+            } for m in media_list]
+            
+            likes_count = Like.query.filter_by(post_id=post.id).count()
+            
+            result.append({
+                'id': post.id,
+                'title': post.title,
+                'content': post.content,
+                'publishedAt': post.published_at.isoformat(),
+                'media': media,
+                'userId': post.user_id,
+                'categoryId': post.category_id,
+                'likes': likes_count,
+                'user': {
+                    'id': user.id if user else None,
+                    'pseudo': user.pseudo if user else 'Utilisateur supprimé',
+                    'profilePicture': user.profile_picture if user else None,
+                    'firstName': user.first_name if user else None,
+                    'lastName': user.last_name if user else None
+                },
+                'category': {
+                    'id': category.id if category else None,
+                    'name': category.name if category else 'Catégorie supprimée',
+                    'description': category.description if category else None
+                }
+            })
+        
+        return jsonify({
+            'posts': result,
+            'hasNext': posts.has_next,
+            'nextPage': posts.next_num if posts.has_next else None,
+            'totalPages': posts.pages,
+            'currentPage': page
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@posts_bp.route('/api/posts/following/<int:user_id>', methods=['GET'])
+def get_following_posts(user_id):
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = 20
+        
+        from models.follow import Follow
+        following_ids = db.session.query(Follow.followed_id).filter_by(follower_id=user_id).all()
+        following_ids = [f[0] for f in following_ids]
+        
+        if not following_ids:
+            return jsonify({
+                'posts': [],
+                'hasNext': False,
+                'nextPage': None,
+                'totalPages': 0,
+                'currentPage': page
+            })
+        
+        posts = Post.query.filter(Post.user_id.in_(following_ids)).order_by(Post.published_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        result = []
+        for post in posts.items:
+            user = User.query.get(post.user_id)
+            
+            category = Category.query.get(post.category_id)
+            
+            from models.post_media import PostMedia
+            media_list = PostMedia.query.filter_by(post_id=post.id).all()
+            media = [{
+                'id': m.id,
+                'url': m.media_url,
+                'type': m.media_type
+            } for m in media_list]
+            
+            likes_count = Like.query.filter_by(post_id=post.id).count()
+            
+            result.append({
+                'id': post.id,
+                'title': post.title,
+                'content': post.content,
+                'publishedAt': post.published_at.isoformat(),
+                'media': media,
+                'userId': post.user_id,
+                'categoryId': post.category_id,
+                'likes': likes_count,
+                'user': {
+                    'id': user.id if user else None,
+                    'pseudo': user.pseudo if user else 'Utilisateur supprimé',
+                    'profilePicture': user.profile_picture if user else None,
+                    'firstName': user.first_name if user else None,
+                    'lastName': user.last_name if user else None
+                },
+                'category': {
+                    'id': category.id if category else None,
+                    'name': category.name if category else 'Catégorie supprimée',
+                    'description': category.description if category else None
+                }
+            })
+        
+        return jsonify({
+            'posts': result,
+            'hasNext': posts.has_next,
+            'nextPage': posts.next_num if posts.has_next else None,
+            'totalPages': posts.pages,
+            'currentPage': page
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

@@ -4,6 +4,7 @@ from models.user import User
 from models.category import Category
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token
+from models.post import Post
 
 categories_bp = Blueprint('categories', __name__)
 
@@ -75,45 +76,26 @@ def get_category(category_id):
     }), 200
 
 @categories_bp.route('/api/categories/<int:category_id>/posts', methods=['GET'])
-def get_posts_by_category(category_id):
-    category = Category.query.get(category_id)
-    if not category:
-        return jsonify({'error': 'Category not found'}), 404
-    
+def fetchCategoryPosts(category_id):
     try:
-        # Obtenir les posts
-        from models.post import Post
-        from models.post_media import PostMedia
-        
-        posts = Post.query.filter_by(category_id=category.id).all()
+        posts = Post.query.filter_by(category_id=category_id).all()
         posts_list = []
-        
+
         for post in posts:
-            # Récupérer tous les médias associés à ce post
-            media_list = PostMedia.query.filter_by(post_id=post.id).all()
-            media = []
-            
-            for item in media_list:
-                media.append({
-                    'id': item.id,
-                    'url': item.media_url,
-                    'type': item.media_type
-                })
-            
-            # Créer l'objet post avec tous ses médias
+            parent_post_data = post.parent_post.to_dict() if post.parent_post else None
             post_data = {
-                'id': post.id, 
-                'title': post.title, 
+                'id': post.id,
+                'title': post.title,
                 'content': post.content,
-                'media_url': post.media_url,  # Pour rétrocompatibilité
-                'media_type': post.media_type,  # Pour rétrocompatibilité
-                'media': media,  # Liste de tous les médias
-                'published_at': post.published_at.isoformat() if post.published_at else None,
-                'user_id': post.user_id
+                'publishedAt': post.published_at.isoformat() if post.published_at else None,
+                'media': [media.to_dict() for media in post.media] if post.media else [],
+                'userId': post.user_id,
+                'categoryId': post.category_id,
+                'parentPost': parent_post_data
             }
-            
             posts_list.append(post_data)
-        
+
         return jsonify({'posts': posts_list}), 200
     except Exception as e:
-        return jsonify({'error': f'Erreur lors de la récupération des posts: {str(e)}'}), 500
+        print(f"Erreur lors de la récupération des posts : {e}")
+        return jsonify({'error': str(e)}), 500

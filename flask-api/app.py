@@ -25,11 +25,7 @@ def create_app(config_class=Config):
     jwt = JWTManager(app)
     
     # CORS configuré correctement pour WebSocket et préflight requests
-    CORS(app, 
-         origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8080", "null"],
-         allow_headers=["Content-Type", "Authorization"],
-         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-         supports_credentials=True)
+    CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True, expose_headers=["Content-Type", "Authorization", "Cache-Control"])
     
     init_cloudinary(app)
     

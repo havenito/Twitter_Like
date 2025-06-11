@@ -728,11 +728,26 @@
                     </button>
                 </div>
 
+                <!-- Ajoutez cette section dans la sidebar -->
+                <div class="new-group">
+                    <button class="new-conversation-btn" onclick="openCreateGroupModal()">
+                        <i class="fas fa-users"></i> Nouveau groupe
+                    </button>
+                </div>
+
                 <div class="conversations-list" id="conversations-list">
                     <div class="empty-state">
                         <i class="fas fa-comments"></i>
                         <h3>Aucune conversation</h3>
                         <p>Commencez une nouvelle conversation</p>
+                    </div>
+                </div>
+
+                <div class="groups-list" id="groups-list">
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <h3>Aucun groupe</h3>
+                        <p>Créez un groupe pour commencer à discuter</p>
                     </div>
                 </div>
             </div>
@@ -780,6 +795,7 @@
         
         let currentUser = null;
         let currentConversation = null;
+        let currentGroup = null;
         let availableUsers = [];
         let conversations = [];
         let socket = null;
@@ -857,6 +873,25 @@
                 socket.on('new_message', (messageData) => {
                     console.log('Nouveau message reçu:', messageData);
                     handleIncomingMessage(messageData);
+                });
+
+                // Écouter les nouveaux messages de groupe
+                socket.on('new_group_message', (messageData) => {
+                    console.log('Nouveau message de groupe reçu:', messageData);
+
+                    if (currentGroup && messageData.group_id === currentGroup.id) {
+                        const messageElement = createMessageElement(messageData);
+                        document.getElementById('chat-messages').appendChild(messageElement);
+
+                        // Faire défiler vers le bas
+                        const messagesContainer = document.getElementById('chat-messages');
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+                        // Jouer un son si ce n'est pas l'utilisateur actuel
+                        if (messageData.sender_id !== currentUser.id) {
+                            playNotificationSound();
+                        }
+                    }
                 });
 
                 // Écouter les confirmations d'envoi - VERSION CORRIGÉE
@@ -1112,22 +1147,13 @@
                 
                 await Promise.all([
                     loadAvailableUsers(),
-                    loadConversations()
+                    loadConversations(),
+                    loadGroups() // Charger les groupes en même temps
                 ]);
                 
                 console.log('Données initiales chargées');
-                
-                // Initialiser WebSocket après le chargement des données
-                initializeWebSocket();
-                
-                // Démarrer le polling comme fallback
-                startMessagePolling();
-                
             } catch (error) {
                 console.error('Erreur lors du chargement des données initiales:', error);
-                
-                // En cas d'erreur, au moins démarrer le polling
-                startMessagePolling();
             }
         }
 
@@ -1207,6 +1233,25 @@
             }
         }
 
+        // Charger les groupes - VERSION AJOUTÉE
+        async function loadGroups() {
+            try {
+                const response = await fetch(`${API_BASE}/group_chat`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Groupes chargés:', result);
+                    displayGroups(result.groups || []);
+                } else {
+                    console.error('Erreur lors du chargement des groupes:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des groupes:', error);
+            }
+        }
+
         // Afficher les conversations dans la sidebar
         function displayConversations() {
             const conversationsList = document.getElementById('conversations-list');
@@ -1257,6 +1302,46 @@
                 `;
                 
                 conversationsList.appendChild(conversationElement);
+            });
+        }
+
+        // Afficher les groupes dans la sidebar
+        function displayGroups(groups) {
+            const groupsList = document.getElementById('groups-list');
+
+            if (!groups || groups.length === 0) {
+                groupsList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <h3>Aucun groupe</h3>
+                        <p>Créez un groupe pour commencer à discuter</p>
+                    </div>
+                `;
+                return;
+            }
+
+            groupsList.innerHTML = '';
+
+            groups.forEach(group => {
+                const groupElement = document.createElement('div');
+                groupElement.className = 'conversation-item';
+                groupElement.onclick = () => selectGroup(group);
+
+                groupElement.innerHTML = `
+                    <div class="conversation-avatar" style="background: #52c41a;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="conversation-info">
+                        <div class="conversation-header">
+                            <span class="conversation-name">${escapeHtml(group.name)}</span>
+                        </div>
+                        <div class="conversation-preview">
+                            ${group.members.length} membres
+                        </div>
+                    </div>
+                `;
+
+                groupsList.appendChild(groupElement);
             });
         }
 
@@ -1452,29 +1537,28 @@
             const messageInput = document.getElementById('message-input');
             const content = messageInput.value.trim();
 
-            if (!content || !currentConversation) return;
+            if (!content || (!currentConversation && !currentGroup)) return;
 
             const sendBtn = document.getElementById('send-btn');
             sendBtn.disabled = true;
             sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
             try {
-                if (socket && socket.connected) {
-                    // Utiliser WebSocket - NE PAS afficher localement, attendre la confirmation
+                if (currentGroup) {
+                    // Envoyer un message dans un groupe via Socket.IO
+                    sendGroupMessage(content);
+                } else if (currentConversation) {
+                    // Envoyer un message privé via Socket.IO
                     socket.emit('send_message', {
                         sender_id: currentUser.id,
                         recipient_id: currentConversation.other_user.id,
                         content: content,
                         conversation_id: currentConversation.conversation_id
                     });
-
-                    // Vider le champ immédiatement
-                    messageInput.value = '';
-                    autoResizeTextarea();
-                } else {
-                    // Fallback vers HTTP si WebSocket n'est pas disponible
-                    await sendMessageHTTP(content);
                 }
+
+                messageInput.value = '';
+                autoResizeTextarea();
             } catch (error) {
                 console.error('Erreur lors de l\'envoi:', error);
                 showAlert('Erreur lors de l\'envoi du message', 'error');
@@ -1889,6 +1973,178 @@
             // Faire défiler vers le bas
             const messagesContainer = document.getElementById('chat-messages');
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Sélectionner un groupe
+        async function selectGroup(group) {
+            console.log('Sélection du groupe:', group);
+
+            currentConversation = null; // Désactiver les conversations privées
+            currentGroup = group;
+
+            // Mettre à jour l'en-tête
+            document.getElementById('chat-avatar').innerHTML = '<i class="fas fa-users"></i>';
+            document.getElementById('chat-username').textContent = group.name;
+
+            // Afficher l'interface de chat
+            document.getElementById('chat-header').style.display = 'flex';
+            document.getElementById('chat-input').style.display = 'block';
+
+            // Rejoindre le groupe via Socket.IO
+            joinGroup(group.id);
+
+            // Charger les messages du groupe
+            await loadGroupMessages(group.id);
+        }
+
+        // Charger les messages d'un groupe
+        async function loadGroupMessages(groupId) {
+            try {
+                const response = await fetch(`${API_BASE}/group_chat/${groupId}/messages`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Messages du groupe chargés:', result.messages);
+                    displayMessages(result.messages || []);
+                } else {
+                    console.error('Erreur lors du chargement des messages du groupe:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des messages du groupe:', error);
+            }
+        }
+
+        async function openCreateGroupModal() {
+            console.log('Ouverture de la modal de création de groupe');
+
+            // Recharger les utilisateurs si la liste est vide
+            if (!availableUsers || availableUsers.length === 0) {
+                await loadAvailableUsers();
+            }
+
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.id = 'create-group-modal';
+
+            const availableUsersHtml = availableUsers
+                .filter(user => user.id !== currentUser.id)
+                .map(user => {
+                    const displayName = user.username || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+                    return `
+                        <div class="user-item" onclick="toggleUserSelection(${user.id})">
+                            <div class="user-item-avatar">${displayName[0].toUpperCase()}</div>
+                            <div class="user-item-info">
+                                <div class="user-item-name">${escapeHtml(displayName)}</div>
+                                <div class="user-item-email">${escapeHtml(user.email)}</div>
+                            </div>
+                            <div class="user-checkbox">
+                                <input type="checkbox" id="user-${user.id}" value="${user.id}">
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Créer un groupe</h3>
+                        <button onclick="closeCreateGroupModal()" class="close-btn">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="group-name">Nom du groupe</label>
+                            <input type="text" id="group-name" placeholder="Entrez le nom du groupe" maxlength="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Sélectionner les membres</label>
+                            <div class="users-list" style="max-height: 300px;">
+                                ${availableUsersHtml}
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button onclick="closeCreateGroupModal()" class="btn btn-secondary">Annuler</button>
+                            <button onclick="createGroup()" class="btn btn-primary">Créer le groupe</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+        }
+
+        function closeCreateGroupModal() {
+            const modal = document.getElementById('create-group-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        async function createGroup() {
+            const groupName = document.getElementById('group-name').value.trim();
+            const selectedUsers = Array.from(document.querySelectorAll('.user-checkbox input:checked')).map(cb => parseInt(cb.value));
+
+            if (!groupName) {
+                showAlert('Le nom du groupe est requis', 'error');
+                return;
+            }
+
+            if (selectedUsers.length < 1) {
+                showAlert('Sélectionnez au moins 1 autre membre', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/group_chat`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        name: groupName,
+                        created_by: currentUser.id,
+                        user_ids: selectedUsers
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert('Groupe créé avec succès', 'success');
+                    closeCreateGroupModal();
+                    await loadGroups(); // Recharger les groupes
+                } else {
+                    showAlert(result.error || 'Erreur lors de la création du groupe', 'error');
+                }
+            } catch (error) {
+                console.error('Erreur lors de la création du groupe:', error);
+                showAlert('Erreur lors de la création du groupe', 'error');
+            }
+        }
+
+        function joinGroup(groupId) {
+            if (socket && socket.connected) {
+                socket.emit('join_group', {
+                    group_id: groupId,
+                    user_id: currentUser.id
+                });
+            }
+        }
+
+        function sendGroupMessage(content) {
+            if (socket && socket.connected && currentGroup) {
+                socket.emit('send_group_message', {
+                    group_id: currentGroup.id,
+                    sender_id: currentUser.id,
+                    content: content
+                });
+            }
+        }
+
+        function toggleUserSelection(userId) {
+            const checkbox = document.getElementById(`user-${userId}`);
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked; // Inverse l'état de la case à cocher
+            }
         }
     </script>
 </body>

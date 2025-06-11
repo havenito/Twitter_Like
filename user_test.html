@@ -262,8 +262,11 @@
         </div>
     </div>
     
+    <button id="add-user-endpoint-btn">Afficher les endpoints</button>
+    <div id="endpoints-code" style="display: none;">Code des endpoints</div>
+    
     <script>
-        const API_BASE_URL = 'http://localhost:5000/api';
+        const API_BASE = 'http://localhost:5000/api';
         let isEditMode = false;
         let userToDelete = null;
         
@@ -320,7 +323,7 @@
             formData.append('file', file);
             
             try {
-                const response = await fetch(`${API_BASE_URL}/upload`, {
+                const response = await fetch(`${API_BASE}/upload`, {
                     method: 'POST',
                     body: formData
                 });
@@ -381,7 +384,7 @@
                 
                 if (isEditMode) {
                     // Mettre à jour l'utilisateur existant
-                    response = await fetch(`${API_BASE_URL}/users/${userIdInput.value}`, {
+                    response = await fetch(`${API_BASE}/users/${userIdInput.value}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json'
@@ -390,7 +393,7 @@
                     });
                 } else {
                     // Créer un nouvel utilisateur
-                    response = await fetch(`${API_BASE_URL}/users`, {
+                    response = await fetch(`${API_BASE}/users`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -440,68 +443,65 @@
         
         // Fonction pour récupérer les utilisateurs
         async function fetchUsers() {
-            const usersListElement = document.getElementById('users-list');
-            usersListElement.innerHTML = '<p>Chargement des utilisateurs...</p>';
-            
             try {
-                const response = await fetch(`${API_BASE_URL}/users`);
-                
-                if (response.ok) {
-                    const users = await response.json();
-                    displayUsers(users);
-                } else {
-                    // Si le statut est 404, l'endpoint n'existe probablement pas encore
-                    if (response.status === 404) {
-                        usersListElement.innerHTML = `
-                            <p>L'endpoint GET /api/users n'existe pas encore.</p>
-                            <p>Cliquez sur le bouton "Ajouter Endpoint GET /api/users" pour voir le code à ajouter.</p>
-                        `;
-                        document.getElementById('add-user-endpoint-btn').style.display = 'block';
-                    } else {
-                        const errorData = await response.json();
-                        usersListElement.innerHTML = `<p>Erreur: ${errorData.error || response.statusText}</p>`;
+                const response = await fetch(`${API_BASE}/users`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Vérifiez si la réponse contient une clé `users`
+                if (data.success && Array.isArray(data.users)) {
+                    const users = data.users;
+                    users.forEach(user => {
+                        console.log(`Utilisateur : ${user.pseudo}`);
+                        // Ajoutez ici le code pour afficher les utilisateurs dans l'interface
+                    });
+                    displayUsers(users); // Appeler la fonction pour afficher les utilisateurs
+                } else {
+                    console.error('La réponse de l\'API n\'est pas valide:', data);
                 }
             } catch (error) {
-                usersListElement.innerHTML = `
-                    <p>Impossible de se connecter à l'API: ${error.message}</p>
-                    <p>Assurez-vous que votre serveur Flask est en cours d'exécution sur http://localhost:5000</p>
-                `;
+                console.error('Erreur lors de la récupération des utilisateurs:', error);
             }
         }
         
         // Fonction pour afficher les utilisateurs
         function displayUsers(users) {
             const usersListElement = document.getElementById('users-list');
-            
+
             if (users.length === 0) {
                 usersListElement.innerHTML = '<p>Aucun utilisateur trouvé.</p>';
                 return;
             }
-            
+
             usersListElement.innerHTML = '';
-            
+
             users.forEach(user => {
                 const userCard = document.createElement('div');
                 userCard.className = 'user-card';
-                
+
                 // Afficher l'image de profil si disponible
                 let profileImageHtml = '';
                 if (user.profile_picture) {
                     profileImageHtml = `<img src="${user.profile_picture}" alt="${user.first_name || 'User'}" class="profile-image">`;
                 } else {
-                    // Image de profil par défaut avec initiales - Sécurisée contre les valeurs null
-                    const firstName = user.first_name || '';
-                    const lastName = user.last_name || '';
-                    const initials = `${firstName.charAt(0) || ''}${lastName.charAt(0) || ''}`;
-                    
+                    const initials = `${(user.first_name || '').charAt(0)}${(user.last_name || '').charAt(0)}`;
                     profileImageHtml = `
                         <div class="profile-image" style="background-color: #1DA1F2; color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold;">
                             ${initials || '?'}
                         </div>
                     `;
                 }
-                
+
                 userCard.innerHTML = `
                     ${profileImageHtml}
                     <div class="user-email">${user.email || 'Email non disponible'}</div>
@@ -513,10 +513,10 @@
                         <button class="delete-btn" data-user-id="${user.id}">Supprimer</button>
                     </div>
                 `;
-                
+
                 usersListElement.appendChild(userCard);
             });
-            
+
             // Ajouter des écouteurs d'événements pour les boutons d'édition et de suppression
             document.querySelectorAll('.edit-btn').forEach(button => {
                 button.addEventListener('click', function() {
@@ -524,7 +524,7 @@
                     editUser(users.find(user => user.id == userId));
                 });
             });
-            
+
             document.querySelectorAll('.delete-btn').forEach(button => {
                 button.addEventListener('click', function() {
                     const userId = this.getAttribute('data-user-id');
@@ -568,7 +568,7 @@
         // Fonction pour supprimer un utilisateur
         async function deleteUser(userId) {
             try {
-                const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+                const response = await fetch(`${API_BASE}/users/${userId}`, {
                     method: 'DELETE'
                 });
                 
@@ -622,7 +622,9 @@
         });
         
         // Charger les utilisateurs au chargement de la page
-        document.addEventListener('DOMContentLoaded', fetchUsers);
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchUsers();
+        });
     </script>
 </body>
 </html>

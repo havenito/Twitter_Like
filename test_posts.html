@@ -171,6 +171,34 @@
         .upload-btn:hover {
             background-color: #0c85d0;
         }
+        .post-card {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #444;
+        }
+        .post-card h3 {
+            margin-top: 0;
+        }
+        .post-actions {
+            margin-top: 10px;
+        }
+        .parent-post {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #444;
+            border-radius: 8px;
+            border: 1px solid #555;
+        }
+        .parent-post h4 {
+            margin: 0 0 5px;
+            color: #90EE90;
+        }
+        .parent-post p {
+            margin: 0;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -299,29 +327,25 @@
             formData.append('content', document.getElementById('content').value);
             formData.append('user_id', document.getElementById('user-id').value);
             formData.append('category_id', document.getElementById('category-id').value);
-            formData.append('published_at', new Date().toISOString());
-            
+
             const postId = document.getElementById('post-id').value;
             if (postId) {
                 formData.append('post_id', postId);
             }
-            
-            // Ajouter tous les fichiers sélectionnés de notre tableau
+
+            // Ajouter les fichiers sélectionnés
             if (selectedFiles.length > 0) {
-                console.log(`Nombre de fichiers à envoyer: ${selectedFiles.length}`);
-                
-                selectedFiles.forEach((file, index) => {
-                    console.log(`Ajout du fichier ${index + 1}: ${file.name}`);
+                selectedFiles.forEach((file) => {
                     formData.append('files[]', file);
                 });
             }
-            
+
             try {
                 const response = await fetch(`${API_BASE_URL}/create_post`, {
                     method: 'POST',
-                    body: formData
+                    body: formData, // Utiliser FormData pour envoyer les fichiers
                 });
-                
+
                 const result = await response.json();
                 if (response.ok) {
                     document.getElementById('form-status').className = 'success';
@@ -344,28 +368,27 @@
             formData.append('title', document.getElementById('title').value);
             formData.append('content', document.getElementById('content').value);
             formData.append('category_id', document.getElementById('category-id').value);
-            
-            // Ajouter tous les fichiers sélectionnés de notre tableau
+
+            // Ajouter les fichiers sélectionnés
             if (selectedFiles.length > 0) {
-                selectedFiles.forEach((file, index) => {
-                    console.log(`Ajout du fichier ${index + 1}: ${file.name}`);
+                selectedFiles.forEach((file) => {
                     formData.append('files[]', file);
                 });
             }
-            
+
             // Ajouter les IDs des médias à supprimer
             if (mediaToRemove.length > 0) {
-                for (let mediaId of mediaToRemove) {
+                mediaToRemove.forEach((mediaId) => {
                     formData.append('remove_media_ids', mediaId);
-                }
+                });
             }
-            
+
             try {
                 const response = await fetch(`${API_BASE_URL}/update_post/${currentEditId}`, {
                     method: 'POST',
-                    body: formData
+                    body: formData,
                 });
-                
+
                 const result = await response.json();
                 if (response.ok) {
                     document.getElementById('form-status').className = 'success';
@@ -391,7 +414,10 @@
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
                 
-                const posts = await response.json();
+                const data = await response.json();
+                console.log('Données reçues de l\'API:', data); // Vérifiez les données reçues
+                const posts = data.posts || [];
+                
                 const postsContainer = document.getElementById('posts-container');
                 
                 if (posts.length > 0) {
@@ -485,56 +511,34 @@
             const container = document.getElementById('existing-media');
             const mediaList = document.getElementById('existing-media-list');
             mediaList.innerHTML = '';
-            
-            // Vérifier si le post a des médias dans le format "media" (tableau)
+
             if (post.media && post.media.length > 0) {
                 container.style.display = 'block';
-                
-                post.media.forEach(item => {
+
+                post.media.forEach((item) => {
                     const mediaItem = document.createElement('div');
                     mediaItem.className = 'existing-media-item';
                     mediaItem.dataset.id = item.id;
-                    
-                    // Créer l'élément médial (image ou vidéo)
+
                     const mediaElement = document.createElement(item.type === 'image' ? 'img' : 'video');
                     mediaElement.src = item.url;
                     if (item.type === 'video') {
                         mediaElement.controls = true;
                     }
-                    
-                    // Bouton de suppression
+
                     const removeBtn = document.createElement('button');
                     removeBtn.className = 'remove-media-btn';
-                    removeBtn.innerHTML = '×'; // Croix
-                    removeBtn.onclick = function() {
+                    removeBtn.innerHTML = '×';
+                    removeBtn.onclick = function () {
                         mediaToRemove.push(item.id);
                         mediaItem.style.opacity = '0.3';
                         removeBtn.disabled = true;
                     };
-                    
+
                     mediaItem.appendChild(mediaElement);
                     mediaItem.appendChild(removeBtn);
                     mediaList.appendChild(mediaItem);
                 });
-            } 
-            // Rétrocompatibilité: vérifier si post a un ancien format de média
-            else if (post.media_url) {
-                container.style.display = 'block';
-                
-                const mediaItem = document.createElement('div');
-                mediaItem.className = 'existing-media-item';
-                
-                // Créer l'élément média
-                const mediaElement = document.createElement(post.media_type === 'image' ? 'img' : 'video');
-                mediaElement.src = post.media_url;
-                if (post.media_type === 'video') {
-                    mediaElement.controls = true;
-                }
-                
-                mediaItem.appendChild(mediaElement);
-                mediaList.appendChild(mediaItem);
-                
-                // Note: pas de bouton de suppression pour l'ancien format car nous n'avons pas d'ID de média
             } else {
                 container.style.display = 'none';
             }
@@ -543,68 +547,103 @@
         // Créer une carte pour afficher un post
         function createPostCard(post) {
             const card = document.createElement('div');
-            card.className = 'card';
-            
+            card.className = 'post-card';
+
             const title = document.createElement('h3');
             title.textContent = post.title;
             card.appendChild(title);
-            
+
             const content = document.createElement('p');
             content.textContent = post.content;
             card.appendChild(content);
-            
-            const meta = document.createElement('p');
-            meta.innerHTML = `<small>ID: ${post.id} | User: ${post.user_id} | Category: ${post.category_id}</small>`;
-            card.appendChild(meta);
-            
-            // Affichage des médias multiples
+
+            const metadata = document.createElement('small');
+            metadata.textContent = `Publié par l'utilisateur ${post.userId} dans la catégorie ${post.categoryId}`;
+            card.appendChild(metadata);
+
+            // Ajouter les médias du post principal
             if (post.media && post.media.length > 0) {
                 const mediaGallery = document.createElement('div');
                 mediaGallery.className = 'media-gallery';
-                
-                post.media.forEach(item => {
-                    const galleryItem = document.createElement('div');
-                    galleryItem.className = 'media-gallery-item';
-                    
-                    const mediaElement = document.createElement(item.type === 'image' ? 'img' : 'video');
-                    mediaElement.src = item.url;
-                    mediaElement.className = 'media';
-                    if (item.type === 'video') {
-                        mediaElement.controls = true;
+
+                post.media.forEach(media => {
+                    const mediaItem = document.createElement('div');
+                    mediaItem.className = 'media-gallery-item';
+
+                    if (media.type === 'image') {
+                        const img = document.createElement('img');
+                        img.src = media.url;
+                        img.alt = 'Media';
+                        mediaItem.appendChild(img);
+                    } else if (media.type === 'video') {
+                        const video = document.createElement('video');
+                        video.src = media.url;
+                        video.controls = true;
+                        mediaItem.appendChild(video);
                     }
-                    
-                    galleryItem.appendChild(mediaElement);
-                    mediaGallery.appendChild(galleryItem);
+
+                    mediaGallery.appendChild(mediaItem);
                 });
-                
+
                 card.appendChild(mediaGallery);
-            } 
-            // Rétrocompatibilité avec l'ancien format
-            else if (post.media_url) {
-                const media = document.createElement(post.media_type === 'image' ? 'img' : 'video');
-                media.src = post.media_url;
-                media.className = 'media';
-                if (post.media_type === 'video') {
-                    media.controls = true;
-                }
-                card.appendChild(media);
             }
-            
+
+            // Ajouter le post parent si renseigné
+            if (post.parentPost) {
+                const parentPost = document.createElement('div');
+                parentPost.className = 'parent-post';
+                parentPost.innerHTML = `
+                    <h4>Post Parent :</h4>
+                    <p>${post.parentPost.title}</p>
+                    <p>${post.parentPost.content}</p>
+                `;
+
+                // Ajouter les médias du post parent
+                if (post.parentPost.media && post.parentPost.media.length > 0) {
+                    const parentMediaGallery = document.createElement('div');
+                    parentMediaGallery.className = 'media-gallery';
+
+                    post.parentPost.media.forEach(media => {
+                        const mediaItem = document.createElement('div');
+                        mediaItem.className = 'media-gallery-item';
+
+                        if (media.type === 'image') {
+                            const img = document.createElement('img');
+                            img.src = media.url;
+                            img.alt = 'Media';
+                            mediaItem.appendChild(img);
+                        } else if (media.type === 'video') {
+                            const video = document.createElement('video');
+                            video.src = media.url;
+                            video.controls = true;
+                            mediaItem.appendChild(video);
+                        }
+
+                        parentMediaGallery.appendChild(mediaItem);
+                    });
+
+                    parentPost.appendChild(parentMediaGallery);
+                }
+
+                card.appendChild(parentPost);
+            }
+
+            // Ajouter les boutons d'action
             const actions = document.createElement('div');
-            actions.className = 'actions';
-            
+            actions.className = 'post-actions';
+
             const editBtn = document.createElement('button');
             editBtn.textContent = 'Modifier';
             editBtn.onclick = () => prepareEditForm(post.id);
             actions.appendChild(editBtn);
-            
+
             const deleteBtn = document.createElement('button');
             deleteBtn.textContent = 'Supprimer';
             deleteBtn.onclick = () => deletePost(post.id);
             actions.appendChild(deleteBtn);
-            
+
             card.appendChild(actions);
-            
+
             return card;
         }
 
@@ -635,6 +674,75 @@
 
         // Charger les posts au chargement de la page
         fetchPosts();
+
+        function displayPosts(posts) {
+            const postsContainer = document.getElementById('posts-container');
+            postsContainer.innerHTML = '';
+
+            posts.forEach(post => {
+                console.log('Post:', post); // Vérifiez les données du post
+                console.log('Post Parent:', post.parentPost); // Vérifiez les données du post parent
+
+                const postElement = document.createElement('div');
+                postElement.className = 'post';
+
+                postElement.innerHTML = `
+                    <h3>${post.title}</h3>
+                    <p>${post.content}</p>
+                    <small>Publié par l'utilisateur ${post.userId} dans la catégorie ${post.categoryId}</small>
+                    ${post.media && post.media.length > 0 ? `
+                        <div class="media-gallery">
+                            ${post.media.map(media => `
+                                <div class="media-gallery-item">
+                                    ${media.type === 'image' ? `<img src="${media.url}" alt="Media">` : `<video src="${media.url}" controls></video>`}
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                `;
+
+                if (post.parentPost) {
+                    const parentPostElement = document.createElement('div');
+                    parentPostElement.className = 'parent-post';
+                    parentPostElement.innerHTML = `
+                        <h4>Post Parent :</h4>
+                        <p>${post.parentPost.title}</p>
+                        <p>${post.parentPost.content}</p>
+                    `;
+                    postElement.appendChild(parentPostElement);
+                }
+
+                postsContainer.appendChild(postElement);
+            });
+        }
+
+        async function createRetweet(postId, userId, categoryId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/create_post`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json', // En-tête correct
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        title: '', // Les retweets peuvent ne pas avoir de titre
+                        content: '', // Les retweets peuvent ne pas avoir de contenu
+                        user_id: userId,
+                        category_id: categoryId,
+                        post_id: postId // ID du post parent (retweet)
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('Retweet créé avec succès:', result);
+            } catch (error) {
+                console.error('Erreur lors de la création du retweet:', error);
+            }
+        }
     </script>
 </body>
 </html>
