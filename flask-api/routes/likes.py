@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from models import db
-from models.like import Like
+from models.likes import Like
 from models.post import Post
 from models.user import User
 from models.category import Category
