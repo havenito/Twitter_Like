@@ -17,7 +17,6 @@ const ProfileContent = ({ profileData, isOwnProfile }) => {
     { id: 'posts', label: 'Publications' },
     { id: 'media', label: 'Média' },
     { id: 'likes', label: 'J\'aime' },
-    { id: 'favorite', label: 'Favoris'},
     { id: 'polls', label: 'Sondages'}
   ];
 
@@ -52,7 +51,6 @@ const ProfileContent = ({ profileData, isOwnProfile }) => {
         {activeTab === 'posts' && <PostsList posts={profileData.posts || []} isOwnProfile={isOwnProfile} userPseudo={profileData.pseudo} />}
         {activeTab === 'media' && <MediaGrid posts={profileData.posts} userPseudo={profileData.pseudo} isOwnProfile={isOwnProfile} />}
         {activeTab === 'likes' && <LikesList likes={profileData.likes} userPseudo={profileData.pseudo} isOwnProfile={isOwnProfile} />}
-        {activeTab === 'favorite' && <FavoritesList favorites={profileData.favorites} userPseudo={profileData.pseudo} isOwnProfile={isOwnProfile} />}
         {activeTab === 'polls' && <PollsList polls={profileData.polls || []} userPseudo={profileData.pseudo} isOwnProfile={isOwnProfile} />}
       </div>
     </div>

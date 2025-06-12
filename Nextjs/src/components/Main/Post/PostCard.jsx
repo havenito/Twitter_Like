@@ -4,17 +4,23 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComment } from '@fortawesome/free-regular-svg-icons';
 import { faTag, faPlay } from '@fortawesome/free-solid-svg-icons';
 import LikeButton from './LikeButton';
 import FavoriteButton from './FavoriteButton';
 import MediaModal from '../../MediaModal';
+import CommentsModal from './CommentsModal';
+import CommentButton from './CommentButton';
 
-const PostCard = ({ post }) => {
+const PostCard = ({ post, disableNavigation = false }) => {
+  const router = useRouter();
   const [imageError, setImageError] = useState(false);
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [commentsCount, setCommentsCount] = useState(post.comments || 0);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Date inconnue';
@@ -31,7 +37,23 @@ const PostCard = ({ post }) => {
     }
   };
 
-  const handleMediaClick = (index) => {
+  const handlePostClick = (e) => {
+    if (
+      disableNavigation ||
+      e.target.closest('button') || 
+      e.target.closest('a') || 
+      e.target.closest('[data-interactive]')
+    ) {
+      return;
+    }
+    
+    if (post.user?.pseudo) {
+      router.push(`/${post.user.pseudo}/post/${post.id}`);
+    }
+  };
+
+  const handleMediaClick = (index, e) => {
+    e.stopPropagation();
     setSelectedMediaIndex(index);
     setShowMediaModal(true);
   };
@@ -49,7 +71,8 @@ const PostCard = ({ post }) => {
       return (
         <div 
           className="mt-3 relative cursor-pointer group rounded-lg overflow-hidden"
-          onClick={() => handleMediaClick(0)}
+          onClick={(e) => handleMediaClick(0, e)}
+          data-interactive="true"
         >
           {isVideo ? (
             <div className="relative">
@@ -78,7 +101,7 @@ const PostCard = ({ post }) => {
     const cols = allMedia.length === 2 ? 'grid-cols-2' : allMedia.length === 3 ? 'grid-cols-3' : 'grid-cols-2';
     
     return (
-      <div className={`mt-3 grid ${cols} gap-2`}>
+      <div className={`mt-3 grid ${cols} gap-2`} data-interactive="true">
         {allMedia.slice(0,4).map((media, i) => {
           const src = media.url.startsWith('http') ? media.url : `/${media.url}`;
           const isVideo = media.type === 'video';
@@ -86,7 +109,7 @@ const PostCard = ({ post }) => {
             <div 
               key={media.id||i} 
               className="relative rounded-lg overflow-hidden cursor-pointer group"
-              onClick={() => handleMediaClick(i)}
+              onClick={(e) => handleMediaClick(i, e)}
             >
               {isVideo ? (
                 <div className="relative">
@@ -177,15 +200,24 @@ const PostCard = ({ post }) => {
     return pseudo || 'Utilisateur introuvable';
   };
 
+  const handleCommentAdded = (postId) => {
+    if (postId === post.id) {
+      setCommentsCount(prev => prev + 1);
+    }
+  };
+
   return (
     <>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-[#1e1e1e] p-4 sm:p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 border border-[#333]"
+        onClick={handlePostClick}
+        className={`bg-[#1e1e1e] p-4 sm:p-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 border border-[#333] ${
+          !disableNavigation ? 'cursor-pointer hover:bg-[#252525]' : ''
+        }`}
       >
         <div className="flex items-center mb-4">
-          <div className="flex-shrink-0 mr-3">
+          <div className="flex-shrink-0 mr-3" data-interactive="true">
             {post.user?.pseudo ? (
               <Link href={`/${post.user.pseudo}`} className="block">
                 {renderProfilePicture()}
@@ -201,6 +233,7 @@ const PostCard = ({ post }) => {
                 <Link 
                   href={`/${post.user.pseudo}`} 
                   className="text-white font-medium hover:text-[#90EE90] transition-colors truncate"
+                  data-interactive="true"
                 >
                   {getDisplayName()}
                 </Link>
@@ -212,6 +245,7 @@ const PostCard = ({ post }) => {
                 <Link 
                   href={`/${post.user.pseudo}`}
                   className="text-gray-500 text-sm hover:text-[#90EE90] transition-colors"
+                  data-interactive="true"
                 >
                   @{post.user.pseudo}
                 </Link>
@@ -241,16 +275,15 @@ const PostCard = ({ post }) => {
         
         {renderMedia()}
         
-        <div className="text-xs text-gray-500 mt-4 flex justify-between items-center pt-3 border-t border-[#333]">
-          <div className="flex items-center space-x-4">
-            <button className="hover:text-[#90EE90] transition-colors flex items-center">
-              <FontAwesomeIcon icon={faComment} className="mr-1" /> 
-              <span>{post.comments || 0}</span>
-            </button>
+        <div className="text-xs text-gray-500 mt-4 flex justify-end items-center pt-3 border-t border-[#333]">
+          <div className="flex items-center space-x-4" data-interactive="true">
+            <CommentButton 
+              commentsCount={commentsCount}
+              onClick={() => setShowCommentsModal(true)}
+            />
             <LikeButton postId={post.id} initialLikes={post.likes || 0} />
             <FavoriteButton postId={post.id} />
           </div>
-          <span>{formatDate(post.publishedAt)}</span>
         </div>
       </motion.div>
 
@@ -260,6 +293,13 @@ const PostCard = ({ post }) => {
         media={post.media || []}
         currentIndex={selectedMediaIndex}
         onNavigate={setSelectedMediaIndex}
+      />
+
+      <CommentsModal
+        isOpen={showCommentsModal}
+        onClose={() => setShowCommentsModal(false)}
+        post={post}
+        onCommentAdded={handleCommentAdded}
       />
     </>
   );

@@ -248,7 +248,7 @@ def update_user(user_id):
     elif request.is_json:
         data_source = request.get_json()
         if not data_source:
-             return jsonify({'error': 'Invalid or missing JSON data'}), 400
+            return jsonify({'error': 'Invalid or missing JSON data'}), 400
         
         if 'profile_picture' in data_source:
             profile_picture_url_to_set = data_source.get('profile_picture') 
@@ -540,3 +540,24 @@ def get_user_by_pseudo(pseudo):
     }
     
     return jsonify(result)
+
+@auth_bp.route('/api/users/<int:user_id>', methods=['GET'])
+def get_user_by_id(user_id):
+    """Récupérer un utilisateur par son ID"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Utilisateur non trouvé'}), 404
+            
+        return jsonify({
+            'id': user.id,
+            'pseudo': user.pseudo,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'profile_picture': user.profile_picture,
+            'biography': user.biography,
+            'private': user.private,
+            'created_at': user.created_at.isoformat() if user.created_at else None
+        }), 200
+    except Exception as e:
+        return jsonify({'error': f'Erreur serveur: {str(e)}'}), 500

@@ -1,30 +1,29 @@
-'use client';
 import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart } from '@fortawesome/free-solid-svg-icons';
 import { faHeart as faHeartRegular } from '@fortawesome/free-regular-svg-icons';
+import { useSession } from 'next-auth/react';
 
-const LikeButton = ({ 
-  postId, 
+const CommentLikeButton = ({ 
+  commentId, 
   initialLikes = 0, 
   className = "",
   disabled = false 
 }) => {
   const { data: session } = useSession();
-  const [likesCount, setLikesCount] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(initialLikes);
   const [loading, setLoading] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
-    const checkLikeStatus = async () => {
-      if (!session?.user?.id || !postId) return;
+    if (!session?.user?.id || !commentId) return;
 
+    const checkLikeStatus = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/${session.user.id}/posts/${postId}/like-status`
+          `${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/${session.user.id}/comments/${commentId}/like-status`
         );
         
         if (response.ok) {
@@ -37,11 +36,11 @@ const LikeButton = ({
     };
 
     checkLikeStatus();
-  }, [session?.user?.id, postId]);
+  }, [session?.user?.id, commentId]);
 
   const handleLike = async () => {
     if (!session?.user?.id) {
-      alert('Vous devez être connecté pour liker un post');
+      alert('Vous devez être connecté pour liker un commentaire');
       return;
     }
 
@@ -51,7 +50,7 @@ const LikeButton = ({
     setLoading(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/posts/${postId}/like`,
+        `${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/comments/${commentId}/like`,
         {
           method: 'POST',
           headers: {
@@ -93,48 +92,14 @@ const LikeButton = ({
       <motion.div
         animate={isAnimating ? { 
           scale: [1, 1.3, 1],
-          rotate: [0, -10, 10, -5, 0]
+          rotate: [0, -10, 10, 0]
         } : {}}
-        transition={{ 
-          duration: 0.6,
-          ease: "easeInOut"
-        }}
-        className="relative"
+        transition={{ duration: 0.6 }}
       >
         <FontAwesomeIcon 
-          icon={isLiked ? faHeart : faHeartRegular} 
+          icon={isLiked ? faHeart : faHeartRegular}
           className="text-sm"
         />
-        
-        <AnimatePresence>
-          {isAnimating && isLiked && (
-            <>
-              {[...Array(6)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ 
-                    opacity: 1, 
-                    scale: 0,
-                    x: 0,
-                    y: 0
-                  }}
-                  animate={{ 
-                    opacity: 0, 
-                    scale: 1,
-                    x: Math.cos((i * 60) * Math.PI / 180) * 20,
-                    y: Math.sin((i * 60) * Math.PI / 180) * 20
-                  }}
-                  exit={{ opacity: 0 }}
-                  transition={{ 
-                    duration: 0.6,
-                    ease: "easeOut"
-                  }}
-                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-red-500 rounded-full"
-                />
-              ))}
-            </>
-          )}
-        </AnimatePresence>
       </motion.div>
       
       <motion.span
@@ -152,4 +117,4 @@ const LikeButton = ({
   );
 };
 
-export default LikeButton;
+export default CommentLikeButton;

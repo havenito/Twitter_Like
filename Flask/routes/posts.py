@@ -3,6 +3,7 @@ from models import db
 from models.post import Post
 from models.user import User
 from models.category import Category
+from models.comment import Comment
 from services.file_upload import upload_file, determine_media_type
 from models.like import Like
 
@@ -240,6 +241,7 @@ def get_all_posts():
             } for m in media_list]
             
             likes_count = Like.query.filter_by(post_id=post.id).count()
+            comments_count = Comment.query.filter_by(post_id=post.id).count()
             
             result.append({
                 'id': post.id,
@@ -250,6 +252,7 @@ def get_all_posts():
                 'userId': post.user_id,
                 'categoryId': post.category_id,
                 'likes': likes_count,
+                'comments': comments_count,
                 'user': {
                     'id': user.id if user else None,
                     'pseudo': user.pseudo if user else 'Utilisateur supprimé',
@@ -309,7 +312,8 @@ def get_user_posts(user_id):
                 })
             
             likes_count = Like.query.filter_by(post_id=post.id).count()
-                
+            comments_count = Comment.query.filter_by(post_id=post.id).count() 
+                 
             result.append({
                 'id': post.id,
                 'title': post.title,
@@ -322,6 +326,7 @@ def get_user_posts(user_id):
                 'category_id': post.category_id,
                 'categoryId': post.category_id,
                 'likes': likes_count,
+                'comments': comments_count,
                 'user': {
                     'id': user.id if user else None,
                     'pseudo': user.pseudo if user else 'Utilisateur supprimé',
@@ -346,7 +351,6 @@ def get_foryou_posts():
         page = request.args.get('page', 1, type=int)
         per_page = 20
 
-        # Uniquement les posts des comptes publics
         posts = (
             Post.query
                 .join(User, Post.user_id == User.id)
@@ -370,6 +374,7 @@ def get_foryou_posts():
             } for m in media_list]
             
             likes_count = Like.query.filter_by(post_id=post.id).count()
+            comments_count = Comment.query.filter_by(post_id=post.id).count()
             
             result.append({
                 'id': post.id,
@@ -380,6 +385,7 @@ def get_foryou_posts():
                 'userId': post.user_id,
                 'categoryId': post.category_id,
                 'likes': likes_count,
+                'comments': comments_count, 
                 'user': {
                     'id': user.id if user else None,
                     'pseudo': user.pseudo if user else 'Utilisateur supprimé',
@@ -442,6 +448,7 @@ def get_following_posts(user_id):
             } for m in media_list]
             
             likes_count = Like.query.filter_by(post_id=post.id).count()
+            comments_count = Comment.query.filter_by(post_id=post.id).count()
             
             result.append({
                 'id': post.id,
@@ -452,6 +459,7 @@ def get_following_posts(user_id):
                 'userId': post.user_id,
                 'categoryId': post.category_id,
                 'likes': likes_count,
+                'comments': comments_count,
                 'user': {
                     'id': user.id if user else None,
                     'pseudo': user.pseudo if user else 'Utilisateur supprimé',
