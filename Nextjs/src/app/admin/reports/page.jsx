@@ -22,7 +22,24 @@ export default function AdminReportsPage() {
   const [banModalOpen, setBanModalOpen] = useState(false);
   const [banUserId, setBanUserId] = useState(null);
 
+  // Pour le modal moderne d'alerte
+  const [alert, setAlert] = useState({ message: "", type: "info", isConfirm: false, onConfirm: null });
+
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+  // Inject animation CSS (une seule fois)
+  if (typeof window !== "undefined" && !document.getElementById("fade-in-keyframes")) {
+    const style = document.createElement("style");
+    style.id = "fade-in-keyframes";
+    style.innerHTML = `
+      @keyframes fade-in-modal {
+        from { opacity: 0; transform: scale(0.95);}
+        to   { opacity: 1; transform: scale(1);}
+      }
+      .animate-fade-in-modal { animation: fade-in-modal 0.25s; }
+    `;
+    document.head.appendChild(style);
+  }
 
   const fetchReports = useCallback(async () => {
     setLoading(true);
@@ -81,23 +98,76 @@ export default function AdminReportsPage() {
       if (!response.ok) throw new Error("Erreur lors de la mise à jour du statut");
       fetchReports();
     } catch (err) {
-      alert(`Erreur: ${err.message}`);
+      setAlert({ message: `Erreur: ${err.message}`, type: "error", isConfirm: false });
     }
   };
 
+  // MODAL MODERNE
+  const ModernModal = () => (
+    alert.message && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div
+          className={`relative px-8 py-7 rounded-2xl shadow-2xl text-white font-semibold flex flex-col items-center gap-6 text-lg
+            ${alert.type === "success"
+              ? "bg-green-600"
+              : alert.type === "error"
+              ? "bg-[#23272f]"
+              : "bg-blue-600"
+            } animate-fade-in-modal`}
+          style={{ minWidth: 340, maxWidth: "90vw" }}
+        >
+          <div className="w-full text-center font-bold">{alert.message}</div>
+          {alert.isConfirm ? (
+            <div className="flex gap-4 w-full justify-center">
+              <button
+                onClick={alert.onConfirm}
+                className="flex-1 bg-red-600 hover:bg-red-500 px-4 py-2 rounded-xl font-bold shadow transition"
+              >
+                Confirmer
+              </button>
+              <button
+                onClick={() => setAlert({ message: "", type: "info", isConfirm: false })}
+                className="flex-1 bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-xl font-bold shadow transition"
+              >
+                Annuler
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setAlert({ message: "", type: "info", isConfirm: false })}
+              className="absolute top-3 right-5 text-white/80 hover:text-white text-2xl font-bold"
+              aria-label="Fermer"
+            >
+              &times;
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  );
+
+  // WARN avec confirmation moderne
   const handleWarnUser = async (userId) => {
     if (!userId) {
-      alert("ID utilisateur non défini pour cet avertissement.");
+      setAlert({ message: "ID utilisateur non défini pour cet avertissement.", type: "error", isConfirm: false });
       return;
     }
-    if (!window.confirm("Êtes-vous sûr de vouloir ajouter un avertissement à cet utilisateur ?")) return;
-    try {
-      const response = await fetch(`${API_URL}/api/warn/${userId}`, { method: "POST" });
-      if (!response.ok) throw new Error("Erreur lors de l'avertissement de l'utilisateur");
-      fetchReports();
-    } catch (err) {
-      alert(`Erreur: ${err.message}`);
-    }
+    setAlert({
+      message: "Êtes-vous sûr de vouloir ajouter un avertissement à cet utilisateur ?",
+      type: "error",
+      isConfirm: true,
+      onConfirm: async () => {
+        setAlert({ message: "", type: "info", isConfirm: false });
+        try {
+          const response = await fetch(`${API_URL}/api/warn/${userId}`, { method: "POST" });
+          if (!response.ok) throw new Error("Erreur lors de l'avertissement de l'utilisateur");
+          setAlert({ message: "Avertissement ajouté avec succès.", type: "success", isConfirm: false });
+          fetchReports();
+        } catch (err) {
+          setAlert({ message: `Erreur: ${err.message}`, type: "error", isConfirm: false });
+        }
+      }
+    });
   };
 
   // Ouvre le modal de ban avec l'id utilisateur
@@ -106,44 +176,72 @@ export default function AdminReportsPage() {
     setBanModalOpen(true);
   };
 
-  // Ban avec durée
+  // Ban avec confirmation moderne
   const handleBanUser = async (userId, duration) => {
     setBanModalOpen(false);
     if (!userId) {
-      alert("ID utilisateur non défini pour ce bannissement.");
+      setAlert({ message: "ID utilisateur non défini pour ce bannissement.", type: "error", isConfirm: false });
       return;
     }
-    try {
-      const response = await fetch(`${API_URL}/api/ban/${userId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ duration }), // durée en jours, 0 = à vie
-      });
-      if (!response.ok) throw new Error("Erreur lors du bannissement de l'utilisateur");
-      fetchReports();
-    } catch (err) {
-      alert(`Erreur: ${err.message}`);
-    }
+    setAlert({
+      message: `Êtes-vous sûr de vouloir bannir cet utilisateur${duration === 0 ? " à vie" : ` pour ${duration} jour(s)`} ?`,
+      type: "error",
+      isConfirm: true,
+      onConfirm: async () => {
+        setAlert({ message: "", type: "info", isConfirm: false });
+        try {
+          const response = await fetch(`${API_URL}/api/ban/${userId}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ duration }),
+          });
+          if (!response.ok) throw new Error("Erreur lors du bannissement de l'utilisateur");
+          fetchReports();
+        } catch (err) {
+          setAlert({ message: `Erreur: ${err.message}`, type: "error", isConfirm: false });
+        }
+      }
+    });
   };
 
-  // Déban
+  // Déban avec confirmation moderne
   const handleUnbanUser = async (userId) => {
     if (!userId) return;
-    if (!window.confirm("Débannir cet utilisateur ?")) return;
-    try {
-      const response = await fetch(`${API_URL}/api/unban/${userId}`, { method: "POST" });
-      if (!response.ok) throw new Error("Erreur lors du débannissement");
-      fetchReports();
-    } catch (err) {
-      alert(`Erreur: ${err.message}`);
-    }
+    setAlert({
+      message: "Débannir cet utilisateur ?",
+      type: "error",
+      isConfirm: true,
+      onConfirm: async () => {
+        setAlert({ message: "", type: "info", isConfirm: false });
+        try {
+          const response = await fetch(`${API_URL}/api/unban/${userId}`, { method: "POST" });
+          if (!response.ok) throw new Error("Erreur lors du débannissement");
+          fetchReports();
+        } catch (err) {
+          setAlert({ message: `Erreur: ${err.message}`, type: "error", isConfirm: false });
+        }
+      }
+    });
   };
+
+  // Fermeture auto de l'alerte après 3s si ce n'est pas une confirmation
+  useEffect(() => {
+    if (
+      alert.message &&
+      typeof alert.message === "string" &&
+      !alert.isConfirm
+    ) {
+      const timer = setTimeout(() => setAlert({ message: "", type: "info", isConfirm: false }), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [alert]);
 
   if (loading) return <div className="p-8 text-center text-white">Chargement des signalements...</div>;
   if (error) return <div className="p-8 text-center text-red-400">Erreur: {error}</div>;
 
   return (
     <div className="min-h-screen bg-[#181c24] text-gray-200 p-4 md:p-8">
+      <ModernModal />
       <header className="mb-8">
         <div className="flex items-center mb-6">
           <a href="/" className="p-2 rounded-full hover:bg-gray-700 mr-4">
@@ -159,7 +257,7 @@ export default function AdminReportsPage() {
               key={f}
               onClick={() => {
                 setFilter(f);
-                setAdminTab("reports"); // <-- Permet de revenir à l'onglet signalements
+                setAdminTab("reports");
               }}
               className={`px-4 py-2 rounded-lg font-semibold transition-colors
                 ${filter === f && adminTab === "reports"
@@ -169,7 +267,6 @@ export default function AdminReportsPage() {
               {f}
             </button>
           ))}
-          {/* Onglet Catégories */}
           <button
             onClick={() => setAdminTab("categories")}
             className={`px-4 py-2 rounded-lg font-semibold transition-colors
@@ -180,7 +277,6 @@ export default function AdminReportsPage() {
         </div>
       </header>
 
-      {/* Affichage conditionnel selon l'onglet */}
       {adminTab === "reports" && (
         <>
           <ReportsTable
