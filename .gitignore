@@ -1,4 +1,1 @@
 .flaskenv
-node_modules
-.next
-.env

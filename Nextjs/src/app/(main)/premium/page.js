@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import Card from '../../../components/Main/Premium/Card';
-import { motion } from 'framer-motion';
+import CancelSubscriptionModal from '../../../components/Main/Premium/CancelSubscriptionModal';
+import SubscriptionNotification from '../../../components/Main/Premium/SubscriptionNotification';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link'; 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; 
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons'; 
+import { faArrowLeft, faTrash, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'; 
 import { useSession } from 'next-auth/react';
 
 const subscriptionPlans = [
@@ -44,7 +46,6 @@ const subscriptionPlans = [
     features: [
       'Tout de Minouverse Plus',
       'Badge "Premium" exclusif',
-      'Boost de vos "Miaous"',
       'Choix de thèmes personnalisés',
       'Support 24/7',
       'Aucune publicité',
@@ -56,9 +57,13 @@ export default function PremiumPage() {
   const [selectedPlanId, setSelectedPlanId] = useState(null);
   const [currentPlanId, setCurrentPlanId] = useState('free');
   const [loading, setLoading] = useState(false);
-  const { data: session, update } = useSession(); // Ajout de 'update'
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [userSubscription, setUserSubscription] = useState(null);
+  const [notification, setNotification] = useState(null);
+  const { data: session, update } = useSession();
 
-  // AJOUT : Afficher les infos utilisateur dans la console spécifiquement pour la page Premium
+  // Afficher les infos utilisateur dans la console
   useEffect(() => {
     if (session?.user) {
       console.group('💎 INFORMATIONS UTILISATEUR - PAGE PREMIUM');
@@ -72,28 +77,30 @@ export default function PremiumPage() {
     }
   }, [session, currentPlanId]);
 
+  const fetchUserSubscription = async () => {
+    if (session?.user?.id) {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/user/${session.user.id}/subscription`);
+        const data = await response.json();
+        
+        setCurrentPlanId(data.plan || 'free');
+        setUserSubscription(data.subscription);
+        
+        console.log('Données d\'abonnement récupérées:', data);
+      } catch (error) {
+        console.error('Erreur lors de la récupération de l\'abonnement:', error);
+        setCurrentPlanId('free');
+      }
+    }
+  };
+
   useEffect(() => {
-    // Récupérer l'abonnement actuel de l'utilisateur depuis la session
+    // Récupérer l'abonnement actuel de l'utilisateur
     if (session?.user?.subscription) {
       setCurrentPlanId(session.user.subscription);
-      console.log('Abonnement actuel de l\'utilisateur:', session.user.subscription);
-    } else {
-      // Si pas d'abonnement dans la session, récupérer depuis l'API
-      const fetchUserSubscription = async () => {
-        if (session?.user?.id) {
-          try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/user/${session.user.id}/subscription`);
-            const data = await response.json();
-            setCurrentPlanId(data.plan || 'free');
-          } catch (error) {
-            console.error('Erreur lors de la récupération de l\'abonnement:', error);
-            setCurrentPlanId('free');
-          }
-        }
-      };
-
-      fetchUserSubscription();
     }
+
+    fetchUserSubscription();
   }, [session]);
 
   // Gérer les paramètres de retour de Stripe
@@ -103,27 +110,26 @@ export default function PremiumPage() {
     const canceled = urlParams.get('canceled');
 
     if (success) {
-      // Afficher l'alerte une seule fois
-      alert('Paiement réussi ! Votre abonnement a été activé.');
+      setNotification({
+        type: 'success',
+        message: 'Paiement réussi ! Votre abonnement a été activé.',
+        details: 'Vous avez maintenant accès à toutes les fonctionnalités premium.'
+      });
       
-      // Nettoyer l'URL pour éviter de redéclencher l'alerte
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
       
-      // SOLUTION 1 : Forcer la mise à jour de la session
       const updateSession = async () => {
         try {
-          // Récupérer les nouvelles données utilisateur
           const response = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/user/${session.user.id}/subscription`);
           const data = await response.json();
           
-          // Mettre à jour la session avec les nouvelles données
           await update({
             subscription: data.plan || 'free'
           });
           
-          // Mettre à jour l'état local
           setCurrentPlanId(data.plan || 'free');
+          setUserSubscription(data.subscription);
           console.log('Session mise à jour avec le nouvel abonnement:', data.plan);
         } catch (error) {
           console.error('Erreur lors de la mise à jour de la session:', error);
@@ -134,13 +140,16 @@ export default function PremiumPage() {
         updateSession();
       }
     } else if (canceled) {
-      alert('Paiement annulé.');
+      setNotification({
+        type: 'info',
+        message: 'Paiement annulé.',
+        details: 'Aucun changement n\'a été effectué sur votre abonnement.'
+      });
       
-      // Nettoyer l'URL
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
     }
-  }, [session?.user?.id, update]); // Ajout des dépendances
+  }, [session?.user?.id, update]);
 
   const handleCardClick = (planId) => {
     setSelectedPlanId(planId === selectedPlanId ? null : planId);
@@ -148,7 +157,11 @@ export default function PremiumPage() {
 
   const handleSubscribe = async (planId) => {
     if (!session?.user?.id) {
-      alert('Vous devez être connecté pour vous abonner');
+      setNotification({
+        type: 'error',
+        message: 'Vous devez être connecté pour vous abonner',
+        details: 'Veuillez vous connecter et réessayer.'
+      });
       return;
     }
 
@@ -168,23 +181,112 @@ export default function PremiumPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Rediriger vers Stripe Checkout
         window.location.href = data.url;
       } else {
-        alert(data.error || 'Erreur lors de la création de la session de paiement');
+        setNotification({
+          type: 'error',
+          message: 'Erreur lors de la création de la session de paiement',
+          details: data.error || 'Une erreur inattendue s\'est produite.'
+        });
       }
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la création de la session de paiement');
+      setNotification({
+        type: 'error',
+        message: 'Erreur lors de la création de la session de paiement',
+        details: 'Veuillez vérifier votre connexion internet et réessayer.'
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleCancelSubscription = () => {
+    setShowCancelModal(true);
+  };
+
+  const confirmCancelSubscription = async () => {
+    if (!session?.user?.id) {
+      setNotification({
+        type: 'error',
+        message: 'Vous devez être connecté pour annuler votre abonnement',
+        details: 'Veuillez vous reconnecter et réessayer.'
+      });
+      return;
+    }
+
+    setCancelLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/user/${session.user.id}/cancel-subscription`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setNotification({
+          type: 'success',
+          message: 'Votre abonnement a été résilié immédiatement.',
+          details: 'Vous êtes maintenant sur le plan gratuit. Vous pouvez souscrire à nouveau à tout moment.'
+        });
+        
+        // Mettre à jour la session et les états locaux
+        await update({
+          subscription: 'free'
+        });
+        
+        setCurrentPlanId('free');
+        setUserSubscription(null);
+        setShowCancelModal(false);
+        
+        // Recharger les données d'abonnement
+        await fetchUserSubscription();
+        
+        console.log('Abonnement annulé avec succès');
+      } else {
+        setNotification({
+          type: 'error',
+          message: 'Erreur lors de l\'annulation de l\'abonnement',
+          details: data.error || 'Une erreur inattendue s\'est produite.'
+        });
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+      setNotification({
+        type: 'error',
+        message: 'Erreur lors de l\'annulation de l\'abonnement',
+        details: 'Veuillez vérifier votre connexion internet et réessayer.'
+      });
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
+  const cancelModal = () => {
+    setShowCancelModal(false);
+  };
+
+  // CORRECTION : Logique simplifiée pour l'affichage du bouton de résiliation
+  const hasActiveSubscription = currentPlanId !== 'free';
+
   return (
     <div className="min-h-screen bg-[#1f1f1f] py-12 px-4 sm:px-6 lg:px-8 text-white w-full relative">
+      {/* Notification */}
+      {notification && (
+        <SubscriptionNotification
+          type={notification.type}
+          message={notification.message}
+          details={notification.details}
+          isVisible={!!notification}
+          onClose={() => setNotification(null)}
+        />
+      )}
+
       {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
           <div className="bg-white p-6 rounded-lg">
             <p className="text-black">Redirection vers le paiement...</p>
           </div>
@@ -214,6 +316,29 @@ export default function PremiumPage() {
         <p className="text-lg text-gray-400">
           Débloquez plus de fonctionnalités et soutenez la plateforme.
         </p>
+        
+        {/* CORRECTION : Simplification de la condition d'affichage */}
+        {hasActiveSubscription && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="mt-6"
+          >
+            <motion.button
+              onClick={handleCancelSubscription}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full font-semibold text-sm flex items-center mx-auto transition-all duration-200"
+            >
+              <FontAwesomeIcon icon={faTrash} className="mr-2" />
+              Résilier mon abonnement
+            </motion.button>
+            <p className="text-sm text-gray-400 mt-4">
+              Pour changer d'abonnement, vous devez d'abord résilier votre abonnement actuel.
+            </p>
+          </motion.div>
+        )}
       </motion.div>
 
       <motion.div
@@ -240,10 +365,21 @@ export default function PremiumPage() {
               onClick={() => handleCardClick(plan.id)}
               onSubscribe={handleSubscribe}
               className="flex-1"
+              isDisabled={hasActiveSubscription && plan.id !== 'free' && plan.id !== currentPlanId}
             />
           </motion.div>
         ))}
       </motion.div>
+
+      {/* Modal de confirmation de résiliation */}
+      <CancelSubscriptionModal
+        isOpen={showCancelModal}
+        onClose={cancelModal}
+        onConfirm={confirmCancelSubscription}
+        isLoading={cancelLoading}
+        currentPlan={currentPlanId}
+        subscriptionPlans={subscriptionPlans}
+      />
     </div>
   );
 }

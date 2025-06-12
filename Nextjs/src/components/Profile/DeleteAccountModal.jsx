@@ -45,7 +45,6 @@ const DeleteAccountModal = ({ isOpen, onClose, onConfirm, isLoading, userEmail }
             className="bg-[#222] rounded-2xl p-6 w-full max-w-md border border-gray-700"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center">
                 <FontAwesomeIcon 
@@ -66,7 +65,6 @@ const DeleteAccountModal = ({ isOpen, onClose, onConfirm, isLoading, userEmail }
               )}
             </div>
 
-            {/* Warning */}
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
               <h3 className="text-red-400 font-semibold mb-2">
                 Action irréversible
@@ -82,7 +80,6 @@ const DeleteAccountModal = ({ isOpen, onClose, onConfirm, isLoading, userEmail }
               </ul>
             </div>
 
-            {/* Email confirmation */}
             <div className="mb-6">
               <label className="block text-gray-300 text-sm font-medium mb-2">
                 Pour confirmer, tapez votre adresse email :
@@ -106,11 +103,10 @@ const DeleteAccountModal = ({ isOpen, onClose, onConfirm, isLoading, userEmail }
               )}
             </div>
 
-            {/* Actions */}
             {isLoading ? (
-              <div className="flex items-center justify-center py-3">
-                <FontAwesomeIcon icon={faSpinner} className="animate-spin text-red-500 mr-3" />
-                <span className="text-gray-300">Suppression du compte en cours...</span>
+              <div className="flex justify-center items-center py-3">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-500"></div>
+                <span className="ml-3 text-gray-300">Suppression du compte en cours...</span>
               </div>
             ) : (
               <div className="flex gap-3 justify-end">

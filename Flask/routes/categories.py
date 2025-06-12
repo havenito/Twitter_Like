@@ -11,7 +11,7 @@ categories_bp = Blueprint('categories', __name__)
 def create_category():
     data = request.get_json()
     name = data.get('name')
-    description = data.get('description') or ""  # Chaîne vide si None
+    description = data.get('description')
 
     if not name:
         return jsonify({'error': 'Category name is required'}), 400

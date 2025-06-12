@@ -38,7 +38,6 @@ export default function UserProfilePage() {
         let fetchedData = null;
 
         try {
-          // D'abord récupérer les infos de base du profil
           const response = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/profile/${username}`);
           
           if (!response.ok) {
@@ -47,7 +46,6 @@ export default function UserProfilePage() {
           
           fetchedData = await response.json();
           
-          // Vérifier si l'utilisateur connecté suit ce profil (seulement si ce n'est pas son propre profil)
           if (session?.user?.id && fetchedData.id && !isOwnProfile) {
             setFollowingLoading(true);
             try {
@@ -65,9 +63,10 @@ export default function UserProfilePage() {
             }
           }
           
-          // Ensuite récupérer les posts spécifiquement avec la route dédiée
           let userPosts = [];
           let userMedia = [];
+          let userLikes = [];
+          let userPolls = [];
           
           if (fetchedData.id) {
             try {
@@ -75,31 +74,21 @@ export default function UserProfilePage() {
               
               if (postsResponse.ok) {
                 const postsData = await postsResponse.json();
-                userPosts = postsData.posts || [];
-                
-                // Transformer les posts pour correspondre au format attendu par PostsList
-                userPosts = userPosts.map(post => ({
+                userPosts = postsData.posts.map(post => ({
                   id: post.id,
                   title: post.title,
                   content: post.content,
                   createdAt: post.published_at,
                   publishedAt: post.published_at,
-                  mediaUrl: post.media_url,
-                  mediaType: post.media_type,
                   media: post.media || [],
+                  user: post.user, 
                   userId: post.user_id,
+                  category: post.category,
                   categoryId: post.category_id,
-                  // Ajout des données de catégorie
-                  category: post.category ? {
-                    id: post.category.id,
-                    name: post.category.name,
-                    description: post.category.description
-                  } : null,
-                  likes: 0, // À implémenter avec votre système de likes
-                  comments: 0 // À implémenter avec votre système de commentaires
+                  likes: post.likes || 0,
+                  comments: post.comments || 0
                 }));
                 
-                // Extraire les médias de tous les posts
                 userMedia = userPosts.reduce((allMedia, post) => {
                   if (post.media && Array.isArray(post.media)) {
                     return [...allMedia, ...post.media];
@@ -111,6 +100,30 @@ export default function UserProfilePage() {
               }
             } catch (postsError) {
               console.error('Erreur lors de la récupération des posts:', postsError);
+            }
+
+            if (isOwnProfile || (!fetchedData.private || isFollowing)) {
+              try {
+                const likesResponse = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/${fetchedData.id}/likes`);
+                
+                if (likesResponse.ok) {
+                  const likesData = await likesResponse.json();
+                  userLikes = likesData.likes || [];
+                }
+              } catch (likesError) {
+                console.error('Erreur lors de la récupération des likes:', likesError);
+              }
+
+              try {
+                const pollsResponse = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/${fetchedData.id}/polls`);
+                
+                if (pollsResponse.ok) {
+                  const pollsData = await pollsResponse.json();
+                  userPolls = pollsData.polls || [];
+                }
+              } catch (pollsError) {
+                console.error('Erreur lors de la récupération des sondages:', pollsError);
+              }
             }
           }
           
@@ -128,14 +141,14 @@ export default function UserProfilePage() {
             following: fetchedData.following_count || 0,
             posts: userPosts,
             media: userMedia,
-            likes: fetchedData.likes || [],
+            likes: userLikes,
+            polls: userPolls,
           };
           
         } catch (err) {
           console.error("Erreur API:", err);
           
           if (isOwnProfile && session?.user) {
-            // Fallback pour le profil personnel avec des données vides
             fetchedData = {
               id: session.user.id,
               pseudo: session.user.pseudo,
@@ -148,7 +161,7 @@ export default function UserProfilePage() {
               isPublic: session.user.isPrivate !== undefined ? !session.user.isPrivate : true,
               followers: 0,
               following: 0,
-              posts: [], // Posts vides en cas d'erreur
+              posts: [],
               media: [],
               likes: [],
             };
@@ -180,13 +193,12 @@ export default function UserProfilePage() {
     return <ProfileNotFound error={error || "Le profil demandé n'a pas pu être chargé."} />;
   }
   
-  // Compte privé & pas celui de l'utilisateur connecté & pas abonné
   if (!profileData.isPublic && !isOwnProfile && !isFollowing) {
     return (
         <div className="min-h-screen bg-[#111] text-white pb-10">
             <ProfileHeader 
               profileData={{
-                id: profileData.id, // ✅ Ajout de l'ID manquant
+                id: profileData.id,
                 pseudo: profileData.pseudo,
                 firstName: profileData.firstName,
                 lastName: profileData.lastName,

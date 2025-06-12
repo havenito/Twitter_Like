@@ -1,9 +1,7 @@
 from models import db
 from sqlalchemy.dialects.postgresql import ENUM
-from sqlalchemy import Column, DateTime
 
 class User(db.Model):
-    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False) 
@@ -17,11 +15,9 @@ class User(db.Model):
     pseudo = db.Column(db.String(50), nullable=True)
     biography = db.Column(db.String(255), nullable=True)
     banner = db.Column(db.String(255), nullable=True)
+    # CORRECTION : Utilisation du type ENUM personnalisé de Supabase
     subscription = db.Column(ENUM('free', 'plus', 'premium', name='subscription-type'), nullable=False, default='free')
-    warn_count = db.Column(db.Integer, default=0)  
-    is_banned = db.Column(db.Boolean, default=False)  
-    ban_until = Column(DateTime, nullable=True)
-
+    
     def __repr__(self):
         return f'<User {self.first_name} {self.last_name}>'
     
@@ -30,6 +26,7 @@ class User(db.Model):
         Méthode pour mettre à jour l'abonnement de l'utilisateur.
         Cette méthode doit être utilisée uniquement par le système d'abonnement.
         """
+        # CORRECTION : Validation stricte des valeurs ENUM
         valid_subscriptions = ['free', 'plus', 'premium']
         if new_subscription in valid_subscriptions:
             self.subscription = new_subscription

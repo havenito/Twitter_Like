@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import PostCard from '../../../../components/Main/Feed/PostCard';
+import PostCard from '../../../../components/Main/Post/PostCard';
 import { useInfiniteScroll } from '../../../../hooks/useInfiniteScroll';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
@@ -14,6 +14,29 @@ export default function ForYouPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNext, setHasNext] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // Fonction pour réorganiser les posts en ordre ligne par ligne
+  const getReorderedPosts = () => {
+    const cols = 3; // On considère toujours 3 colonnes pour la logique
+    const reordered = [];
+    
+    // Regrouper par lignes de 3
+    for (let i = 0; i < posts.length; i += cols) {
+      const row = posts.slice(i, i + cols);
+      
+      // Distribuer chaque post de la ligne dans l'ordre des colonnes
+      row.forEach((post, colIndex) => {
+        // Calculer la position finale dans le tableau réorganisé
+        const targetIndex = colIndex * Math.ceil(posts.length / cols) + Math.floor(i / cols);
+        if (!reordered[targetIndex]) {
+          reordered[targetIndex] = post;
+        }
+      });
+    }
+    
+    // Supprimer les éléments undefined et retourner
+    return reordered.filter(post => post !== undefined);
+  };
 
   const fetchPosts = useCallback(async (page = 1, append = false) => {
     try {
@@ -92,7 +115,7 @@ export default function ForYouPage() {
 
   return (
     <div className="min-h-screen bg-[#111] text-white">
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -118,10 +141,20 @@ export default function ForYouPage() {
               hidden: { opacity: 0 },
               visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
             }}
-            className="space-y-6"
+            className="columns-1 sm:columns-2 lg:columns-3 gap-6"
+            style={{ columnFill: 'balance' }}
           >
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} />
+            {getReorderedPosts().map((post) => (
+              <motion.div
+                key={post.id}
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  visible: { opacity: 1, y: 0 }
+                }}
+                className="break-inside-avoid mb-6 inline-block w-full"
+              >
+                <PostCard post={post} />
+              </motion.div>
             ))}
           </motion.div>
         )}

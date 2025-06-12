@@ -3,7 +3,9 @@ from models import db
 from models.post import Post
 from models.user import User
 from models.category import Category
+from models.comment import Comment
 from services.file_upload import upload_file, determine_media_type
+from models.like import Like
 
 posts_bp = Blueprint('posts', __name__)
 
@@ -30,7 +32,6 @@ def create_post():
         user_id = request.form['user_id']
         category_id = request.form['category_id']
         
-        # Créer le post sans médias
         post = Post(
             title=title, 
             content=content, 
@@ -43,7 +44,6 @@ def create_post():
         db.session.add(post)
         db.session.commit()
         
-        # Gérer les médias uniquement dans PostMedia
         media_files = []
         
         if 'file' in request.files:
@@ -57,7 +57,6 @@ def create_post():
                 if file.filename:
                     media_files.append(file)
         
-        # Ajouter tous les médias dans PostMedia uniquement
         for file in media_files:
             url, file_type = upload_file(file)
             
@@ -106,7 +105,6 @@ def update_post(post_id):
         if 'category_id' in request.form:
             post.category_id = request.form['category_id']
         
-        # Gérer la suppression des médias existants
         if 'delete_media_ids' in request.form:
             import json
             from models.post_media import PostMedia
@@ -122,7 +120,6 @@ def update_post(post_id):
             except (json.JSONDecodeError, ValueError) as e:
                 print(f"Erreur lors du parsing des IDs de médias à supprimer: {e}")
         
-        # Ajouter nouveaux médias
         media_files = []
         
         if 'file' in request.files:
@@ -156,7 +153,6 @@ def update_post(post_id):
 
         db.session.commit()
         
-        # Récupérer la liste mise à jour des médias
         from models.post_media import PostMedia
         media_list = PostMedia.query.filter_by(post_id=post.id).all()
         media = []
@@ -198,7 +194,6 @@ def get_post(post_id):
             'url': item.media_url,
             'type': item.media_type
         })
-    user = User.query.get(post.user_id)
         
     return jsonify({
         'id': post.id,
@@ -207,8 +202,7 @@ def get_post(post_id):
         'published_at': post.published_at,
         'media': media,
         'user_id': post.user_id,
-        'category_id': post.category_id,
-        'user_pseudo': user.pseudo if user else 'Utilisateur supprimé'
+        'category_id': post.category_id
     })
 
 @posts_bp.route('/api/posts/<int:post_id>', methods=['DELETE'])
@@ -234,10 +228,8 @@ def get_all_posts():
         result = []
         
         for post in posts:
-            # Récupérer les informations de l'utilisateur
             user = User.query.get(post.user_id)
             
-            # Récupérer les informations de la catégorie
             category = Category.query.get(post.category_id)
             
             from models.post_media import PostMedia
@@ -248,6 +240,9 @@ def get_all_posts():
                 'type': m.media_type
             } for m in media_list]
             
+            likes_count = Like.query.filter_by(post_id=post.id).count()
+            comments_count = Comment.query.filter_by(post_id=post.id).count()
+            
             result.append({
                 'id': post.id,
                 'title': post.title,
@@ -256,7 +251,8 @@ def get_all_posts():
                 'media': media,
                 'userId': post.user_id,
                 'categoryId': post.category_id,
-                # Ajout des informations utilisateur
+                'likes': likes_count,
+                'comments': comments_count,
                 'user': {
                     'id': user.id if user else None,
                     'pseudo': user.pseudo if user else 'Utilisateur supprimé',
@@ -264,7 +260,6 @@ def get_all_posts():
                     'firstName': user.first_name if user else None,
                     'lastName': user.last_name if user else None
                 },
-                # Ajout des informations de catégorie
                 'category': {
                     'id': category.id if category else None,
                     'name': category.name if category else 'Catégorie supprimée',
@@ -299,11 +294,9 @@ def get_user_posts(user_id):
         posts = Post.query.filter_by(user_id=user_id).order_by(Post.published_at.desc()).all()
         result = []
         
-        # Récupérer les informations de l'utilisateur une fois
         user = User.query.get(user_id)
         
         for post in posts:
-            # Récupérer les informations de la catégorie
             category = Category.query.get(post.category_id)
             
             from models.post_media import PostMedia
@@ -317,7 +310,10 @@ def get_user_posts(user_id):
                     'type': item.media_type,
                     'created_at': item.created_at.isoformat() if item.created_at else None
                 })
-                
+            
+            likes_count = Like.query.filter_by(post_id=post.id).count()
+            comments_count = Comment.query.filter_by(post_id=post.id).count() 
+                 
             result.append({
                 'id': post.id,
                 'title': post.title,
@@ -329,7 +325,8 @@ def get_user_posts(user_id):
                 'userId': post.user_id,
                 'category_id': post.category_id,
                 'categoryId': post.category_id,
-                # Ajout des informations utilisateur
+                'likes': likes_count,
+                'comments': comments_count,
                 'user': {
                     'id': user.id if user else None,
                     'pseudo': user.pseudo if user else 'Utilisateur supprimé',
@@ -337,7 +334,6 @@ def get_user_posts(user_id):
                     'firstName': user.first_name if user else None,
                     'lastName': user.last_name if user else None
                 },
-                # Ajout des informations de catégorie
                 'category': {
                     'id': category.id if category else None,
                     'name': category.name if category else 'Catégorie supprimée',
@@ -355,7 +351,6 @@ def get_foryou_posts():
         page = request.args.get('page', 1, type=int)
         per_page = 20
 
-        # Ne garder que les posts dont l'auteur est public (private == False)
         posts = (
             Post.query
                 .join(User, Post.user_id == User.id)
@@ -366,10 +361,8 @@ def get_foryou_posts():
 
         result = []
         for post in posts.items:
-            # Récupérer les informations de l'utilisateur
             user = User.query.get(post.user_id)
             
-            # Récupérer les informations de la catégorie
             category = Category.query.get(post.category_id)
             
             from models.post_media import PostMedia
@@ -380,6 +373,9 @@ def get_foryou_posts():
                 'type': m.media_type
             } for m in media_list]
             
+            likes_count = Like.query.filter_by(post_id=post.id).count()
+            comments_count = Comment.query.filter_by(post_id=post.id).count()
+            
             result.append({
                 'id': post.id,
                 'title': post.title,
@@ -388,7 +384,8 @@ def get_foryou_posts():
                 'media': media,
                 'userId': post.user_id,
                 'categoryId': post.category_id,
-                # Ajout des informations utilisateur
+                'likes': likes_count,
+                'comments': comments_count, 
                 'user': {
                     'id': user.id if user else None,
                     'pseudo': user.pseudo if user else 'Utilisateur supprimé',
@@ -396,7 +393,6 @@ def get_foryou_posts():
                     'firstName': user.first_name if user else None,
                     'lastName': user.last_name if user else None
                 },
-                # Ajout des informations de catégorie
                 'category': {
                     'id': category.id if category else None,
                     'name': category.name if category else 'Catégorie supprimée',
@@ -439,10 +435,8 @@ def get_following_posts(user_id):
         
         result = []
         for post in posts.items:
-            # Récupérer les informations de l'utilisateur
             user = User.query.get(post.user_id)
             
-            # Récupérer les informations de la catégorie
             category = Category.query.get(post.category_id)
             
             from models.post_media import PostMedia
@@ -453,6 +447,9 @@ def get_following_posts(user_id):
                 'type': m.media_type
             } for m in media_list]
             
+            likes_count = Like.query.filter_by(post_id=post.id).count()
+            comments_count = Comment.query.filter_by(post_id=post.id).count()
+            
             result.append({
                 'id': post.id,
                 'title': post.title,
@@ -461,7 +458,8 @@ def get_following_posts(user_id):
                 'media': media,
                 'userId': post.user_id,
                 'categoryId': post.category_id,
-                # Ajout des informations utilisateur
+                'likes': likes_count,
+                'comments': comments_count,
                 'user': {
                     'id': user.id if user else None,
                     'pseudo': user.pseudo if user else 'Utilisateur supprimé',
@@ -469,7 +467,6 @@ def get_following_posts(user_id):
                     'firstName': user.first_name if user else None,
                     'lastName': user.last_name if user else None
                 },
-                # Ajout des informations de catégorie
                 'category': {
                     'id': category.id if category else None,
                     'name': category.name if category else 'Catégorie supprimée',
@@ -486,4 +483,3 @@ def get_following_posts(user_id):
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    

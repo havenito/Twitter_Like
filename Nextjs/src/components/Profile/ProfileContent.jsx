@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import PostsList from './PostsList';
 import MediaGrid from './MediaGrid';
 import LikesList from './LikesList';
+import FavoritesList from './FavoritesList';
+import PollsList from './PollsList';
 
 const ProfileContent = ({ profileData, isOwnProfile }) => {
   const [activeTab, setActiveTab] = useState('posts');
@@ -14,7 +16,8 @@ const ProfileContent = ({ profileData, isOwnProfile }) => {
   const tabs = [
     { id: 'posts', label: 'Publications' },
     { id: 'media', label: 'Média' },
-    { id: 'likes', label: 'J\'aime' }
+    { id: 'likes', label: 'J\'aime' },
+    { id: 'polls', label: 'Sondages'}
   ];
 
   return (
@@ -48,6 +51,7 @@ const ProfileContent = ({ profileData, isOwnProfile }) => {
         {activeTab === 'posts' && <PostsList posts={profileData.posts || []} isOwnProfile={isOwnProfile} userPseudo={profileData.pseudo} />}
         {activeTab === 'media' && <MediaGrid posts={profileData.posts} userPseudo={profileData.pseudo} isOwnProfile={isOwnProfile} />}
         {activeTab === 'likes' && <LikesList likes={profileData.likes} userPseudo={profileData.pseudo} isOwnProfile={isOwnProfile} />}
+        {activeTab === 'polls' && <PollsList polls={profileData.polls || []} userPseudo={profileData.pseudo} isOwnProfile={isOwnProfile} />}
       </div>
     </div>
   );

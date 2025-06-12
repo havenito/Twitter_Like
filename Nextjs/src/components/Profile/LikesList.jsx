@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeartCrack } from '@fortawesome/free-solid-svg-icons';
+import PostCard from '../Main/Post/PostCard';
 
 const LikesList = ({ likes, userPseudo, isOwnProfile }) => {
   if (!likes || likes.length === 0) {
@@ -31,19 +32,13 @@ const LikesList = ({ likes, userPseudo, isOwnProfile }) => {
       }}
       className="space-y-4 sm:space-y-6"
     >
-      {likes.map((likedItem) => ( // 'likedItem' devrait être une structure de post
+      {likes.map((post) => (
         <motion.div
-          key={likedItem.id}
+          key={`liked-${post.id}`}
           variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-          className="bg-[#1e1e1e] p-4 sm:p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200"
+          className="relative"
         >
-          {/* Afficher ici une version résumée ou complète du post aimé */}
-          <p className="text-white">
-            Contenu du post aimé : {likedItem.content || "Contenu non disponible"}
-          </p>
-          <p className="text-xs text-gray-500 mt-2">
-            Par @{likedItem.authorPseudo || 'Auteur inconnu'} - Aimé le {new Date(likedItem.likedAt || Date.now()).toLocaleDateString('fr-FR')}
-          </p>
+          <PostCard post={post} />
         </motion.div>
       ))}
     </motion.div>

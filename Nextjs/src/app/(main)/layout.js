@@ -16,7 +16,6 @@ export default function HomeLayout({ children }) {
     }
   }, [status, router]);
 
-  // AJOUT : Afficher les infos utilisateur dans la console
   useEffect(() => {
     if (session?.user) {
       console.group('🔍 INFORMATIONS UTILISATEUR CONNECTÉ');
@@ -52,7 +51,7 @@ export default function HomeLayout({ children }) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#1e1e1e] to-[#121212] text-white flex flex-col">
         <Header />
-        <main className="flex flex-1 pt-[76px]"> 
+        <main className="flex flex-1 pt-14 md:pt-[76px]"> 
           {children} 
         </main>
         <Footer />
