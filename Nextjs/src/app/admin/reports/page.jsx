@@ -161,7 +161,6 @@ export default function AdminReportsPage() {
         try {
           const response = await fetch(`${API_URL}/api/warn/${userId}`, { method: "POST" });
           if (!response.ok) throw new Error("Erreur lors de l'avertissement de l'utilisateur");
-          setAlert({ message: "Avertissement ajouté avec succès.", type: "success", isConfirm: false });
           fetchReports();
         } catch (err) {
           setAlert({ message: `Erreur: ${err.message}`, type: "error", isConfirm: false });
