@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import ReportsTable from "@/components/Admin/ReportsTable";
 import Pagination from "@/components/Admin/Pagination";
 import BanModal from "@/components/Admin/BanModal";
+import AdminCategoriesPanel from "@/components/Admin/AdminCategoriesPanel";
 
 const ITEMS_PER_PAGE = 7;
 
@@ -13,6 +14,9 @@ export default function AdminReportsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
+
+  // Onglet actif : "reports" ou "categories"
+  const [adminTab, setAdminTab] = useState("reports");
 
   // Pour le ban modal
   const [banModalOpen, setBanModalOpen] = useState(false);
@@ -153,40 +157,62 @@ export default function AdminReportsPage() {
           {["Tous", "En attente", "Traités", "Bannis"].map(f => (
             <button
               key={f}
-              onClick={() => setFilter(f)}
+              onClick={() => {
+                setFilter(f);
+                setAdminTab("reports"); // <-- Permet de revenir à l'onglet signalements
+              }}
               className={`px-4 py-2 rounded-lg font-semibold transition-colors
-                ${filter === f ? "bg-green-500 text-white shadow-lg" : "bg-gray-700 hover:bg-gray-600 text-gray-300"}`}
+                ${filter === f && adminTab === "reports"
+                  ? "bg-green-500 text-white shadow-lg"
+                  : "bg-gray-700 hover:bg-gray-600 text-gray-300"}`}
             >
               {f}
             </button>
           ))}
+          {/* Onglet Catégories */}
+          <button
+            onClick={() => setAdminTab("categories")}
+            className={`px-4 py-2 rounded-lg font-semibold transition-colors
+              ${adminTab === "categories" ? "bg-green-500 text-white shadow-lg" : "bg-gray-700 hover:bg-gray-600 text-gray-300"}`}
+          >
+            Catégories
+          </button>
         </div>
       </header>
 
-      <ReportsTable
-        reports={reportsWithUserName}
-        handleUpdateStatus={handleUpdateStatus}
-        handleWarnUser={handleWarnUser}
-        handleBanUser={openBanModal}
-        handleUnbanUser={handleUnbanUser}
-        filter={filter}
-      />
+      {/* Affichage conditionnel selon l'onglet */}
+      {adminTab === "reports" && (
+        <>
+          <ReportsTable
+            reports={reportsWithUserName}
+            handleUpdateStatus={handleUpdateStatus}
+            handleWarnUser={handleWarnUser}
+            handleBanUser={openBanModal}
+            handleUnbanUser={handleUnbanUser}
+            filter={filter}
+          />
 
-      <Pagination
-        page={page}
-        totalPages={totalPages}
-        setPage={setPage}
-      />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            setPage={setPage}
+          />
 
-      <BanModal
-        isOpen={banModalOpen}
-        onClose={() => setBanModalOpen(false)}
-        onConfirm={(duration) => handleBanUser(banUserId, duration)}
-      />
+          <BanModal
+            isOpen={banModalOpen}
+            onClose={() => setBanModalOpen(false)}
+            onConfirm={(duration) => handleBanUser(banUserId, duration)}
+          />
 
-      <footer className="mt-8 text-sm text-gray-500 text-center">
-        {reports.filter(r => r.statut === false).length} signalement(s) en attente.
-      </footer>
+          <footer className="mt-8 text-sm text-gray-500 text-center">
+            {reports.filter(r => r.statut === false).length} signalement(s) en attente.
+          </footer>
+        </>
+      )}
+
+      {adminTab === "categories" && (
+        <AdminCategoriesPanel />
+      )}
     </div>
   );
 }

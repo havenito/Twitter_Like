@@ -8,4 +8,4 @@ class Post(db.Model):
     published_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())    
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id', ondelete="CASCADE"), nullable=False)
