@@ -181,7 +181,31 @@ export default function CommentDetailPage() {
   };
 
   const handleBackClick = () => {
-    router.back();
+    const previousPageType = sessionStorage.getItem('previousPageType');
+    
+    if (previousPageType === 'profile') {
+      sessionStorage.removeItem('previousPageType');
+      router.push(`/${username}`);
+    } else if (originalPost) {
+      router.push(`/${originalPost.user.pseudo}/post/${originalPost.id}`);
+    } else {
+      router.back();
+    }
+  };
+
+  const handlePostClick = (e) => {
+    if (
+      e.target.closest('button') || 
+      e.target.closest('a') || 
+      e.target.closest('[data-interactive]')
+    ) {
+      return;
+    }
+    
+    if (originalPost?.user?.pseudo) {
+      sessionStorage.setItem('previousPageType', 'comment');
+      router.push(`/${originalPost.user.pseudo}/post/${originalPost.id}`);
+    }
   };
 
   if (loading) {
@@ -235,9 +259,12 @@ export default function CommentDetailPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
+            className="mb-6 cursor-pointer"
+            onClick={handlePostClick}
           >
-            <PostCardDetail post={originalPost} />
+            <div className="hover:bg-[#252525] transition-colors rounded-xl">
+              <PostCardDetail post={originalPost} />
+            </div>
             <div className="mt-4">
               <h2 className="text-gray-400 text-sm font-medium">Post d'origine</h2>
             </div>
