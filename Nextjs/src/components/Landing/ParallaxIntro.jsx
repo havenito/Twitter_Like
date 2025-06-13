@@ -16,7 +16,7 @@ const ParallaxIntro = () => {
 
   return (
     <div className="relative h-[150vh] overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#1e1e1e] to-[#121212]">
-      <div className="absolute inset-0 bg-[url('/night-city-city-6000x4000-9753.jpg')] bg-cover bg-center opacity-20"></div>
+      <div className="absolute inset-0 bg-[url('/landingbg.jpg')] bg-cover bg-center opacity-20"></div>
 
       <motion.div
         className="absolute top-[-35%] inset-0 flex items-center justify-center"

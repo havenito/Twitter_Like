@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
-import ConversationList from './components/ConversationList';
-import ChatWindow from './components/ChatWindow';
-import NewConversationModal from './components/NewConversationModal';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import ConversationList from '../../../../components/Main/Message/ConversationList';
+import ChatWindow from '../../../../components/Main/Message/ChatWindow';
+import NewConversationModal from '../../../../components/Main/Message/NewConversationModal';
 import { useSocket } from '../../../../hooks/useSocket';
 
 export default function MessagePage() {
@@ -21,61 +23,30 @@ export default function MessagePage() {
   const { socket, sendMessage, joinConversation, leaveConversation } = useSocket();
 
   useEffect(() => {
-    const loadCurrentUser = () => {
-      try {
-        // Essayer d'abord le localStorage
-        const userStr = localStorage.getItem('user');
-        console.log('User from localStorage:', userStr);
-        
-        if (userStr && userStr !== '{}' && userStr !== 'null') {
-          const user = JSON.parse(userStr);
-          console.log('Parsed user from localStorage:', user);
-          
-          if (user && user.id) {
-            setCurrentUser(user);
-            loadConversations(user.id);
-            return;
-          }
-        }
+    // n'agir qu'une fois NextAuth a fini de charger
+    if (status === 'loading') return;
 
-        // Si pas d'utilisateur dans localStorage, essayer NextAuth session
-        if (session?.user) {
-          console.log('Using NextAuth session:', session.user);
-          
-          const sessionUser = {
-            id: session.user.id || session.user.sub,
-            email: session.user.email,
-            first_name: session.user.first_name || session.user.name?.split(' ')[0],
-            last_name: session.user.last_name || session.user.name?.split(' ')[1],
-            pseudo: session.user.pseudo || session.user.username,
-            profile_picture: session.user.image || session.user.profile_picture
-          };
+    if (session?.user) {
+      // Reconstruire l'utilisateur à partir de la session
+      const sessionUser = {
+        id: session.user.id || session.user.sub,
+        email: session.user.email,
+        first_name: session.user.first_name || session.user.name?.split(' ')[0],
+        last_name: session.user.last_name  || session.user.name?.split(' ')[1],
+        pseudo: session.user.pseudo       || session.user.username,
+        profile_picture: session.user.image || session.user.profile_picture,
+        subscription: session.user.subscription || 'free' // S'assurer que subscription est inclus
+      };
 
-          if (sessionUser.id) {
-            setCurrentUser(sessionUser);
-            loadConversations(sessionUser.id);
-            
-            // Sauvegarder dans localStorage pour les prochaines fois
-            localStorage.setItem('user', JSON.stringify(sessionUser));
-            return;
-          }
-        }
+      console.log('Current user session:', sessionUser); // Debug
+      setCurrentUser(sessionUser);
+      loadConversations(sessionUser.id);
 
-        // Si aucune session trouvée et que NextAuth a fini de charger
-        if (status !== 'loading') {
-          console.warn('No user found in localStorage or session');
-          setLoading(false);
-        }
-        
-      } catch (error) {
-        console.error('Error parsing user from localStorage:', error);
-        setLoading(false);
-      }
-    };
-
-    // Attendre que NextAuth ait fini de charger
-    if (status !== 'loading') {
-      loadCurrentUser();
+      // Optionnel : remettre à jour le localStorage
+      localStorage.setItem('user', JSON.stringify(sessionUser));
+    } else {
+      // pas de session => plus de chargement
+      setLoading(false);
     }
   }, [session, status]);
 
@@ -106,6 +77,13 @@ export default function MessagePage() {
     
     setSelectedConversation(conversation);
     joinConversation(conversation.conversation_id, currentUser.id);
+  };
+
+  const handleBackToConversations = () => {
+    if (selectedConversation?.conversation_id) {
+      leaveConversation(selectedConversation.conversation_id, currentUser.id);
+    }
+    setSelectedConversation(null);
   };
 
   const handleNewMessage = (messageData) => {
@@ -193,11 +171,13 @@ export default function MessagePage() {
   }
 
   return (
-    <div className="flex h-screen bg-[#1b1b1b] overflow-hidden">
-      {/* Liste des conversations */}
-      <div className="w-full md:w-1/3 border-r border-[#333] bg-[#1b1b1b] flex flex-col">
+    <div className="flex h-[calc(100vh-76px)] bg-[#1b1b1b] relative">
+      {/* Liste des conversations - Masquée sur mobile quand une conversation est sélectionnée */}
+      <div className={`w-full md:w-1/3 border-r border-[#333] bg-[#1b1b1b] flex flex-col ${
+        selectedConversation ? 'hidden md:flex' : 'flex'
+      }`}>
         {/* En-tête avec bouton nouvelle conversation */}
-        <div className="p-4 border-b border-[#333] bg-[#1b1b1b]">
+        <div className="p-4 border-b border-[#333] bg-[#1b1b1b] flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-xl font-semibold text-white">Messages</h1>
             <motion.button
@@ -221,25 +201,57 @@ export default function MessagePage() {
           </p>
         </div>
 
-        <ConversationList
-          conversations={conversations}
-          selectedConversation={selectedConversation}
-          onConversationSelect={handleConversationSelect}
-          currentUser={currentUser}
-          onNewConversation={() => setShowNewConversationModal(true)}
-        />
+        <div className="flex-1 overflow-hidden">
+          <ConversationList
+            conversations={conversations}
+            selectedConversation={selectedConversation}
+            onConversationSelect={handleConversationSelect}
+            currentUser={currentUser}
+            onNewConversation={() => setShowNewConversationModal(true)}
+          />
+        </div>
       </div>
 
-      {/* Fenêtre de chat */}
-      <div className={`flex-1 ${selectedConversation ? 'block' : 'hidden md:block'}`}>
+      {/* Fenêtre de chat - Affichée sur toute la largeur sur mobile quand une conversation est sélectionnée */}
+      <div className={`flex-1 flex flex-col ${
+        selectedConversation ? 'flex' : 'hidden md:flex'
+      }`}>
         {selectedConversation ? (
-          <ChatWindow
-            conversation={selectedConversation}
-            currentUser={currentUser}
-            socket={socket}
-            sendMessage={sendMessage}
-            onNewMessage={handleNewMessage}
-          />
+          <>
+            {/* En-tête mobile avec bouton retour */}
+            <div className="md:hidden flex items-center p-4 border-b border-[#333] bg-[#1b1b1b] flex-shrink-0">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleBackToConversations}
+                className="flex items-center justify-center w-10 h-10 bg-[#333] text-white rounded-full hover:bg-[#444] transition-colors mr-3"
+              >
+                <FontAwesomeIcon icon={faArrowLeft} className="text-sm" />
+              </motion.button>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-white truncate">
+                  {selectedConversation.other_user?.first_name && selectedConversation.other_user?.last_name
+                    ? `${selectedConversation.other_user.first_name} ${selectedConversation.other_user.last_name}`
+                    : selectedConversation.other_user?.username || selectedConversation.other_user?.email || 'Utilisateur inconnu'}
+                </h2>
+                <p className="text-sm text-gray-400 truncate">
+                  @{selectedConversation.other_user?.username || selectedConversation.other_user?.email?.split('@')[0]}
+                </p>
+              </div>
+            </div>
+            
+            {/* Fenêtre de chat avec hauteur contrainte */}
+            <div className="flex-1 overflow-hidden">
+              <ChatWindow
+                conversation={selectedConversation}
+                currentUser={currentUser}
+                socket={socket}
+                sendMessage={sendMessage}
+                onNewMessage={handleNewMessage}
+                showMobileHeader={false} // Désactiver l'en-tête dans ChatWindow sur mobile
+              />
+            </div>
+          </>
         ) : (
           <div className="flex items-center justify-center h-full text-gray-400 bg-[#1b1b1b]">
             <div className="text-center max-w-md mx-auto px-6">

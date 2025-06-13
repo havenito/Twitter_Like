@@ -115,32 +115,70 @@ const LikedReplyCard = ({ reply }) => {
     );
   };
 
+  const renderSubscriptionBadge = (user) => {
+    const subscription = user?.subscription || 'free';
+    
+    if (subscription === 'plus') {
+      return (
+        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3">
+          <Image
+            src="/plusbadge.png"
+            alt="Badge Plus"
+            width={12}
+            height={12}
+            className="w-full h-full object-contain"
+          />
+        </div>
+      );
+    } else if (subscription === 'premium') {
+      return (
+        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3">
+          <Image
+            src="/premiumbadge.png"
+            alt="Badge Premium"
+            width={12}
+            height={12}
+            className="w-full h-full object-contain"
+          />
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
   const renderProfilePicture = () => {
     const profilePicture = reply.user?.profile_picture || reply.user?.profilePicture;
     
     if (!profilePicture) {
       return (
-        <Image
-          src="/defaultuserpfp.png"
-          alt={`Photo de profil par défaut de ${reply.user?.pseudo || 'Utilisateur'}`}
-          width={32}
-          height={32}
-          className="w-8 h-8 rounded-full object-cover border border-[#555]"
-        />
+        <div className="relative">
+          <Image
+            src="/defaultuserpfp.png"
+            alt={`Photo de profil par défaut de ${reply.user?.pseudo || 'Utilisateur'}`}
+            width={32}
+            height={32}
+            className="w-8 h-8 rounded-full object-cover border border-[#555]"
+          />
+          {renderSubscriptionBadge(reply.user)}
+        </div>
       );
     }
 
     return (
-      <Image
-        src={profilePicture}
-        alt={`Photo de profil de ${reply.user?.pseudo || 'Utilisateur'}`}
-        width={32}
-        height={32}
-        className="w-8 h-8 rounded-full object-cover border border-[#555]"
-        onError={(e) => {
-          e.target.src = '/defaultuserpfp.png';
-        }}
-      />
+      <div className="relative">
+        <Image
+          src={profilePicture}
+          alt={`Photo de profil de ${reply.user?.pseudo || 'Utilisateur'}`}
+          width={32}
+          height={32}
+          className="w-8 h-8 rounded-full object-cover border border-[#555]"
+          onError={(e) => {
+            e.target.src = '/defaultuserpfp.png';
+          }}
+        />
+        {renderSubscriptionBadge(reply.user)}
+      </div>
     );
   };
 

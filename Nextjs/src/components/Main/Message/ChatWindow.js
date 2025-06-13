@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 
@@ -8,12 +9,13 @@ export default function ChatWindow({
   currentUser, 
   socket, 
   sendMessage, 
-  onNewMessage 
+  onNewMessage,
+  showMobileHeader = true
 }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [typing, setTyping] = useState(null);
-  const [pendingMessages, setPendingMessages] = useState(new Map()); // Utiliser Map au lieu de Set
+  const [pendingMessages, setPendingMessages] = useState(new Map());
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const messagesEndRef = useRef(null);
 
@@ -28,16 +30,13 @@ export default function ChatWindow({
   useEffect(() => {
     if (conversation && currentUser && socket) {
       loadMessages();
-      // Nettoyer les messages en attente quand on change de conversation
       setPendingMessages(new Map());
       
-      // IMPORTANT: Rejoindre la conversation pour recevoir les messages
       socket.emit('join_conversation', {
         conversation_id: conversation.conversation_id,
         user_id: currentUser.id
       });
       
-      // Rejoindre aussi la room utilisateur pour les notifications
       socket.emit('join_user', {
         user_id: currentUser.id
       });
@@ -100,10 +99,8 @@ export default function ChatWindow({
     console.log('Received new_message:', messageData);
     
     if (messageData.conversation_id === conversation.conversation_id) {
-      // Vérifier si c'est un message de quelqu'un d'autre
       if (messageData.sender_id !== currentUser.id) {
         setMessages(prev => {
-          // Vérifier si le message n'existe pas déjà
           const exists = prev.some(msg => msg.id === messageData.id);
           if (!exists) {
             return [...prev, messageData];
@@ -124,7 +121,6 @@ export default function ChatWindow({
       if (pendingMessages.has(tempId)) {
         console.log('✅ Confirming WebSocket message:', tempId);
         
-        // Remplacer le message temporaire par le message réel
         setMessages(prev => prev.map(msg => 
           msg.tempId === tempId 
             ? { 
@@ -136,14 +132,12 @@ export default function ChatWindow({
             : msg
         ));
         
-        // Supprimer de la liste des messages en attente
         setPendingMessages(prev => {
           const newMap = new Map(prev);
           newMap.delete(tempId);
           return newMap;
         });
         
-        // Informer le parent
         onNewMessage(data.message_data);
       } else {
         console.log('⚠️ Received confirmation for unknown tempId:', tempId);
@@ -166,7 +160,6 @@ export default function ChatWindow({
   const handleSendMessage = async (content) => {
     const tempId = `temp_${currentUser.id}_${Date.now()}_${Math.random()}`;
     
-    // Ajouter le message temporaire
     const tempMessage = {
       tempId: tempId,
       id: tempId,
@@ -190,10 +183,8 @@ export default function ChatWindow({
 
     console.log('📤 Sending message:', messageData);
     
-    // Variable pour suivre l'état de l'envoi
     let messageHandled = false;
     
-    // Fonction pour marquer le message comme envoyé (évite les doublons)
     const markMessageAsSent = (messageData, source) => {
       if (messageHandled) {
         console.log(`⚠️ Message already handled, ignoring ${source} response`);
@@ -203,7 +194,6 @@ export default function ChatWindow({
       messageHandled = true;
       console.log(`✅ Message sent via ${source}:`, messageData);
       
-      // Remplacer le message temporaire par le message réel
       setMessages(prev => prev.map(msg => 
         msg.tempId === tempId 
           ? { 
@@ -215,18 +205,15 @@ export default function ChatWindow({
           : msg
       ));
       
-      // Supprimer de la liste des messages en attente
       setPendingMessages(prev => {
         const newMap = new Map(prev);
         newMap.delete(tempId);
         return newMap;
       });
       
-      // Informer le parent
       onNewMessage(messageData);
     };
     
-    // Fonction pour marquer le message comme échoué
     const markMessageAsFailed = () => {
       if (messageHandled) return;
       
@@ -246,60 +233,28 @@ export default function ChatWindow({
       });
     };
     
-    // Essayer WebSocket en premier si connecté
     if (socket && socket.connected) {
       console.log('🔌 Trying WebSocket...');
       
-      // Écouter la confirmation WebSocket
       const handleWebSocketConfirmation = (data) => {
         if (data.tempId === tempId && data.success && data.message_data) {
           markMessageAsSent(data.message_data, 'WebSocket');
         }
       };
       
-      // Ajouter l'écouteur temporaire
       socket.on('message_sent', handleWebSocketConfirmation);
       
-      // Envoyer via WebSocket
       sendMessage(messageData);
       
-      // Timeout pour WebSocket (plus court)
       setTimeout(() => {
-        // Nettoyer l'écouteur
         socket.off('message_sent', handleWebSocketConfirmation);
         
-        // Si pas encore traité, essayer HTTP
         if (!messageHandled) {
           console.log('⏰ WebSocket timeout, trying HTTP fallback...');
-          
-          fetch('http://localhost:5000/api/chats/private', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              sender_id: currentUser.id,
-              recipient_id: conversation.other_user.id,
-              content: content
-            })
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.success && data.chat) {
-              markMessageAsSent(data.chat, 'HTTP fallback');
-            } else {
-              markMessageAsFailed();
-            }
-          })
-          .catch(error => {
-            console.error('❌ HTTP fallback failed:', error);
-            markMessageAsFailed();
-          });
         }
-      }, 2000); // Réduire à 2 secondes
+      }, 2000);
       
     } else {
-      // WebSocket pas connecté, utiliser HTTP directement
       console.log('❌ WebSocket not connected, using HTTP directly');
       
       try {
@@ -318,7 +273,7 @@ export default function ChatWindow({
         const data = await response.json();
         
         if (response.ok && data.success && data.chat) {
-          markMessageAsSent(data.chat, 'HTTP direct');
+          markMessageAsSent(data.chat, 'HTTP');
         } else {
           markMessageAsFailed();
         }
@@ -350,22 +305,71 @@ export default function ChatWindow({
     }
   };
 
-  const getInitials = (user) => {
-    if (!user) return '?';
+  const renderSubscriptionBadge = (user) => {
+    const subscription = user?.subscription || 'free';
     
-    if (user.first_name) {
-      return user.first_name[0].toUpperCase() + (user.last_name?.[0] || '').toUpperCase();
+    if (subscription === 'plus') {
+      return (
+        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4">
+          <Image
+            src="/plusbadge.png"
+            alt="Badge Plus"
+            width={16}
+            height={16}
+            className="w-full h-full object-contain"
+          />
+        </div>
+      );
+    } else if (subscription === 'premium') {
+      return (
+        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4">
+          <Image
+            src="/premiumbadge.png"
+            alt="Badge Premium"
+            width={16}
+            height={16}
+            className="w-full h-full object-contain"
+          />
+        </div>
+      );
     }
     
-    if (user.username) {
-      return user.username.substring(0, 2).toUpperCase();
-    }
+    return null;
+  };
+
+  const renderProfilePicture = (user) => {
+    const profilePicture = user?.profile_picture || user?.profilePicture;
     
-    if (user.email) {
-      return user.email.substring(0, 2).toUpperCase();
+    if (!profilePicture) {
+      return (
+        <div className="relative">
+          <Image
+            src="/defaultuserpfp.png"
+            alt={`Photo de profil de ${user?.first_name || user?.username || user?.email || 'Utilisateur'}`}
+            width={40}
+            height={40}
+            className="w-10 h-10 rounded-full object-cover border-2 border-[#333]"
+          />
+          {renderSubscriptionBadge(user)}
+        </div>
+      );
     }
-    
-    return '?';
+
+    return (
+      <div className="relative">
+        <Image
+          src={profilePicture}
+          alt={`Photo de profil de ${user?.first_name || user?.username || user?.email || 'Utilisateur'}`}
+          width={40}
+          height={40}
+          className="w-10 h-10 rounded-full object-cover border-2 border-[#333]"
+          onError={(e) => {
+            e.target.src = '/defaultuserpfp.png';
+          }}
+        />
+        {renderSubscriptionBadge(user)}
+      </div>
+    );
   };
 
   if (loading) {
@@ -381,15 +385,13 @@ export default function ChatWindow({
 
   return (
     <div className="flex flex-col h-full bg-[#1b1b1b]">
-      {/* En-tête de la conversation */}
+      {/* En-tête desktop toujours visible */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center p-4 border-b border-[#333] bg-[#1b1b1b] shadow-sm"
+        className="hidden md:flex items-center p-4 border-b border-[#333] bg-[#1b1b1b] shadow-sm"
       >
-        <div className="w-10 h-10 bg-gradient-to-br from-[#90EE90] to-[#7CD37C] rounded-full flex items-center justify-center text-black font-semibold shadow-lg">
-          {getInitials(conversation.other_user)}
-        </div>
+        {renderProfilePicture(conversation.other_user)}
         <div className="ml-3 flex-1">
           <h2 className="text-lg font-semibold text-white">
             {conversation.other_user?.first_name && conversation.other_user?.last_name
@@ -400,25 +402,7 @@ export default function ChatWindow({
             <p className="text-sm text-gray-400">
               @{conversation.other_user?.username || conversation.other_user?.email?.split('@')[0]}
             </p>
-            <div className="flex items-center text-xs text-green-400">
-              <div className="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
-              En ligne
-            </div>
           </div>
-        </div>
-        
-        {/* Actions de conversation */}
-        <div className="flex items-center space-x-2">
-          <button className="p-2 text-gray-400 hover:text-white hover:bg-[#333] rounded-full transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
-          </button>
-          <button className="p-2 text-gray-400 hover:text-white hover:bg-[#333] rounded-full transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-            </svg>
-          </button>
         </div>
       </motion.div>
 
@@ -431,10 +415,8 @@ export default function ChatWindow({
             className="flex items-center justify-center h-full text-gray-400"
           >
             <div className="text-center max-w-md">
-              <div className="w-16 h-16 mx-auto mb-4 bg-[#333] rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-[#90EE90]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
+              <div className="w-16 h-16 mx-auto mb-4 overflow-hidden rounded-full border-2 border-[#333]">
+                {renderProfilePicture(conversation.other_user)}
               </div>
               <p className="text-sm font-medium text-gray-300 mb-2">Commencez votre conversation</p>
               <p className="text-xs text-gray-500 leading-relaxed">
@@ -454,7 +436,8 @@ export default function ChatWindow({
                   messages[index - 1].sender_id !== message.sender_id
                 }
                 otherUser={conversation.other_user}
-                index={index}
+                currentUser={currentUser}
+                index={messages.length - 1 - index} // Inversion de l'index pour l'effet du bas vers le haut
                 isPending={message.isPending}
                 failed={message.failed}
               />
@@ -471,8 +454,14 @@ export default function ChatWindow({
               exit={{ opacity: 0, y: -10 }}
               className="flex items-center space-x-3 text-gray-400"
             >
-              <div className="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center text-xs font-semibold">
-                {getInitials(conversation.other_user)}
+              <div className="w-8 h-8 overflow-hidden rounded-full border border-[#333]">
+                <Image
+                  src={conversation.other_user?.profile_picture || '/defaultuserpfp.png'}
+                  alt="Photo de profil"
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="bg-[#2a2a2a] rounded-2xl px-4 py-2 flex items-center space-x-1">
                 <div className="flex space-x-1">
@@ -494,6 +483,7 @@ export default function ChatWindow({
         onSendMessage={handleSendMessage}
         onTypingStart={handleTypingStart}
         onTypingStop={handleTypingStop}
+        currentUser={currentUser}
       />
     </div>
   );

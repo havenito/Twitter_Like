@@ -19,7 +19,8 @@ from routes.polls import polls_bp
 from routes.notifications import notifications_bp
 from routes.comment_likes import comment_likes_bp
 from routes.reply_likes import reply_likes_bp
-from routes.chat import chat_bp
+from routes.chat import chats_bp
+from routes.search import search_bp
 
 from routes.websocket_chat import init_socketio
 
@@ -49,7 +50,8 @@ def create_app(config_class=Config):
     app.register_blueprint(notifications_bp)
     app.register_blueprint(comment_likes_bp)
     app.register_blueprint(reply_likes_bp)
-    app.register_blueprint(chat_bp)
+    app.register_blueprint(chats_bp)
+    app.register_blueprint(search_bp)
     
     socketio = init_socketio(app)
 

@@ -26,9 +26,9 @@ const CommentsRepliesList = ({ commentsAndReplies, userPseudo, isOwnProfile }) =
   }, [commentsAndReplies, activeFilter]);
 
   const filterOptions = [
-    { id: 'all', label: 'Tout', shortLabel: 'Tout', icon: faFilter },
-    { id: 'comments', label: 'Commentaires', shortLabel: 'Comm.', icon: faComment },
-    { id: 'replies', label: 'Réponses', shortLabel: 'Rép.', icon: faReply }
+    { id: 'all', label: 'Tout', shortLabel: 'Tout', icon: faFilter, count: commentsAndReplies?.length || 0 },
+    { id: 'comments', label: 'Commentaires', shortLabel: 'Comm.', icon: faComment, count: commentsAndReplies?.filter(item => item.type === 'comment').length || 0 },
+    { id: 'replies', label: 'Réponses', shortLabel: 'Rép.', icon: faReply, count: commentsAndReplies?.filter(item => item.type === 'reply').length || 0 }
   ];
 
   if (!commentsAndReplies || commentsAndReplies.length === 0) {
@@ -148,6 +148,9 @@ const CommentsRepliesList = ({ commentsAndReplies, userPseudo, isOwnProfile }) =
               <FontAwesomeIcon icon={option.icon} className="text-xs" />
               <span className="block sm:hidden">{option.shortLabel}</span>
               <span className="hidden sm:block">{option.label}</span>
+              <span className="bg-gray-600 text-white rounded-full px-1.5 py-0.5 text-xs">
+                {option.count}
+              </span>
             </button>
           ))}
         </div>

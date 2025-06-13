@@ -170,10 +170,12 @@ def get_chat_sender(chat_id):
 
         return jsonify({
             'id': sender.id,
-            'username': sender.pseudo,  # Utiliser 'username' au lieu de 'pseudo'
+            'username': sender.pseudo,
             'email': sender.email,
             'first_name': getattr(sender, 'first_name', None),
-            'last_name': getattr(sender, 'last_name', None)
+            'last_name': getattr(sender, 'last_name', None),
+            'profile_picture': getattr(sender, 'profile_picture', None),
+            'subscription': getattr(sender, 'subscription', 'free')  # Ajouter cette ligne avec fallback
         }), 200
         
     except Exception as e:
@@ -196,8 +198,12 @@ def get_conversation_chats(conversation_id):
             if user:
                 participants.append({
                     'id': user.id,
-                    'username': user.pseudo,  # Utiliser 'pseudo' au lieu de 'username'
-                    'email': user.email
+                    'username': user.pseudo,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'profile_picture': user.profile_picture,
+                    'subscription': user.subscription  # Ajouter cette ligne
                 })
 
         return jsonify({
@@ -221,12 +227,7 @@ def get_user_conversations(user_id):
         user = User.query.get(user_id)
         if not user:
             print(f"❌ User {user_id} not found")
-            return jsonify({
-                'error': 'Utilisateur non trouvé',
-                'user_id': user_id,
-                'conversations': [],
-                'total_conversations': 0
-            }), 404
+            return jsonify({'error': 'Utilisateur non trouvé'}), 404
         
         print(f"✅ User found: {user.email}")
 

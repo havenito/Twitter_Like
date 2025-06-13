@@ -203,7 +203,7 @@ def get_users():
             'created_at': user_obj.created_at.isoformat() if hasattr(user_obj, 'created_at') and user_obj.created_at else None,
             'updated_at': user_obj.updated_at.isoformat() if hasattr(user_obj, 'updated_at') and user_obj.updated_at else None,
             'banner': user_obj.banner,
-            'subscription': user_obj.subscription_level
+            'subscription': user_obj.subscription  # Changer de subscription_level à subscription
         })
     
     return jsonify(result)

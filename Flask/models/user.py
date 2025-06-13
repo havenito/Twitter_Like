@@ -15,9 +15,18 @@ class User(db.Model):
     pseudo = db.Column(db.String(50), nullable=True)
     biography = db.Column(db.String(255), nullable=True)
     banner = db.Column(db.String(255), nullable=True)
-    # CORRECTION : Utilisation du type ENUM personnalisé de Supabase
     subscription = db.Column(ENUM('free', 'plus', 'premium', name='subscription-type'), nullable=False, default='free')
     
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "pseudo": self.pseudo,
+            "profile_picture": self.profile_picture,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "subscription": self.subscription
+        }
+
     def __repr__(self):
         return f'<User {self.first_name} {self.last_name}>'
     
@@ -26,7 +35,6 @@ class User(db.Model):
         Méthode pour mettre à jour l'abonnement de l'utilisateur.
         Cette méthode doit être utilisée uniquement par le système d'abonnement.
         """
-        # CORRECTION : Validation stricte des valeurs ENUM
         valid_subscriptions = ['free', 'plus', 'premium']
         if new_subscription in valid_subscriptions:
             self.subscription = new_subscription

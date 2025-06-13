@@ -91,7 +91,8 @@ def get_posts_by_category(category_id):
     try:
         from models.post import Post
         from models.post_media import PostMedia
-        
+        from models.user import User
+
         posts = Post.query.filter_by(category_id=category.id).all()
         posts_list = []
         
@@ -106,15 +107,17 @@ def get_posts_by_category(category_id):
                     'type': item.media_type
                 })
             
+            user = User.query.get(post.user_id)
+            user_pseudo = user.pseudo if user else None
+
             post_data = {
                 'id': post.id, 
                 'title': post.title, 
-                'content': post.content,
-                'media_url': post.media_url, 
-                'media_type': post.media_type,
+                'content': post.content, 
                 'media': media,
                 'published_at': post.published_at.isoformat() if post.published_at else None,
-                'user_id': post.user_id
+                'user_id': post.user_id,
+                'user_pseudo': user_pseudo
             }
             
             posts_list.append(post_data)
