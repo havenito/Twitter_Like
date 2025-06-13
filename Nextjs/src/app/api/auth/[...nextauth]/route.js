@@ -9,14 +9,39 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-// CORRECTION : Constantes pour les valeurs ENUM
 const SUBSCRIPTION_TYPES = ['free', 'plus', 'premium'];
+
+const RESERVED_PSEUDOS = [
+  'login', 'register', 'comment', 'edit-profile', 'favorites', 'followers', 
+  'following', 'post', 'reply', 'foryou', 'message', 'home', 'polls', 
+  'search', 'premium', 'api', 'auth', 'forgot-password', 'reset-password', 
+  'notifications', 'admin', 'user', 'reports', 'dashboard', 'settings',
+  'profile', 'about', 'help', 'support', 'contact', 'terms', 'privacy',
+  'www', 'mail', 'email', 'ftp', 'blog', 'news', 'static', 'assets',
+  'css', 'js', 'img', 'images', 'upload', 'download', 'test', 'demo'
+];
 
 function validateSubscriptionType(subscriptionType) {
   if (!SUBSCRIPTION_TYPES.includes(subscriptionType)) {
     throw new Error(`Type d'abonnement invalide: ${subscriptionType}. Valeurs autorisées: ${SUBSCRIPTION_TYPES.join(', ')}`);
   }
   return subscriptionType;
+}
+
+function generateValidPseudo(baseEmail) {
+  const basePseudo = baseEmail.split('@')[0];
+  const normalizedBase = basePseudo.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+  
+  // Si le pseudo de base est réservé, ajouter un suffixe
+  if (RESERVED_PSEUDOS.includes(normalizedBase.toLowerCase())) {
+    return `${normalizedBase}${Date.now()}`;
+  }
+  
+  return normalizedBase;
+}
+
+function isReservedPseudo(pseudo) {
+  return RESERVED_PSEUDOS.includes(pseudo.toLowerCase());
 }
 
 export const authOptions = {
@@ -71,7 +96,6 @@ export const authOptions = {
   },
   callbacks: {
     async jwt({ token, user, account, trigger, session }) {
-      // Persist the user id and role to the token right after signin
       if (account && user) {
         token.userId = user.id;
         token.userRoles = user.roles;
@@ -84,16 +108,14 @@ export const authOptions = {
         token.biography = user.biography;
         token.banner = user.banner;
         
-        // CORRECTION : Validation ENUM pour l'abonnement
         try {
           token.subscription = validateSubscriptionType(user.subscription || 'free');
         } catch (error) {
           console.error('Erreur validation abonnement:', error);
-          token.subscription = 'free'; // Fallback sûr
+          token.subscription = 'free'; 
         }
       }
 
-      // NOUVEAU : Gérer les mises à jour de session
       if (trigger === "update" && session?.subscription) {
         try {
           token.subscription = validateSubscriptionType(session.subscription);
@@ -144,6 +166,24 @@ export const authOptions = {
             const nameParts = user.name ? user.name.split(' ') : [];
             const firstName = nameParts[0] || '';
             const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+            
+            let generatedPseudo = generateValidPseudo(user.email);
+            
+            let pseudoCounter = 1;
+            let finalPseudo = generatedPseudo;
+            
+            while (true) {
+              const { data: existingPseudo } = await supabase
+                .from('user')
+                .select('id')
+                .eq('pseudo', finalPseudo)
+                .maybeSingle();
+              
+              if (!existingPseudo) break;
+              
+              finalPseudo = `${generatedPseudo}${pseudoCounter}`;
+              pseudoCounter++;
+            }
 
             const { data: newUser, error: insertError } = await supabase
               .from('user')
@@ -155,7 +195,7 @@ export const authOptions = {
                   last_name: lastName,
                   profile_picture: user.image || null,
                   private: false,
-                  pseudo: user.email.split('@')[0],
+                  pseudo: finalPseudo,
                   subscription: defaultSubscription
                 },
               ])

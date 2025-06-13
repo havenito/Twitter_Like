@@ -5,15 +5,27 @@ import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faLock, faEnvelope, faSignature, faCamera, faGlobe, faLock as faLockSolid, faEye, faEyeSlash, faCheckCircle, faTimesCircle } from "@fortawesome/free-solid-svg-icons"; // Ajout de faCheckCircle et faTimesCircle
+import { faUser, faLock, faEnvelope, faSignature, faCamera, faGlobe, faLock as faLockSolid, faEye, faEyeSlash, faCheckCircle, faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 import Notification from '../../components/Notification';
 import { motion } from 'framer-motion';
+
+// Pseudos réservés
+const RESERVED_PSEUDOS = [
+  'login', 'register', 'comment', 'edit-profile', 'favorites', 'followers', 
+  'following', 'post', 'reply', 'foryou', 'message', 'home', 'polls', 
+  'search', 'premium', 'api', 'auth', 'forgot-password', 'reset-password', 
+  'notifications', 'admin', 'user', 'reports', 'dashboard', 'settings',
+  'profile', 'about', 'help', 'support', 'contact', 'terms', 'privacy',
+  'www', 'mail', 'email', 'ftp', 'blog', 'news', 'static', 'assets',
+  'css', 'js', 'img', 'images', 'upload', 'download', 'test', 'demo'
+];
 
 export default function RegisterPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [pseudo, setUsername] = useState('');
+  const [pseudoError, setPseudoError] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -21,10 +33,12 @@ export default function RegisterPage() {
   const [passwordCriteria, setPasswordCriteria] = useState({
     minLength: false,
     hasUppercase: false,
+    hasNumber: false,
     hasSpecialChar: false,
   });
   const [profile_picture, setProfileImage] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
+  const [imageError, setImageError] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,9 +48,80 @@ export default function RegisterPage() {
   const router = useRouter();
   const pathname = usePathname();
 
+  const validatePseudo = (pseudoValue) => {
+    if (!pseudoValue) {
+      return "Le pseudo est requis.";
+    }
+    
+    if (pseudoValue.length < 3) {
+      return "Le pseudo doit contenir au moins 3 caractères.";
+    }
+    
+    if (pseudoValue.length > 30) {
+      return "Le pseudo ne peut pas dépasser 30 caractères.";
+    }
+    
+    if (!/^[a-zA-Z0-9_.-]+$/.test(pseudoValue)) {
+      return "Le pseudo ne peut contenir que des lettres, chiffres, points, tirets et underscores.";
+    }
+    
+    if (pseudoValue.startsWith('.') || pseudoValue.startsWith('-') || pseudoValue.startsWith('_') ||
+        pseudoValue.endsWith('.') || pseudoValue.endsWith('-') || pseudoValue.endsWith('_')) {
+      return "Le pseudo ne peut pas commencer ou finir par un point, tiret ou underscore.";
+    }
+    
+    if (RESERVED_PSEUDOS.includes(pseudoValue.toLowerCase())) {
+      return `Le pseudo "${pseudoValue}" est réservé et ne peut pas être utilisé.`;
+    }
+    
+    return null;
+  };
+
+  const validateImageFile = (file) => {
+    if (!file) return null;
+    
+    // Vérifier que c'est bien un fichier image
+    if (!file.type.startsWith('image/')) {
+      return "Le fichier doit être une image.";
+    }
+    
+    // Vérifier si c'est un GIF (interdit pour les comptes gratuits)
+    if (file.type === 'image/gif') {
+      return "Les GIFs ne sont disponibles que pour les abonnements Plus et Premium. Votre photo de profil doit être une image statique (JPEG, PNG, WebP).";
+    }
+    
+    // Types d'images autorisés pour les comptes gratuits
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      return "Format non supporté. Formats autorisés: JPEG, PNG, WebP. Les GIFs sont réservés aux abonnements Plus et Premium.";
+    }
+    
+    return null;
+  };
+
+  const handlePseudoChange = (e) => {
+    const newPseudo = e.target.value;
+    setUsername(newPseudo);
+    
+    const error = validatePseudo(newPseudo);
+    setPseudoError(error);
+  };
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      const validationError = validateImageFile(file);
+      if (validationError) {
+        setImageError(validationError);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        setProfileImage(null);
+        setPreviewImage(null);
+        return;
+      }
+
+      setImageError('');
       setProfileImage(file);
       
       const reader = new FileReader();
@@ -96,6 +181,22 @@ export default function RegisterPage() {
       setError('Veuillez remplir tous les champs obligatoires (Prénom, Email, Pseudo, Mot de passe).');
       setLoading(false);
       return;
+    }
+
+    const pseudoValidationError = validatePseudo(pseudo);
+    if (pseudoValidationError) {
+      setError(pseudoValidationError);
+      setLoading(false);
+      return;
+    }
+
+    if (profile_picture) {
+      const imageValidationError = validateImageFile(profile_picture);
+      if (imageValidationError) {
+        setError(imageValidationError);
+        setLoading(false);
+        return;
+      }
     }
 
     const passwordError = validatePassword(password);
@@ -260,6 +361,25 @@ export default function RegisterPage() {
         >
           <motion.div 
             variants={fieldVariant}
+            className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4"
+          >
+            <div className="flex items-start space-x-2">
+              <div className="w-5 h-5 bg-blue-500 bg-opacity-20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-blue-200 text-xs leading-relaxed">
+                  Les GIFs pour les photos de profil sont réservés aux abonnements Plus et Premium. 
+                  Vous pouvez utiliser des images statiques (JPEG, PNG, WebP).
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            variants={fieldVariant}
             className="flex flex-col items-center mb-4"
           >
             <div 
@@ -285,12 +405,21 @@ export default function RegisterPage() {
             >
               {previewImage ? "Changer de photo" : "Ajouter une photo de profil"}
             </button>
-            <p className="text-gray-400 text-xs mt-1">
+            <p className="text-gray-400 text-xs mt-1 text-center">
               {!previewImage ? "Facultatif - Une photo par défaut sera utilisée si aucune photo n'est choisie" : ""}
             </p>
+            {imageError && (
+              <motion.p 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-red-400 text-xs mt-1 text-center"
+              >
+                {imageError}
+              </motion.p>
+            )}
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
               ref={fileInputRef}
               onChange={handleImageChange}
               className="hidden"
@@ -373,12 +502,28 @@ export default function RegisterPage() {
                 id="pseudo"
                 type="text"
                 value={pseudo}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={handlePseudoChange}
                 placeholder="Choisissez un pseudo unique"
-                className="w-full pl-10 pr-3 py-2 bg-[#444444] text-white rounded border border-[#555555] focus:outline-none focus:ring-2 focus:ring-[#90EE90]"
+                className={`w-full pl-10 pr-3 py-2 bg-[#444444] text-white rounded border ${
+                  pseudoError ? 'border-red-500' : 'border-[#555555]'
+                } focus:outline-none focus:ring-2 ${
+                  pseudoError ? 'focus:ring-red-500' : 'focus:ring-[#90EE90]'
+                }`}
                 required
               />
             </div>
+            {pseudoError && (
+              <motion.p 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-red-400 text-xs mt-1"
+              >
+                {pseudoError}
+              </motion.p>
+            )}
+            <p className="text-gray-400 text-xs mt-1">
+              3-30 caractères, lettres, chiffres, points, tirets et underscores autorisés
+            </p>
           </motion.div>
           
           <motion.div variants={fieldVariant}>
@@ -493,7 +638,7 @@ export default function RegisterPage() {
           <motion.button
             variants={fieldVariant}
             type="submit"
-            disabled={loading}
+            disabled={loading || pseudoError || imageError}
             className="w-full px-4 py-2 bg-[#90EE90] text-black font-medium rounded-full hover:bg-[#7CD37C] transition-colors disabled:opacity-50 mt-4"
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}

@@ -33,6 +33,38 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
     return num.toString();
   };
 
+  const renderSubscriptionBadge = (user) => {
+    const subscription = user?.subscription || 'free';
+    
+    if (subscription === 'plus') {
+      return (
+        <div className="inline-flex items-center ml-3">
+          <Image
+            src="/plusbadge.png"
+            alt="Badge Plus"
+            width={24}
+            height={24}
+            className="w-6 h-6 object-contain"
+          />
+        </div>
+      );
+    } else if (subscription === 'premium') {
+      return (
+        <div className="inline-flex items-center ml-3">
+          <Image
+            src="/premiumbadge.png"
+            alt="Badge Premium"
+            width={24}
+            height={24}
+            className="w-6 h-6 object-contain"
+          />
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
   const handleFollowToggle = async () => {
     if (!session?.user?.id || !profileData?.id || followLoading) return;
     
@@ -252,9 +284,12 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
-            <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center">
-              {profileData.firstName || profileData.pseudo} {profileData.lastName}
-            </h1>
+            <div className="flex items-center flex-wrap">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white">
+                {profileData.firstName || profileData.pseudo} {profileData.lastName}
+              </h1>
+              {renderSubscriptionBadge(profileData)}
+            </div>
             <p className="text-gray-400 text-sm sm:text-base">@{profileData.pseudo}</p>
             
             {profileData.bio && (

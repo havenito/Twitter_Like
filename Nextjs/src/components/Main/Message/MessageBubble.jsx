@@ -53,70 +53,32 @@ export default function MessageBubble({
     }
   };
 
-  const renderSubscriptionBadge = (user) => {
-    const subscription = user?.subscription || 'free';
-    
-    if (subscription === 'plus') {
-      return (
-        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3">
-          <Image
-            src="/plusbadge.png"
-            alt="Badge Plus"
-            width={12}
-            height={12}
-            className="w-full h-full object-contain"
-          />
-        </div>
-      );
-    } else if (subscription === 'premium') {
-      return (
-        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3">
-          <Image
-            src="/premiumbadge.png"
-            alt="Badge Premium"
-            width={12}
-            height={12}
-            className="w-full h-full object-contain"
-          />
-        </div>
-      );
-    }
-    
-    return null;
-  };
-
   const renderProfilePicture = (user) => {
     const profilePicture = user?.profile_picture || user?.profilePicture;
     
     if (!profilePicture) {
       return (
-        <div className="relative">
-          <Image
-            src="/defaultuserpfp.png"
-            alt={`Photo de profil de ${user?.first_name || user?.username || user?.email || 'Utilisateur'}`}
-            width={32}
-            height={32}
-            className="w-8 h-8 rounded-full object-cover border border-[#333]"
-          />
-          {renderSubscriptionBadge(user)}
-        </div>
-      );
-    }
-
-    return (
-      <div className="relative">
         <Image
-          src={profilePicture}
+          src="/defaultuserpfp.png"
           alt={`Photo de profil de ${user?.first_name || user?.username || user?.email || 'Utilisateur'}`}
           width={32}
           height={32}
           className="w-8 h-8 rounded-full object-cover border border-[#333]"
-          onError={(e) => {
-            e.target.src = '/defaultuserpfp.png';
-          }}
         />
-        {renderSubscriptionBadge(user)}
-      </div>
+      );
+    }
+
+    return (
+      <Image
+        src={profilePicture}
+        alt={`Photo de profil de ${user?.first_name || user?.username || user?.email || 'Utilisateur'}`}
+        width={32}
+        height={32}
+        className="w-8 h-8 rounded-full object-cover border border-[#333]"
+        onError={(e) => {
+          e.target.src = '/defaultuserpfp.png';
+        }}
+      />
     );
   };
 

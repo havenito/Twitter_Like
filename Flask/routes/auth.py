@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, make_response
 from models import db
 from models.user import User
 from flask_bcrypt import Bcrypt
@@ -15,11 +15,46 @@ auth_bp = Blueprint('auth', __name__)
 
 SUBSCRIPTION_TYPES = ['free', 'plus', 'premium']
 
+# Pseudos réservés interdits
+RESERVED_PSEUDOS = [
+    'login', 'register', 'comment', 'edit-profile', 'favorites', 'followers', 
+    'following', 'post', 'reply', 'foryou', 'message', 'home', 'polls', 
+    'search', 'premium', 'api', 'auth', 'forgot-password', 'reset-password', 
+    'notifications', 'admin', 'user', 'reports', 'dashboard', 'settings',
+    'profile', 'about', 'help', 'support', 'contact', 'terms', 'privacy',
+    'www', 'mail', 'email', 'ftp', 'blog', 'news', 'static', 'assets',
+    'css', 'js', 'img', 'images', 'upload', 'download', 'test', 'demo'
+]
+
 def validate_subscription_type(subscription_type):
     """Valide que le type d'abonnement est autorisé par l'ENUM"""
     if subscription_type not in SUBSCRIPTION_TYPES:
         raise ValueError(f"Type d'abonnement invalide: {subscription_type}. Valeurs autorisées: {SUBSCRIPTION_TYPES}")
     return subscription_type
+
+def validate_pseudo(pseudo):
+    """Valide que le pseudo n'est pas réservé et respecte les critères"""
+    if not pseudo:
+        return "Le pseudo est requis."
+    
+    normalized_pseudo = pseudo.strip().lower()
+    
+    if normalized_pseudo in [reserved.lower() for reserved in RESERVED_PSEUDOS]:
+        return f"Le pseudo '{pseudo}' est réservé et ne peut pas être utilisé."
+    
+    if len(pseudo) < 3:
+        return "Le pseudo doit contenir au moins 3 caractères."
+    
+    if len(pseudo) > 30:
+        return "Le pseudo ne peut pas dépasser 30 caractères."
+    
+    if not re.match(r'^[a-zA-Z0-9_.-]+$', pseudo):
+        return "Le pseudo ne peut contenir que des lettres, chiffres, points, tirets et underscores."
+    
+    if pseudo.startswith(('.', '-', '_')) or pseudo.endswith(('.', '-', '_')):
+        return "Le pseudo ne peut pas commencer ou finir par un point, tiret ou underscore."
+    
+    return None
 
 # --- Password verification ---
 def validate_password(password):
@@ -34,6 +69,37 @@ def validate_password(password):
     if not re.search(r'[!@#$%^&*(),.?":{}|<>_-]', password):
         return "Le mot de passe doit contenir au moins un caractère spécial."
     return None
+
+def validate_image_file(file, user_subscription, file_type='image'):
+    """
+    Valide un fichier image selon le type d'abonnement de l'utilisateur
+    """
+    if not file:
+        return None, None
+    
+    # Vérifier que c'est bien un fichier image
+    if not file.content_type or not file.content_type.startswith('image/'):
+        return None, f"Le fichier doit être une image pour {file_type}."
+    
+    # Vérifier si c'est un GIF
+    is_gif = file.content_type == 'image/gif'
+    
+    # Si c'est un GIF et que l'utilisateur n'a pas d'abonnement premium/plus
+    if is_gif and user_subscription not in ['plus', 'premium']:
+        return None, f"Les GIFs ne sont disponibles que pour les abonnements Plus et Premium. Votre {file_type} doit être une image statique (JPEG, PNG, WebP)."
+    
+    # Types d'images autorisés
+    allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if user_subscription in ['plus', 'premium']:
+        allowed_types.append('image/gif')
+    
+    if file.content_type not in allowed_types:
+        if user_subscription in ['plus', 'premium']:
+            return None, f"Format non supporté. Formats autorisés: JPEG, PNG, WebP, GIF."
+        else:
+            return None, f"Format non supporté. Formats autorisés: JPEG, PNG, WebP. Les GIFs sont réservés aux abonnements Plus et Premium."
+    
+    return file, None
 
 @auth_bp.route('/api/users', methods=['POST'])
 def create_user():
@@ -56,24 +122,37 @@ def create_user():
         private = not (is_public_str.lower() == 'true')
         
         roles = data_source.get('roles', 'user').strip()
+        
+        # Pour les nouveaux utilisateurs, l'abonnement par défaut est 'free'
+        user_subscription = 'free'
 
         if 'profile_picture' in request.files:
-            file = request.files['profile_picture']
-            if file and file.filename:
-                uploaded_url, _ = upload_file(file)
-                if uploaded_url:
-                    profile_picture_to_save = uploaded_url
+            profile_picture_file = request.files['profile_picture']
+            validated_file, error_msg = validate_image_file(profile_picture_file, user_subscription, 'photo de profil')
+            if error_msg:
+                return jsonify({'error': error_msg}), 400
+            if validated_file:
+                url, file_type = upload_file(validated_file)
+                if url:
+                    profile_picture_to_save = url
+                else:
+                    return jsonify({'error': 'Erreur lors du téléchargement de la photo de profil'}), 500
         
         if 'banner_image' in request.files: 
             banner_file = request.files['banner_image']
-            if banner_file and banner_file.filename:
-                banner_url, _ = upload_file(banner_file)
-                if banner_url:
-                    banner_image_to_save = banner_url
+            validated_file, error_msg = validate_image_file(banner_file, user_subscription, 'bannière')
+            if error_msg:
+                return jsonify({'error': error_msg}), 400
+            if validated_file:
+                url, file_type = upload_file(validated_file)
+                if url:
+                    banner_image_to_save = url
+                else:
+                    return jsonify({'error': 'Erreur lors du téléchargement de la bannière'}), 500
     else:
         json_data = request.get_json()
         if not json_data:
-            return jsonify({'error': 'Invalid or missing JSON data'}), 400
+            return jsonify({'error': 'Aucune donnée fournie'}), 400
         data_source = json_data
         
         email = data_source.get('email', '').strip().lower()
@@ -91,14 +170,17 @@ def create_user():
     if not all([email, password, first_name, pseudo]):
         return jsonify({'error': 'Les champs email, mot de passe, prénom et pseudo sont obligatoires'}), 400
     
+    if pseudo_error := validate_pseudo(pseudo):
+        return jsonify({'error': pseudo_error}), 400
+    
     if err := validate_password(password):
         return jsonify({'error': err}), 400
         
     if User.query.filter_by(email=email).first():
-        return jsonify({'error': 'Email déjà enregistré'}), 400
+        return jsonify({'error': 'Un utilisateur avec cet email existe déjà'}), 400
     
     if User.query.filter_by(pseudo=pseudo).first():
-        return jsonify({'error': 'Pseudo déjà utilisé'}), 409
+        return jsonify({'error': 'Ce pseudo est déjà utilisé'}), 400
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     
@@ -203,7 +285,7 @@ def get_users():
             'created_at': user_obj.created_at.isoformat() if hasattr(user_obj, 'created_at') and user_obj.created_at else None,
             'updated_at': user_obj.updated_at.isoformat() if hasattr(user_obj, 'updated_at') and user_obj.updated_at else None,
             'banner': user_obj.banner,
-            'subscription': user_obj.subscription  # Changer de subscription_level à subscription
+            'subscription': user_obj.subscription
         })
     
     return jsonify(result)
@@ -211,10 +293,11 @@ def get_users():
 @auth_bp.route('/api/users/<int:user_id>', methods=['PUT', 'OPTIONS'])
 def update_user(user_id):
     if request.method == 'OPTIONS':
-        response = jsonify({'message': 'OPTIONS request successful'})
-        response.headers.add('Access-Control-Allow-Methods', 'PUT, OPTIONS')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-        return response, 200
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add('Access-Control-Allow-Headers', "*")
+        response.headers.add('Access-Control-Allow-Methods', "*")
+        return response
         
     user_to_update = User.query.get(user_id)
     if not user_to_update:
@@ -226,77 +309,65 @@ def update_user(user_id):
 
     if request.content_type and 'multipart/form-data' in request.content_type:
         data_source = request.form
-
-        if data_source.get('delete_profile_picture') == 'true':
-            profile_picture_url_to_set = None
-        elif 'profile_picture' in request.files:
-            file = request.files['profile_picture']
-            if file and file.filename:
-                uploaded_url, _ = upload_file(file)
-                if uploaded_url:
-                    profile_picture_url_to_set = uploaded_url
         
-        if data_source.get('delete_banner_image') == 'true':
-            banner_image_url_to_set = None
-        elif 'banner_image' in request.files:
+        user_subscription = user_to_update.subscription or 'free'
+        
+        if 'profile_picture' in request.files:
+            profile_picture_file = request.files['profile_picture']
+            validated_file, error_msg = validate_image_file(profile_picture_file, user_subscription, 'photo de profil')
+            if error_msg:
+                return jsonify({'error': error_msg}), 400
+            if validated_file:
+                url, file_type = upload_file(validated_file)
+                if url:
+                    profile_picture_url_to_set = url
+                else:
+                    return jsonify({'error': 'Erreur lors du téléchargement de la photo de profil'}), 500
+        elif data_source.get('delete_profile_picture') == 'true':
+            profile_picture_url_to_set = None
+
+        if 'banner_image' in request.files:
             banner_file = request.files['banner_image']
-            if banner_file and banner_file.filename:
-                banner_url, _ = upload_file(banner_file)
-                if banner_url:
-                    banner_image_url_to_set = banner_url
+            validated_file, error_msg = validate_image_file(banner_file, user_subscription, 'bannière')
+            if error_msg:
+                return jsonify({'error': error_msg}), 400
+            if validated_file:
+                url, file_type = upload_file(validated_file)
+                if url:
+                    banner_image_url_to_set = url
+                else:
+                    return jsonify({'error': 'Erreur lors du téléchargement de la bannière'}), 500
+        elif data_source.get('delete_banner_image') == 'true':
+            banner_image_url_to_set = None
 
     elif request.is_json:
         data_source = request.get_json()
         if not data_source:
-            return jsonify({'error': 'Invalid or missing JSON data'}), 400
-        
-        if 'profile_picture' in data_source:
-            profile_picture_url_to_set = data_source.get('profile_picture') 
-        if 'banner' in data_source:
-            banner_image_url_to_set = data_source.get('banner')
+            return jsonify({'error': 'Aucune donnée fournie'}), 400
     else:
-        return jsonify({'error': 'Unsupported content type or no data provided'}), 415
+        return jsonify({'error': 'Type de contenu non supporté'}), 400
 
     if data_source:
-        if 'subscription' in data_source:
-            return jsonify({'error': 'La modification de l\'abonnement n\'est pas autorisée via cette route. Utilisez les routes d\'abonnement dédiées.'}), 403
-        
-        if 'email' in data_source and data_source.get('email', '').strip():
-            new_email = data_source.get('email').strip().lower()
-            if new_email != user_to_update.email:
-                existing_user = User.query.filter(User.email == new_email, User.id != user_id).first()
-                if existing_user:
-                    return jsonify({'error': 'Email déjà enregistré par un autre utilisateur'}), 400
-                user_to_update.email = new_email
-
         if 'first_name' in data_source:
-            user_to_update.first_name = data_source.get('first_name', '').strip()
+            user_to_update.first_name = data_source['first_name']
         if 'last_name' in data_source:
-            user_to_update.last_name = data_source.get('last_name', '').strip()
-        if 'password' in data_source and data_source.get('password', '').strip():
-            new_password = data_source.get('password').strip()
-            if err := validate_password(new_password):
-                return jsonify({'error': err}), 400
-            user_to_update.password = bcrypt.generate_password_hash(new_password).decode('utf-8')
-        
+            user_to_update.last_name = data_source['last_name']
         if 'pseudo' in data_source:
-            new_pseudo = data_source.get('pseudo', '').strip()
+            new_pseudo = data_source['pseudo'].strip()
             if new_pseudo != user_to_update.pseudo:
-                if new_pseudo:
-                    existing_user_pseudo = User.query.filter(User.pseudo == new_pseudo, User.id != user_id).first()
-                    if existing_user_pseudo:
-                        return jsonify({'error': 'Pseudo déjà utilisé par un autre utilisateur'}), 409
+                if pseudo_error := validate_pseudo(new_pseudo):
+                    return jsonify({'error': pseudo_error}), 400
+                if User.query.filter_by(pseudo=new_pseudo).first():
+                    return jsonify({'error': 'Ce pseudo est déjà utilisé'}), 400
                 user_to_update.pseudo = new_pseudo
-
         if 'biography' in data_source:
-            user_to_update.biography = data_source.get('biography', '').strip()
-
-        if request.is_json:
-            if 'private' in data_source:
-                user_to_update.private = bool(data_source.get('private'))
-        elif 'isPublic' in data_source:
-            is_public_str = data_source.get('isPublic')
-            user_to_update.private = not (is_public_str.lower() == 'true')
+            user_to_update.biography = data_source['biography']
+        if 'isPublic' in data_source:
+            is_public = data_source['isPublic']
+            if isinstance(is_public, str):
+                user_to_update.private = not (is_public.lower() == 'true')
+            else:
+                user_to_update.private = not bool(is_public)
             
     user_to_update.profile_picture = profile_picture_url_to_set
     user_to_update.banner = banner_image_url_to_set 
@@ -307,16 +378,14 @@ def update_user(user_id):
         'message': 'Utilisateur mis à jour avec succès',
         'user': {
             'id': user_to_update.id,
-            'email': user_to_update.email,
             'first_name': user_to_update.first_name,
             'last_name': user_to_update.last_name,
-            'roles': user_to_update.roles,
-            'profile_picture': user_to_update.profile_picture,
             'pseudo': user_to_update.pseudo,
-            'private': user_to_update.private,
-            'biography': user_to_update.biography,
+            'profile_picture': user_to_update.profile_picture,
             'banner': user_to_update.banner,
-            'subscription': user_to_update.subscription_level
+            'biography': user_to_update.biography,
+            'private': user_to_update.private,
+            'subscription': user_to_update.subscription
         }
     }), 200
 

@@ -21,8 +21,6 @@ const subscriptionPlans = [
         'Poster des "Miaous"',
         'Suivre d\'autres utilisateurs',
         'Messagerie directe',
-        'Support basique',
-        'Publicités',
     ],
   },
   {
@@ -34,8 +32,6 @@ const subscriptionPlans = [
       'Tout de Minouverse Free',
       'Badge "Plus" sur le profil',
       'Photo de profil et bannière animées',
-      'Support prioritaire',
-      'Moins de publicités',
     ],
   },
   {
@@ -46,9 +42,7 @@ const subscriptionPlans = [
     features: [
       'Tout de Minouverse Plus',
       'Badge "Premium" exclusif',
-      'Choix de thèmes personnalisés',
-      'Support 24/7',
-      'Aucune publicité',
+      'Choix de thèmes personnalisés (A venir)',
     ],
   },
 ];

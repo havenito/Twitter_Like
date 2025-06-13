@@ -175,7 +175,7 @@ def get_chat_sender(chat_id):
             'first_name': getattr(sender, 'first_name', None),
             'last_name': getattr(sender, 'last_name', None),
             'profile_picture': getattr(sender, 'profile_picture', None),
-            'subscription': getattr(sender, 'subscription', 'free')  # Ajouter cette ligne avec fallback
+            'subscription': getattr(sender, 'subscription', 'free')  # AJOUTER CETTE LIGNE
         }), 200
         
     except Exception as e:
@@ -203,7 +203,7 @@ def get_conversation_chats(conversation_id):
                     'first_name': user.first_name,
                     'last_name': user.last_name,
                     'profile_picture': user.profile_picture,
-                    'subscription': user.subscription  # Ajouter cette ligne
+                    'subscription': user.subscription  # AJOUTER CETTE LIGNE
                 })
 
         return jsonify({
@@ -227,48 +227,40 @@ def get_user_conversations(user_id):
         user = User.query.get(user_id)
         if not user:
             print(f"❌ User {user_id} not found")
-            return jsonify({'error': 'Utilisateur non trouvé'}), 404
+            return jsonify({'error': 'Utilisateur introuvable'}), 404
         
         print(f"✅ User found: {user.email}")
 
         def extract_participants_from_conversation_id(conv_id):
             """
             Extrait les IDs des participants à partir de l'ID de conversation
-            Format attendu: {user1_id}{user2_id:03d} ou {user1_id}0{user2_id}
-            Exemple: 1002 -> participants [1, 2], 71072 -> participants [71, 72]
             """
             conv_str = str(conv_id)
             print(f"🔍 Analyzing conversation ID: {conv_str}")
             
             # Si l'ID contient un 0 au milieu, le diviser à ce point
-            if '0' in conv_str[1:-1]:  # Ignorer les 0 en début/fin
-                zero_index = conv_str.find('0', 1)  # Chercher à partir du 2ème caractère
-                if zero_index > 0:
-                    user1_id = int(conv_str[:zero_index])
-                    user2_id = int(conv_str[zero_index+1:])
-                    print(f"  → Method 1 (split by 0): [{user1_id}, {user2_id}]")
-                    return [user1_id, user2_id]
+            if '0' in conv_str[1:-1]:
+                zero_pos = conv_str.index('0', 1)
+                user1_id = int(conv_str[:zero_pos])
+                user2_id = int(conv_str[zero_pos+1:])
+                print(f"  → Split at zero: {user1_id}, {user2_id}")
+                return [user1_id, user2_id]
             
             # Méthode alternative: essayer de diviser en supposant que le 2ème ID fait 3 chiffres
             if len(conv_str) >= 4:
-                try:
-                    # Supposer que les 3 derniers chiffres sont l'ID du 2ème utilisateur
-                    user1_id = int(conv_str[:-3])
-                    user2_id = int(conv_str[-3:])
-                    print(f"  → Method 2 (last 3 digits): [{user1_id}, {user2_id}]")
+                user1_id = int(conv_str[:-3])
+                user2_id = int(conv_str[-3:])
+                if user1_id > 0 and user2_id > 0:
+                    print(f"  → Split with 3-digit suffix: {user1_id}, {user2_id}")
                     return [user1_id, user2_id]
-                except ValueError:
-                    pass
             
             # Méthode de fallback: essayer différentes positions de split
             for split_pos in range(1, len(conv_str)):
                 try:
                     user1_id = int(conv_str[:split_pos])
                     user2_id = int(conv_str[split_pos:])
-                    
-                    # Vérifier que les deux IDs sont raisonnables (> 0 et < 100000)
-                    if 0 < user1_id < 100000 and 0 < user2_id < 100000 and user1_id != user2_id:
-                        print(f"  → Method 3 (split at {split_pos}): [{user1_id}, {user2_id}]")
+                    if user1_id > 0 and user2_id > 0:
+                        print(f"  → Split at position {split_pos}: {user1_id}, {user2_id}")
                         return [user1_id, user2_id]
                 except ValueError:
                     continue
@@ -289,7 +281,7 @@ def get_user_conversations(user_id):
             
             if user_id in participants:
                 conversation_ids.add(conv_id)
-                print(f"✅ User {user_id} found in conversation {conv_id} with participants {participants}")
+                print(f"  ✅ User {user_id} participates in conversation {conv_id}")
         
         # Double vérification: ajouter les conversations où l'utilisateur a envoyé des messages
         sent_conversations = db.session.query(Chat.conversation_id).filter_by(sender_id=user_id).distinct().all()
@@ -301,65 +293,62 @@ def get_user_conversations(user_id):
         # Construire les détails de chaque conversation
         for conv_id in conversation_ids:
             try:
-                print(f"\n--- Processing conversation {conv_id} ---")
+                # Récupérer tous les messages de cette conversation
+                conversation_chats = Chat.query.filter_by(conversation_id=conv_id).order_by(Chat.send_at.desc()).all()
                 
-                # Récupérer tous les participants réels de cette conversation
-                participants_query = db.session.query(Chat.sender_id).filter_by(conversation_id=conv_id).distinct().all()
-                actual_participants = [p[0] for p in participants_query]
-                print(f"📋 Actual participants from messages: {actual_participants}")
-                
-                # Combiner avec les participants extraits de l'ID
-                id_participants = extract_participants_from_conversation_id(conv_id)
-                all_participants = list(set(actual_participants + id_participants))
-                
-                # Trouver l'autre participant (pas l'utilisateur actuel)
-                other_participant_id = None
-                for p_id in all_participants:
-                    if p_id != user_id:
-                        other_participant_id = p_id
-                        break
-                
-                if not other_participant_id:
-                    print(f"⚠️ No other participant found for conversation {conv_id}")
+                if not conversation_chats:
                     continue
                 
-                # Récupérer les infos de l'autre participant
-                other_user = User.query.get(other_participant_id)
+                # Récupérer les détails de l'autre utilisateur
+                participants = extract_participants_from_conversation_id(conv_id)
+                other_user_id = participants[1] if participants[0] == user_id else participants[0]
+                
+                if not other_user_id:
+                    continue
+                
+                other_user = User.query.get(other_user_id)
                 if not other_user:
-                    print(f"❌ Other participant {other_participant_id} not found in database")
                     continue
                 
-                # Récupérer le dernier message
-                last_message = Chat.query.filter_by(conversation_id=conv_id)\
-                    .order_by(Chat.send_at.desc()).first()
+                other_user_details = {
+                    'id': other_user.id,
+                    'username': other_user.pseudo,
+                    'email': other_user.email,
+                    'first_name': other_user.first_name,
+                    'last_name': other_user.last_name,
+                    'profile_picture': other_user.profile_picture,
+                    'subscription': other_user.subscription  # AJOUTER CETTE LIGNE CRUCIALE
+                }
                 
-                # Compter les messages
-                total_messages = Chat.query.filter_by(conversation_id=conv_id).count()
+                print(f"  🔍 Other user details: {other_user_details}")  # Debug log
                 
-                # Construire l'objet conversation
+                # Dernier message
+                last_message_details = None
+                if conversation_chats:
+                    last_chat = conversation_chats[0]
+                    last_message_details = {
+                        'id': last_chat.id,
+                        'content': last_chat.content,
+                        'sender_id': last_chat.sender_id,
+                        'send_at': last_chat.send_at.isoformat().replace('+00:00', 'Z') if last_chat.send_at else None
+                    }
+                
+                # Compter les messages non lus (simplification)
+                unread_count = 0
+                
                 conversation_data = {
                     'conversation_id': conv_id,
-                    'other_user': {
-                        'id': other_user.id,
-                        'username': getattr(other_user, 'pseudo', None) or getattr(other_user, 'username', None),
-                        'email': other_user.email,
-                        'first_name': getattr(other_user, 'first_name', None),
-                        'last_name': getattr(other_user, 'last_name', None),
-                        'profile_picture': getattr(other_user, 'profile_picture', None)
-                    },
-                    'last_message': last_message.to_dict() if last_message else None,
-                    'unread_count': 0,
-                    'total_messages': total_messages,
-                    'participants': all_participants  # Debug info
+                    'other_user': other_user_details,
+                    'last_message': last_message_details,
+                    'unread_count': unread_count,
+                    'total_messages': len(conversation_chats)
                 }
                 
                 user_conversations.append(conversation_data)
-                print(f"✅ Added conversation {conv_id} with {other_user.email} ({total_messages} messages)")
+                print(f"  ✅ Added conversation {conv_id} with {other_user.email} (subscription: {other_user.subscription})")
                 
             except Exception as e:
-                print(f"❌ Error processing conversation {conv_id}: {str(e)}")
-                import traceback
-                traceback.print_exc()
+                print(f"  ❌ Error processing conversation {conv_id}: {str(e)}")
                 continue
         
         # Trier par date du dernier message
@@ -372,7 +361,7 @@ def get_user_conversations(user_id):
         
         # Debug: afficher le résultat final
         for conv in user_conversations:
-            print(f"  - Conv {conv['conversation_id']}: {conv['other_user']['email']} ({conv['total_messages']} messages)")
+            print(f"  - Conv {conv['conversation_id']}: {conv['other_user']['email']} (subscription: {conv['other_user'].get('subscription', 'NOT_SET')}) ({conv['total_messages']} messages)")
         
         return jsonify({
             'user_id': user_id,

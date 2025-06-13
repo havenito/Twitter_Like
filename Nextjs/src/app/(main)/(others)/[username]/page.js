@@ -151,6 +151,7 @@ export default function UserProfilePage() {
             isPublic: !fetchedData.private,
             followers: fetchedData.followers_count || 0,
             following: fetchedData.following_count || 0,
+            subscription: fetchedData.subscription || 'free',
             posts: userPosts,
             media: userMedia,
             likes: userLikes,
@@ -172,6 +173,7 @@ export default function UserProfilePage() {
               bannerImage: session.user.banner,
               joinDate: session.user.createdAt || new Date().toISOString(),
               isPublic: session.user.isPrivate !== undefined ? !session.user.isPrivate : true,
+              subscription: session.user.subscription || 'free',
               followers: 0,
               following: 0,
               posts: [],
@@ -222,7 +224,8 @@ export default function UserProfilePage() {
                 isPublic: profileData.isPublic,
                 joinDate: profileData.joinDate,
                 following: profileData.following, 
-                followers: profileData.followers
+                followers: profileData.followers,
+                subscription: profileData.subscription 
               }} 
               isOwnProfile={isOwnProfile}
               isFollowing={isFollowing}

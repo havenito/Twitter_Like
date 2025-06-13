@@ -385,7 +385,6 @@ export default function ChatWindow({
 
   return (
     <div className="flex flex-col h-full bg-[#1b1b1b]">
-      {/* En-tête desktop toujours visible */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -406,7 +405,6 @@ export default function ChatWindow({
         </div>
       </motion.div>
 
-      {/* Zone des messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#141414]">
         {messages.length === 0 ? (
           <motion.div 
@@ -437,7 +435,7 @@ export default function ChatWindow({
                 }
                 otherUser={conversation.other_user}
                 currentUser={currentUser}
-                index={messages.length - 1 - index} // Inversion de l'index pour l'effet du bas vers le haut
+                index={messages.length - 1 - index} 
                 isPending={message.isPending}
                 failed={message.failed}
               />
@@ -445,7 +443,6 @@ export default function ChatWindow({
           </AnimatePresence>
         )}
         
-        {/* Indicateur de frappe */}
         <AnimatePresence>
           {typing && (
             <motion.div 
@@ -478,7 +475,6 @@ export default function ChatWindow({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Zone de saisie */}
       <MessageInput
         onSendMessage={handleSendMessage}
         onTypingStart={handleTypingStart}

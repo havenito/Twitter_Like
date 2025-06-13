@@ -45,33 +45,54 @@ export default function ConversationList({
     return count > 99 ? '99+' : count.toString();
   };
 
+  const handleConversationClick = (conversation) => {
+    // Debug des informations de l'utilisateur avec qui on ouvre le chat
+    const otherUser = conversation.other_user;
+    
+    console.group('💬 OUVERTURE DE CHAT AVEC UTILISATEUR');
+    console.log('📧 Email:', otherUser?.email || 'Non défini');
+    console.log('👤 ID:', otherUser?.id || 'Non défini');
+    console.log('🏷️ Username:', otherUser?.username || 'Non défini');
+    console.log('👨‍💼 Prénom:', otherUser?.first_name || 'Non défini');
+    console.log('👨‍💼 Nom:', otherUser?.last_name || 'Non défini');
+    console.log('🖼️ Photo de profil:', otherUser?.profile_picture || 'Non définie');
+    console.log('💎 Abonnement:', otherUser?.subscription || 'Non défini');
+    console.log('🆔 ID de conversation:', conversation.conversation_id);
+    console.log('💬 Dernier message:', conversation.last_message?.content || 'Aucun message');
+    console.log('📊 Total messages:', conversation.total_messages || 0);
+    console.log('🔔 Messages non lus:', conversation.unread_count || 0);
+    console.log('📱 Objet utilisateur complet:', otherUser);
+    console.log('📱 Objet conversation complet:', conversation);
+    console.groupEnd();
+    
+    // Appeler la fonction originale
+    onConversationSelect(conversation);
+  };
+
   const renderSubscriptionBadge = (user) => {
     const subscription = user?.subscription || 'free';
     
-    // Debug pour voir la valeur
-    console.log('Debug subscription badge:', user?.email, 'subscription:', subscription);
-    
     if (subscription === 'plus') {
       return (
-        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4">
+        <div className="inline-flex ml-2">
           <Image
             src="/plusbadge.png"
             alt="Badge Plus"
             width={16}
             height={16}
-            className="w-full h-full object-contain"
+            className="w-4 h-4 object-contain"
           />
         </div>
       );
     } else if (subscription === 'premium') {
       return (
-        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4">
+        <div className="inline-flex ml-2">
           <Image
             src="/premiumbadge.png"
             alt="Badge Premium"
             width={16}
             height={16}
-            className="w-full h-full object-contain"
+            className="w-4 h-4 object-contain"
           />
         </div>
       );
@@ -85,33 +106,27 @@ export default function ConversationList({
     
     if (!profilePicture) {
       return (
-        <div className="relative">
-          <Image
-            src="/defaultuserpfp.png"
-            alt={`Photo de profil de ${user?.first_name || user?.username || user?.email || 'Utilisateur'}`}
-            width={48}
-            height={48}
-            className="w-12 h-12 rounded-full object-cover border-2 border-[#333]"
-          />
-          {renderSubscriptionBadge(user)}
-        </div>
-      );
-    }
-
-    return (
-      <div className="relative">
         <Image
-          src={profilePicture}
+          src="/defaultuserpfp.png"
           alt={`Photo de profil de ${user?.first_name || user?.username || user?.email || 'Utilisateur'}`}
           width={48}
           height={48}
           className="w-12 h-12 rounded-full object-cover border-2 border-[#333]"
-          onError={(e) => {
-            e.target.src = '/defaultuserpfp.png';
-          }}
         />
-        {renderSubscriptionBadge(user)}
-      </div>
+      );
+    }
+
+    return (
+      <Image
+        src={profilePicture}
+        alt={`Photo de profil de ${user?.first_name || user?.username || user?.email || 'Utilisateur'}`}
+        width={48}
+        height={48}
+        className="w-12 h-12 rounded-full object-cover border-2 border-[#333]"
+        onError={(e) => {
+          e.target.src = '/defaultuserpfp.png';
+        }}
+      />
     );
   };
 
@@ -149,7 +164,7 @@ export default function ConversationList({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.05 }}
-          onClick={() => onConversationSelect(conversation)}
+          onClick={() => handleConversationClick(conversation)}
           className={`p-4 border-b border-[#333] cursor-pointer transition-all duration-200 hover:bg-[#262626] ${
             selectedConversation?.conversation_id === conversation.conversation_id
               ? 'bg-[#2a2a2a] border-l-4 border-l-[#90EE90]'
@@ -157,19 +172,24 @@ export default function ConversationList({
           }`}
         >
           <div className="flex items-start space-x-3">
-            {/* Avatar avec photo de profil et badge */}
-            <div className="flex-shrink-0 relative">
+            {/* Avatar avec photo de profil */}
+            <div className="flex-shrink-0">
               {renderProfilePicture(conversation.other_user)}
             </div>
 
             {/* Contenu de la conversation */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
-                <h3 className="text-sm font-medium text-white truncate">
-                  {conversation.other_user?.first_name && conversation.other_user?.last_name
-                    ? `${conversation.other_user.first_name} ${conversation.other_user.last_name}`
-                    : conversation.other_user?.username || conversation.other_user?.email || 'Utilisateur inconnu'}
-                </h3>
+                {/* Nom avec badge */}
+                <div className="flex items-center min-w-0">
+                  <h3 className="text-sm font-medium text-white truncate">
+                    {conversation.other_user?.first_name && conversation.other_user?.last_name
+                      ? `${conversation.other_user.first_name} ${conversation.other_user.last_name}`
+                      : conversation.other_user?.username || conversation.other_user?.email || 'Utilisateur inconnu'}
+                  </h3>
+                  {renderSubscriptionBadge(conversation.other_user)}
+                </div>
+                
                 {conversation.last_message && (
                   <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
                     {formatLastMessageTime(conversation.last_message.send_at)}
