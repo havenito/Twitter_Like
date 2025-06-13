@@ -5,7 +5,7 @@ import { faReply, faPlay } from '@fortawesome/free-solid-svg-icons';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import ReplyLikeButton from '../Post/ReplyLikeButton';
+import ReplyLikeButton from '../Main/Post/ReplyLikeButton';
 import MediaModal from '../MediaModal';
 
 const LikedReplyCard = ({ reply }) => {

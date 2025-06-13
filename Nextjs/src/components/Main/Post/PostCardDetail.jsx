@@ -4,10 +4,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTag, faPlay } from '@fortawesome/free-solid-svg-icons';
-import LikeButton from '../Main/Post/LikeButton';
-import FavoriteButton from '../Main/Post/FavoriteButton';
-import CommentButton from '../Main/Post/CommentButton';
-import MediaModal from '../MediaModal';
+import LikeButton from './LikeButton';
+import FavoriteButton from './FavoriteButton';
+import CommentButton from './CommentButton';
+import MediaModal from '../../MediaModal';
 
 const PostCardDetail = ({ post }) => {
   const [imageError, setImageError] = useState(false);

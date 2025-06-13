@@ -5,7 +5,7 @@ import { faComment, faPlay } from '@fortawesome/free-solid-svg-icons';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import CommentLikeButton from '../Post/CommentLikeButton';
+import CommentLikeButton from '../Main/Post/CommentLikeButton';
 import MediaModal from '../MediaModal';
 
 const LikedCommentCard = ({ comment }) => {

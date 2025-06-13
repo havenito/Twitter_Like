@@ -5,8 +5,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComment, faReply, faPlay, faTimes, faFilter } from '@fortawesome/free-solid-svg-icons';
 import Image from 'next/image';
 import Link from 'next/link';
-import CommentLikeButton from '../Post/CommentLikeButton';
-import ReplyLikeButton from '../Post/ReplyLikeButton';
+import CommentLikeButton from '../Main/Post/CommentLikeButton';
+import ReplyLikeButton from '../Main/Post/ReplyLikeButton';
 
 const CommentsRepliesList = ({ commentsAndReplies, userPseudo, isOwnProfile }) => {
   const router = useRouter();

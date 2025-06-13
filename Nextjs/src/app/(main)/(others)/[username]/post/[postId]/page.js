@@ -6,9 +6,9 @@ import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
-import PostCardDetail from '@/components/Post/PostCardDetail';
-import CommentForm from '@/components/Post/CommentForm';
-import CommentsList from '@/components/Post/CommentsList';
+import PostCardDetail from '@/components/Main/Post/PostCardDetail';
+import CommentForm from '@/components/Main/Post/CommentForm';
+import CommentsList from '@/components/Main/Post/CommentsList';
 
 export default function PostDetailPage() {
   const params = useParams();

@@ -5,7 +5,7 @@ import { faComment, faTimes, faImage, faPaperPlane, faSpinner, faPlay } from '@f
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import Notification from '../Notification';
+import Notification from '../../Notification';
 
 const ReplyModal = ({ isOpen, onClose, comment, onReplyAdded, isReplyToReply = false }) => {
   const { data: session } = useSession();

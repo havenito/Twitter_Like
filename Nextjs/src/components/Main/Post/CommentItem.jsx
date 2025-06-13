@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlay } from '@fortawesome/free-solid-svg-icons';
 import Image from 'next/image';
 import Link from 'next/link';
-import MediaModal from '../MediaModal';
+import MediaModal from '../../MediaModal';
 import CommentLikeButton from './CommentLikeButton';
 import ReplyButton from './ReplyButton';
 import ReplyModal from './ReplyModal';
