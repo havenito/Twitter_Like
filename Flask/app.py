@@ -19,6 +19,9 @@ from routes.polls import polls_bp
 from routes.notifications import notifications_bp
 from routes.comment_likes import comment_likes_bp
 from routes.reply_likes import reply_likes_bp
+from routes.chat import chat_bp
+
+from routes.websocket_chat import init_socketio
 
 mail = Mail()
 
@@ -46,7 +49,10 @@ def create_app(config_class=Config):
     app.register_blueprint(notifications_bp)
     app.register_blueprint(comment_likes_bp)
     app.register_blueprint(reply_likes_bp)
+    app.register_blueprint(chat_bp)
     
+    socketio = init_socketio(app)
+
     with app.app_context():
         from models.post_media import PostMedia
         from models.comment_media import CommentMedia
@@ -57,8 +63,8 @@ def create_app(config_class=Config):
         from models.favorite import Favorite
         db.create_all()
     
-    return app
+    return app, socketio
 
 if __name__ == '__main__':
-    app = create_app()
-    app.run(debug=True)
+    app, socketio = create_app()
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
