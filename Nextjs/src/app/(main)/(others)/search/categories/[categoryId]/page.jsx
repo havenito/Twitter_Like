@@ -1,9 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 
-export default function CategoryPostsPage({ params }) {
-  const { categoryId } = params;
+export default function CategoryPostsPage() {
+  const params = useParams();
+  const categoryId = params.categoryId;
   const [category, setCategory] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +29,7 @@ export default function CategoryPostsPage({ params }) {
       }
       setLoading(false);
     };
-    fetchCategoryAndPosts();
+    if (categoryId) fetchCategoryAndPosts();
   }, [categoryId]);
 
   return (
