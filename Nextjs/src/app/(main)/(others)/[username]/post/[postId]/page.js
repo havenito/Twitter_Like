@@ -56,6 +56,18 @@ export default function PostDetailPage() {
           console.error('Erreur lors de la récupération des likes:', likesError);
         }
 
+        let commentsCount = 0;
+        try {
+          const commentsResponse = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/posts/${postId}/comments`);
+          if (commentsResponse.ok) {
+            const commentsData = await commentsResponse.json();
+            commentsCount = commentsData.comments?.length || 0;
+            setComments(commentsData.comments || []);
+          }
+        } catch (commentsError) {
+          console.error('Erreur lors de la récupération des commentaires:', commentsError);
+        }
+
         let categoryData = null;
         if (postData.category_id != null) {
           try {
@@ -75,7 +87,7 @@ export default function PostDetailPage() {
           publishedAt: postData.published_at,
           media: postData.media || [],
           likes: likesCount,
-          comments: 0, 
+          comments: commentsCount, // ← Maintenant la bonne valeur dès le début
           user: userData ? {
             id: userData.id,
             pseudo: userData.pseudo,
@@ -102,35 +114,6 @@ export default function PostDetailPage() {
     fetchPost();
   }, [postId, username]);
 
-  useEffect(() => {
-    if (!postId) return;
-
-    const fetchComments = async () => {
-      setCommentsLoading(true);
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/posts/${postId}/comments`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          setComments(data.comments || []);
-          
-          if (post) {
-            setPost(prev => ({
-              ...prev,
-              comments: data.comments?.length || 0
-            }));
-          }
-        }
-      } catch (err) {
-        console.error('Erreur lors du chargement des commentaires:', err);
-      } finally {
-        setCommentsLoading(false);
-      }
-    };
-
-    fetchComments();
-  }, [postId, post?.id]);
-
   const handleCommentAdded = (newComment) => {
     setComments(prev => [newComment, ...prev]);
     setPost(prev => ({
@@ -140,7 +123,13 @@ export default function PostDetailPage() {
   };
 
   const handleBackClick = () => {
-    router.back();
+    const previousPageType = sessionStorage.getItem('previousPageType');
+    
+    if (previousPageType === 'comment' || previousPageType === 'reply') {
+      sessionStorage.removeItem('previousPageType');
+      window.location.href = '/home';    } else {
+      router.back();
+    }
   };
 
   if (loading) {

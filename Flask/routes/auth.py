@@ -561,3 +561,140 @@ def get_user_by_id(user_id):
         }), 200
     except Exception as e:
         return jsonify({'error': f'Erreur serveur: {str(e)}'}), 500
+
+@auth_bp.route('/api/users/<int:user_id>/comments-replies', methods=['GET'])
+def get_user_comments_and_replies(user_id):
+    """Récupérer tous les commentaires et réponses d'un utilisateur"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Utilisateur non trouvé'}), 404
+
+        from models.comment import Comment
+        from models.reply import Reply
+        from models.post import Post
+        from models.comment_media import CommentMedia
+        from models.reply_media import ReplyMedia
+        from models.comment_like import CommentLike
+        from models.reply_like import ReplyLike
+        
+        comments_and_replies = []
+        
+        comments = Comment.query.filter_by(user_id=user_id).order_by(Comment.created_at.desc()).all()
+        
+        for comment in comments:
+            original_post = Post.query.get(comment.post_id)
+            original_post_data = None
+            
+            if original_post:
+                post_user = User.query.get(original_post.user_id)
+                original_post_data = {
+                    'id': original_post.id,
+                    'title': original_post.title,
+                    'content': original_post.content,
+                    'user': {
+                        'id': post_user.id if post_user else None,
+                        'pseudo': post_user.pseudo if post_user else None,
+                        'first_name': post_user.first_name if post_user else None,
+                        'last_name': post_user.last_name if post_user else None,
+                        'profile_picture': post_user.profile_picture if post_user else None
+                    } if post_user else None
+                }
+            
+            comment_media = CommentMedia.query.filter_by(comment_id=comment.id).all()
+            media = [{
+                'id': m.id,
+                'url': m.media_url,
+                'type': m.media_type
+            } for m in comment_media]
+            
+            likes_count = CommentLike.query.filter_by(comment_id=comment.id).count()
+            replies_count = Reply.query.filter_by(comment_id=comment.id).count()
+            
+            comments_and_replies.append({
+                'id': comment.id,
+                'type': 'comment',
+                'content': comment.content,
+                'created_at': comment.created_at.isoformat(),
+                'media': media,
+                'likes_count': likes_count,
+                'replies_count': replies_count,
+                'originalPost': original_post_data
+            })
+        
+        replies = Reply.query.filter_by(user_id=user_id).order_by(Reply.created_at.desc()).all()
+        
+        for reply in replies:
+            original_post_data = None
+            
+            if reply.comment_id:
+                original_comment = Comment.query.get(reply.comment_id)
+                if original_comment:
+                    original_post = Post.query.get(original_comment.post_id)
+                    if original_post:
+                        post_user = User.query.get(original_post.user_id)
+                        original_post_data = {
+                            'id': original_post.id,
+                            'title': original_post.title,
+                            'content': original_post.content,
+                            'user': {
+                                'id': post_user.id if post_user else None,
+                                'pseudo': post_user.pseudo if post_user else None,
+                                'first_name': post_user.first_name if post_user else None,
+                                'last_name': post_user.last_name if post_user else None,
+                                'profile_picture': post_user.profile_picture if post_user else None
+                            } if post_user else None
+                        }
+            elif reply.replies_id:
+                def find_original_post(reply_obj):
+                    if reply_obj.comment_id:
+                        comment = Comment.query.get(reply_obj.comment_id)
+                        return Post.query.get(comment.post_id) if comment else None
+                    elif reply_obj.replies_id:
+                        parent_reply = Reply.query.get(reply_obj.replies_id)
+                        return find_original_post(parent_reply) if parent_reply else None
+                    return None
+                
+                original_post = find_original_post(reply)
+                if original_post:
+                    post_user = User.query.get(original_post.user_id)
+                    original_post_data = {
+                        'id': original_post.id,
+                        'title': original_post.title,
+                        'content': original_post.content,
+                        'user': {
+                            'id': post_user.id if post_user else None,
+                            'pseudo': post_user.pseudo if post_user else None,
+                            'first_name': post_user.first_name if post_user else None,
+                            'last_name': post_user.last_name if post_user else None,
+                            'profile_picture': post_user.profile_picture if post_user else None
+                        } if post_user else None
+                    }
+            
+            reply_media = ReplyMedia.query.filter_by(replies_id=reply.id).all()
+            media = [{
+                'id': m.id,
+                'url': m.media_url,
+                'type': m.media_type
+            } for m in reply_media]
+            
+            likes_count = ReplyLike.query.filter_by(replies_id=reply.id).count()
+            sub_replies_count = Reply.query.filter_by(replies_id=reply.id).count()
+            
+            comments_and_replies.append({
+                'id': reply.id,
+                'type': 'reply',
+                'content': reply.content,
+                'created_at': reply.created_at.isoformat(),
+                'media': media,
+                'likes_count': likes_count,
+                'replies_count': sub_replies_count,
+                'originalPost': original_post_data
+            })
+        
+        comments_and_replies.sort(key=lambda x: x['created_at'], reverse=True)
+        
+        return jsonify({'commentsAndReplies': comments_and_replies}), 200
+        
+    except Exception as e:
+        return jsonify({'error': f'Erreur serveur: {str(e)}'}), 500

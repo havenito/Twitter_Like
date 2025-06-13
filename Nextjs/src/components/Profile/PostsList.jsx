@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileText, faEllipsis, faEdit, faTrash, faComment, faTag, faPlay } from '@fortawesome/free-solid-svg-icons';
-import LikeButton from '../Main/Post/LikeButton';
-import FavoriteButton from '../Main/Post/FavoriteButton';
+import { faFileText, faEllipsis, faEdit, faTrash, faTag, faPlay, faImage } from '@fortawesome/free-solid-svg-icons';
+import Image from 'next/image';
 import EditPostModal from '../Main/Post/EditPostModal';
 import DeletePostModal from '../Main/Post/DeletePostModal';
 import MediaModal from '../MediaModal';
 import CommentsModal from '../Main/Post/CommentsModal';
 import CommentButton from '../Main/Post/CommentButton';
+import LikeButton from '../Main/Post/LikeButton';
+import FavoriteButton from '../Main/Post/FavoriteButton';
 
 const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate, onPostDelete }) => {
   const router = useRouter();
@@ -37,10 +38,10 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="py-10 text-center text-gray-400"
+        className="py-8 sm:py-10 lg:py-12 text-center text-gray-400"
       >
-        <FontAwesomeIcon icon={faFileText} className="text-3xl mb-3 text-gray-500" />
-        <p className="text-lg">
+        <FontAwesomeIcon icon={faFileText} className="text-2xl sm:text-3xl lg:text-4xl mb-3 text-gray-500" />
+        <p className="text-base sm:text-lg lg:text-xl px-4">
           {isOwnProfile ? "Vous n'avez encore rien publié." : `@${userPseudo} n'a pas encore partagé de publications.`}
         </p>
       </motion.div>
@@ -57,8 +58,8 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
     }
     
     if (post.user?.pseudo || userPseudo) {
-      const username = post.user?.pseudo || userPseudo;
-      router.push(`/${username}/post/${post.id}`);
+      const targetPseudo = post.user?.pseudo || userPseudo;
+      router.push(`/${targetPseudo}/post/${post.id}`);
     }
   };
 
@@ -80,12 +81,6 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
 
   const handlePostUpdated = (updatedPost) => {
     console.log('Post modifié:', updatedPost);
-    if (onPostUpdate) {
-      onPostUpdate(updatedPost);
-    }
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
   };
 
   const handleDeletePost = (post) => {
@@ -150,107 +145,99 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
 
   const handleMediaClick = (postMedia, index, e) => {
     e.stopPropagation();
-    setSelectedMedia(postMedia);
+    setSelectedMedia(postMedia || []);
     setSelectedMediaIndex(index);
     setShowMediaModal(true);
   };
 
   const renderMedia = (post) => {
     const allMedia = Array.isArray(post.media) ? post.media : [];
-
+    
     if (allMedia.length === 0) return null;
 
     if (allMedia.length === 1) {
       const media = allMedia[0];
-      const normalizedUrl = media.url.startsWith('http') 
-        ? media.url 
-        : media.url.startsWith('/') 
-          ? media.url 
-          : `/${media.url}`;
-      
+      const src = media.url.startsWith('http') ? media.url : `/${media.url}`;
       const isVideo = media.type === 'video';
-
-      if (isVideo) {
-        return (
-          <div 
-            className="mt-3 rounded-lg overflow-hidden cursor-pointer group relative"
-            onClick={(e) => handleMediaClick(allMedia, 0, e)}
-            data-interactive="true"
-          >
-            <video
-              src={normalizedUrl}
-              className="w-full h-auto object-cover max-h-96"
-              muted
-              preload="metadata"
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 group-hover:bg-opacity-50 transition-colors">
-              <FontAwesomeIcon icon={faPlay} className="text-white text-4xl" />
+      
+      return (
+        <div 
+          className="mt-3 relative cursor-pointer group rounded-lg overflow-hidden"
+          onClick={(e) => handleMediaClick(allMedia, 0, e)}
+          data-interactive="true"
+        >
+          {isVideo ? (
+            <div className="relative">
+              <video 
+                src={src} 
+                className="w-full rounded-lg max-h-48 sm:max-h-64 lg:max-h-80 object-cover" 
+                muted
+                preload="metadata"
+              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 group-hover:bg-opacity-50 transition-colors">
+                <FontAwesomeIcon icon={faPlay} className="text-white text-xl sm:text-2xl lg:text-3xl" />
+              </div>
             </div>
-          </div>
-        );
-      } else {
-        return (
-          <div 
-            className="mt-3 rounded-lg overflow-hidden cursor-pointer group"
-            onClick={(e) => handleMediaClick(allMedia, 0, e)}
-            data-interactive="true"
-          >
-            <img
-              src={normalizedUrl}
-              alt="Media du post"
-              className="w-full h-auto object-cover max-h-96 group-hover:scale-105 transition-transform duration-300"
-              onError={e => e.currentTarget.style.display = 'none'}
+          ) : (
+            <img 
+              src={src} 
+              alt="" 
+              className="w-full rounded-lg max-h-48 sm:max-h-64 lg:max-h-80 object-cover group-hover:scale-105 transition-transform duration-300" 
             />
-          </div>
-        );
-      }
+          )}
+          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-colors rounded-lg" />
+        </div>
+      );
     }
 
     const gridCols = allMedia.length === 2 ? 'grid-cols-2' : 
-                     allMedia.length === 3 ? 'grid-cols-3' : 'grid-cols-2';
-
+                     allMedia.length === 3 ? 'grid-cols-2 sm:grid-cols-3' : 
+                     'grid-cols-2';
+    
     return (
       <div className={`mt-3 grid ${gridCols} gap-2`} data-interactive="true">
-        {allMedia.slice(0, 4).map((media, index) => {
-          const normalizedUrl = media.url.startsWith('http') 
-            ? media.url 
-            : media.url.startsWith('/') 
-              ? media.url 
-              : `/${media.url}`;
-          
+        {allMedia.slice(0, 4).map((media, i) => {
+          const src = media.url.startsWith('http') ? media.url : `/${media.url}`;
           const isVideo = media.type === 'video';
-
+          
+          const isFirstOfThree = allMedia.length === 3 && i === 0;
+          const spanClass = isFirstOfThree ? 'row-span-2 hidden sm:block' : '';
+          
           return (
             <div 
-              key={media.id || index} 
-              className="relative rounded-lg overflow-hidden h-32 cursor-pointer group"
-              onClick={(e) => handleMediaClick(allMedia, index, e)}
+              key={i}
+              className={`relative cursor-pointer group rounded-lg overflow-hidden ${spanClass}`}
+              onClick={(e) => handleMediaClick(allMedia, i, e)}
             >
               {isVideo ? (
-                <div className="relative w-full h-full">
-                  <video
-                    src={normalizedUrl}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                <div className="relative">
+                  <video 
+                    src={src} 
+                    className="w-full h-20 sm:h-24 lg:h-32 object-cover group-hover:scale-105 transition-transform duration-300" 
                     muted
                     preload="metadata"
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 group-hover:bg-opacity-50 transition-colors">
-                    <FontAwesomeIcon icon={faPlay} className="text-white text-2xl" />
+                    <FontAwesomeIcon icon={faPlay} className="text-white text-sm sm:text-base lg:text-lg" />
                   </div>
                 </div>
               ) : (
                 <img
-                  src={normalizedUrl}
-                  alt={`Media ${index + 1}`}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  src={src}
+                  alt=""
+                  className="w-full h-20 sm:h-24 lg:h-32 object-cover group-hover:scale-105 transition-transform duration-300"
                   onError={e => e.currentTarget.style.display = 'none'}
                 />
               )}
-              {allMedia.length > 4 && index === 3 && (
+              
+              {i === 3 && allMedia.length > 4 && (
                 <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-                  <span className="text-white font-semibold">+{allMedia.length - 3}</span>
+                  <span className="text-white font-bold text-lg sm:text-xl">
+                    +{allMedia.length - 4}
+                  </span>
                 </div>
               )}
+              
               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-colors" />
             </div>
           );
@@ -281,25 +268,25 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
           hidden: { opacity: 0 },
           visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
         }}
-        className="space-y-4 sm:space-y-6"
+        className="space-y-3 sm:space-y-4 lg:space-y-6"
       >
         {posts.map((post) => (
           <motion.div
             key={post.id}
             variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-            className="bg-[#1e1e1e] p-4 sm:p-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 border border-[#333] relative cursor-pointer hover:bg-[#252525]"
+            className="bg-[#1e1e1e] p-3 sm:p-4 lg:p-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 border border-[#333] relative cursor-pointer hover:bg-[#252525]"
             onClick={(e) => handlePostClick(post, e)}
           >
             {isOwnProfile && (
-              <div className="absolute top-4 right-4" data-interactive="true">
+              <div className="absolute top-3 right-3 sm:top-4 sm:right-4" data-interactive="true">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleMenuToggle(post.id);
                   }}
-                  className="text-gray-400 hover:text-white transition-colors p-2 px-4 rounded-full hover:bg-[#333]"
+                  className="text-gray-400 hover:text-white transition-colors p-1.5 sm:p-2 rounded-full hover:bg-[#333]"
                 >
-                  <FontAwesomeIcon icon={faEllipsis} />
+                  <FontAwesomeIcon icon={faEllipsis} className="text-sm sm:text-base" />
                 </button>
                 
                 <AnimatePresence>
@@ -308,16 +295,16 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
                       initial={{ opacity: 0, scale: 0.95, y: -10 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                      className="absolute right-0 top-full mt-2 bg-[#2a2a2a] border border-[#444] rounded-lg shadow-lg z-10 min-w-[150px]"
+                      className="absolute right-0 top-full mt-2 bg-[#2a2a2a] border border-[#444] rounded-lg shadow-lg z-10 min-w-[120px] sm:min-w-[150px]"
                     >
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleEditPost(post);
                         }}
-                        className="w-full text-left px-4 py-3 text-[#90EE90] hover:bg-[#333] transition-colors flex items-center rounded-t-lg"
+                        className="w-full text-left px-3 py-2 sm:px-4 sm:py-3 text-[#90EE90] hover:bg-[#333] transition-colors flex items-center rounded-t-lg text-sm sm:text-base"
                       >
-                        <FontAwesomeIcon icon={faEdit} className="mr-3" />
+                        <FontAwesomeIcon icon={faEdit} className="mr-2 sm:mr-3 text-xs sm:text-sm" />
                         Modifier
                       </button>
                       <button
@@ -325,9 +312,9 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
                           e.stopPropagation();
                           handleDeletePost(post);
                         }}
-                        className="w-full text-left px-4 py-3 text-red-400 hover:bg-[#333] transition-colors flex items-center rounded-b-lg border-t border-[#444]"
+                        className="w-full text-left px-3 py-2 sm:px-4 sm:py-3 text-red-400 hover:bg-[#333] transition-colors flex items-center rounded-b-lg border-t border-[#444] text-sm sm:text-base"
                       >
-                        <FontAwesomeIcon icon={faTrash} className="mr-3" />
+                        <FontAwesomeIcon icon={faTrash} className="mr-2 sm:mr-3 text-xs sm:text-sm" />
                         Supprimer
                       </button>
                     </motion.div>
@@ -337,32 +324,45 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
             )}
 
             {post.title && (
-              <h3 className="text-white font-semibold text-lg mb-2 pr-10">{post.title}</h3>
+              <h3 className="text-white font-semibold text-base sm:text-lg lg:text-xl mb-2 pr-8 sm:pr-10 lg:pr-12">
+                {post.title}
+              </h3>
             )}
             
-            <p className="text-white whitespace-pre-wrap leading-relaxed mb-3 pr-10">{post.content}</p>
+            <p className="text-white whitespace-pre-wrap leading-relaxed mb-3 pr-8 sm:pr-10 lg:pr-12 text-sm sm:text-base">
+              {post.content}
+            </p>
             
             {renderMedia(post)}
             
-            <div className="text-xs text-gray-500 mt-4 flex justify-between items-center pt-3 border-t border-[#333]">
-              <div className="flex items-center space-x-3">
-                <span>
+            <div className="text-xs sm:text-sm text-gray-500 mt-3 sm:mt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center pt-3 border-t border-[#333] gap-3 sm:gap-0">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-1 sm:space-y-0">
+                <span className="text-xs sm:text-sm">
                   Publié le {formatDate(post.createdAt || post.publishedAt)}
                 </span>
                 {post.category?.name && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-[#90EE90] bg-opacity-20 text-[#90EE90] border border-[#90EE90] border-opacity-30">
-                    <FontAwesomeIcon icon={faTag} className="mr-1 h-3 w-3" />
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-[#90EE90] bg-opacity-20 text-[#90EE90] border border-[#90EE90] border-opacity-30 w-fit">
+                    <FontAwesomeIcon icon={faTag} className="mr-1 h-2 w-2 sm:h-3 sm:w-3" />
                     {post.category.name}
                   </span>
                 )}
               </div>
-              <div className="flex items-center space-x-4" data-interactive="true">
+              
+              <div className="flex items-center justify-end sm:justify-start space-x-3 sm:space-x-4" data-interactive="true">
                 <CommentButton 
                   commentsCount={commentsCount[post.id] || 0}
                   onClick={(e) => handleOpenComments(post, e)}
+                  className="text-xs sm:text-sm"
                 />
-                <LikeButton postId={post.id} initialLikes={post.likes || 0} />
-                <FavoriteButton postId={post.id} />
+                <LikeButton 
+                  postId={post.id} 
+                  initialLikes={post.likes || 0}
+                  className="text-xs sm:text-sm"
+                />
+                <FavoriteButton 
+                  postId={post.id}
+                  className="text-xs sm:text-sm"
+                />
               </div>
             </div>
           </motion.div>
@@ -376,6 +376,7 @@ const PostsList = ({ posts, isOwnProfile, userPseudo, onCreatePost, onPostUpdate
         />
       )}
 
+      {/* Modales */}
       <EditPostModal
         isOpen={showEditModal}
         onClose={handleEditModalClose}

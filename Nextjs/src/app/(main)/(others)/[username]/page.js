@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import ProfileHeader from '@/components/Profile/ProfileHeader';
-import ProfileContent from '@/components/Profile/ProfileContent';
-import ProfileNotFound from '@/components/Profile/ProfileNotFound';
-import LoadingProfile from '@/components/Profile/LoadingProfile';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faLock } from '@fortawesome/free-solid-svg-icons';
+import ProfileHeader from '@/components/Profile/ProfileHeader';
+import ProfileContent from '@/components/Profile/ProfileContent';
+import LoadingProfile from '@/components/Profile/LoadingProfile';
+import ProfileNotFound from '@/components/Profile/ProfileNotFound';
 
 export default function UserProfilePage() {
   const params = useParams();
@@ -67,6 +67,7 @@ export default function UserProfilePage() {
           let userMedia = [];
           let userLikes = [];
           let userPolls = [];
+          let userCommentsAndReplies = [];
           
           if (fetchedData.id) {
             try {
@@ -103,6 +104,17 @@ export default function UserProfilePage() {
             }
 
             if (isOwnProfile || (!fetchedData.private || isFollowing)) {
+              try {
+                const commentsResponse = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/${fetchedData.id}/comments-replies`);
+                
+                if (commentsResponse.ok) {
+                  const commentsData = await commentsResponse.json();
+                  userCommentsAndReplies = commentsData.commentsAndReplies || [];
+                }
+              } catch (commentsError) {
+                console.error('Erreur lors de la récupération des commentaires et réponses:', commentsError);
+              }
+
               try {
                 const likesResponse = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/${fetchedData.id}/likes`);
                 
@@ -143,6 +155,7 @@ export default function UserProfilePage() {
             media: userMedia,
             likes: userLikes,
             polls: userPolls,
+            commentsAndReplies: userCommentsAndReplies,
           };
           
         } catch (err) {
@@ -164,6 +177,8 @@ export default function UserProfilePage() {
               posts: [],
               media: [],
               likes: [],
+              polls: [],
+              commentsAndReplies: [],
             };
           } else {
             setError("Profil introuvable.");
