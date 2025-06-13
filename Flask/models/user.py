@@ -18,6 +18,15 @@ class User(db.Model):
     # CORRECTION : Utilisation du type ENUM personnalisé de Supabase
     subscription = db.Column(ENUM('free', 'plus', 'premium', name='subscription-type'), nullable=False, default='free')
     
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "pseudo": self.pseudo,
+            "profile_picture": self.profile_picture,
+            "first_name": self.first_name,
+            "last_name": self.last_name
+        }
+
     def __repr__(self):
         return f'<User {self.first_name} {self.last_name}>'
     

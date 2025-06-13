@@ -19,6 +19,7 @@ from routes.polls import polls_bp
 from routes.notifications import notifications_bp
 from routes.comment_likes import comment_likes_bp
 from routes.reply_likes import reply_likes_bp
+from routes.search import search_bp
 
 mail = Mail()
 
@@ -46,6 +47,7 @@ def create_app(config_class=Config):
     app.register_blueprint(notifications_bp)
     app.register_blueprint(comment_likes_bp)
     app.register_blueprint(reply_likes_bp)
+    app.register_blueprint(search_bp)
     
     with app.app_context():
         from models.post_media import PostMedia

@@ -471,6 +471,7 @@ def reset_password_with_token():
     except Exception as e: 
         current_app.logger.error(f"Erreur lors de la réinitialisation du mot de passe : {e}")
         return jsonify({'error': 'Token invalide, expiré ou une erreur est survenue'}), 401
+    
 
 @auth_bp.route('/api/users/profile/<string:pseudo>', methods=['GET'])
 def get_user_by_pseudo(pseudo):
