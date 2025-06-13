@@ -3,10 +3,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserPen, faCalendarAlt, faLock, faGlobe, faUsers, faUserPlus, faUserMinus, faTrash, faEllipsis } from '@fortawesome/free-solid-svg-icons';
+import { faUserPen, faCalendarAlt, faLock, faGlobe, faUsers, faUserPlus, faUserMinus, faTrash, faEllipsis, faFlag } from '@fortawesome/free-solid-svg-icons';
 import { useSession, signOut } from 'next-auth/react';
 import UnfollowPrivateConfirmModal from './UnfollowPrivateConfirmModal';
 import DeleteAccountModal from './DeleteAccountModal';
+import Signalement from '../Signalement/Signalement';
 
 const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing }) => {
   const { data: session } = useSession();
@@ -15,6 +16,7 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const formattedDate = profileData.joinDate 
     ? new Date(profileData.joinDate).toLocaleDateString('fr-FR', {
@@ -198,7 +200,7 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
             </motion.div>
             
             <motion.div 
-              className="mt-4 sm:mt-0"
+              className="mt-4 sm:mt-0 flex flex-col items-end gap-2"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3, duration: 0.5 }}
@@ -248,32 +250,66 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
                   </div>
                 </div>
               ) : session?.user && (
-                <motion.button
-                  onClick={handleFollowToggle}
-                  disabled={followLoading}
-                  whileHover={{ scale: followLoading ? 1 : 1.05 }}
-                  whileTap={{ scale: followLoading ? 1 : 0.95 }}
-                  className={`px-6 py-2 rounded-full font-semibold text-sm flex items-center transition-all duration-200 min-w-[140px] justify-center ${
-                    isFollowing
-                      ? 'bg-[#222222] text-white hover:bg-red-600 hover:text-white'
-                      : 'bg-[#90EE90] text-black hover:bg-[#7CD37C]'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {followLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
-                      Chargement...
-                    </>
-                  ) : (
-                    <>
-                      <FontAwesomeIcon 
-                        icon={isFollowing ? faUserMinus : faUserPlus} 
-                        className="mr-2" 
-                      />
-                      {isFollowing ? 'Se désabonner' : 'Suivre'}
-                    </>
-                  )}
-                </motion.button>
+                <div className="flex gap-3 items-center">
+                  <motion.button
+                    onClick={handleFollowToggle}
+                    disabled={followLoading}
+                    whileHover={{ scale: followLoading ? 1 : 1.05 }}
+                    whileTap={{ scale: followLoading ? 1 : 0.95 }}
+                    className={`px-6 py-2 rounded-full font-semibold text-sm flex items-center transition-all duration-200 min-w-[140px] justify-center ${
+                      isFollowing
+                        ? 'bg-[#222222] text-white hover:bg-red-600 hover:text-white'
+                        : 'bg-[#90EE90] text-black hover:bg-[#7CD37C]'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {followLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                        Chargement...
+                      </>
+                    ) : (
+                      <>
+                        <FontAwesomeIcon 
+                          icon={isFollowing ? faUserMinus : faUserPlus} 
+                          className="mr-2" 
+                        />
+                        {isFollowing ? 'Se désabonner' : 'Suivre'}
+                      </>
+                    )}
+                  </motion.button>
+                  {/* Menu trois points avec signalement */}
+                  <div className="relative">
+                    <motion.button
+                      onClick={handleMenuToggle}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="bg-[#333] text-white px-4 py-3 rounded-full font-semibold text-sm flex items-center hover:bg-[#444] transition-colors"
+                    >
+                      <FontAwesomeIcon icon={faEllipsis} />
+                    </motion.button>
+                    <AnimatePresence>
+                      {showProfileMenu && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                          className="absolute right-0 top-full mt-2 bg-[#2a2a2a] border border-[#444] rounded-lg shadow-lg z-10 min-w-[180px]"
+                        >
+                          <button
+                            onClick={() => {
+                              setShowReportModal(true);
+                              setShowProfileMenu(false); // Fermer le menu après avoir cliqué
+                            }}
+                            className="w-full text-left px-4 py-3 text-red-400 hover:bg-[#333] transition-colors flex items-center rounded-lg"
+                          >
+                            <FontAwesomeIcon icon={faFlag} className="mr-3" />
+                            Signaler cet utilisateur
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
               )}
             </motion.div>
           </div>
@@ -386,6 +422,14 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
         onConfirm={confirmDeleteAccount}
         isLoading={deleteLoading}
         userEmail={session?.user?.email || ''}
+      />
+      
+      {/* Modal de signalement utilisateur */}
+      <Signalement
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        userId={session?.user?.id} // L'ID de l'utilisateur qui signale
+        reportedUserId={profileData?.id} // L'ID de l'utilisateur signalé
       />
     </>
   );

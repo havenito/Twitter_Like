@@ -229,6 +229,8 @@ def upload_profile_image():
             return jsonify({'error': 'Failed to upload file'}), 500
     return jsonify({'error': 'File processing error'}), 400
 
+from datetime import datetime
+
 @auth_bp.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -245,10 +247,23 @@ def login():
     
     if not user:
         return jsonify({'error': "Aucun compte n'existe avec cet email."}), 401 
-    
+
+    # Vérification du ban temporaire
+    if user.is_banned and user.ban_until:
+        if datetime.utcnow() > user.ban_until:
+            user.is_banned = False
+            user.ban_until = None
+            db.session.commit()
+
+    if user.is_banned:
+        # Message plus précis si ban temporaire
+        if user.ban_until:
+            return jsonify({'error': f'Votre compte est banni jusqu\'au {user.ban_until.strftime("%d/%m/%Y %H:%M:%S")}.'}), 403
+        return jsonify({'error': 'Votre compte a été banni.'}), 403
+
     if user.password is None: 
         return jsonify({'error': 'Ce compte a été créé via un fournisseur externe (Google/GitHub). Veuillez vous connecter en utilisant le bouton correspondant.'}), 401
-    
+
     if bcrypt.check_password_hash(user.password, password):
         user_data = {
             'id': user.id,

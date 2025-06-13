@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faImage, faPaperPlane, faSpinner, faTimes, faPlay } from '@fortawesome/free-solid-svg-icons';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
-import Notification from '../Notification';
+import Notification from '../../Notification';
 
 const ReplyForm = ({ commentId, onReplyAdded }) => {
   const { data: session } = useSession();

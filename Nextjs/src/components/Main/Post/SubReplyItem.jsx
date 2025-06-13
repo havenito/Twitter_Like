@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlay } from '@fortawesome/free-solid-svg-icons';
-import MediaModal from '../MediaModal';
+import MediaModal from '../../MediaModal';
 import ReplyLikeButton from './ReplyLikeButton';
 import ReplyButton from './ReplyButton';
 import SubReplyModal from './SubReplyModal';

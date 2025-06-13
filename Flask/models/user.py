@@ -1,7 +1,9 @@
 from models import db
 from sqlalchemy.dialects.postgresql import ENUM
+from sqlalchemy import Column, DateTime
 
 class User(db.Model):
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False) 
@@ -16,6 +18,9 @@ class User(db.Model):
     biography = db.Column(db.String(255), nullable=True)
     banner = db.Column(db.String(255), nullable=True)
     subscription = db.Column(ENUM('free', 'plus', 'premium', name='subscription-type'), nullable=False, default='free')
+    warn_count = db.Column(db.Integer, default=0)  
+    is_banned = db.Column(db.Boolean, default=False)  
+    ban_until = Column(DateTime, nullable=True)
     
     def to_dict(self):
         return {

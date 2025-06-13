@@ -5,7 +5,7 @@ import { faPlay } from '@fortawesome/free-solid-svg-icons';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import MediaModal from '../MediaModal';
+import MediaModal from '../../MediaModal';
 import ReplyLikeButton from './ReplyLikeButton';
 import ReplyButton from './ReplyButton';
 import SubReplyModal from './SubReplyModal';

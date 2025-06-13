@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComment, faTimes, faImage, faPaperPlane, faSpinner, faPlay } from '@fortawesome/free-solid-svg-icons';
 import Image from 'next/image';
 import Link from 'next/link';
-import Notification from '../Notification';
+import Notification from '../../Notification';
 
 const SubReplyModal = ({ isOpen, onClose, parentReply, onSubReplyAdded }) => {
   const { data: session } = useSession();

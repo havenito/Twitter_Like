@@ -5,22 +5,26 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComment } from '@fortawesome/free-regular-svg-icons';
-import { faTag, faPlay } from '@fortawesome/free-solid-svg-icons';
+import { faTag, faPlay, faFlag } from '@fortawesome/free-solid-svg-icons';
 import LikeButton from './LikeButton';
 import FavoriteButton from './FavoriteButton';
 import MediaModal from '../../MediaModal';
 import CommentsModal from './CommentsModal';
 import CommentButton from './CommentButton';
+import ReportModal from '../../Signalement/Signalement';
 
 const PostCard = ({ post, disableNavigation = false }) => {
+  const { data: session } = useSession();
   const router = useRouter();
   const [imageError, setImageError] = useState(false);
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [commentsCount, setCommentsCount] = useState(post.comments || 0);
+  const [showReport, setShowReport] = useState(false);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Date inconnue';
@@ -83,7 +87,7 @@ const PostCard = ({ post, disableNavigation = false }) => {
                 preload="metadata"
               />
               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 group-hover:bg-opacity-50 transition-colors">
-                <FontAwesomeIcon icon={faPlay} className="text-white text-4xl" />
+                <FontAwesomeIcon icon={faPlay} className="text-white text-3xl" />
               </div>
             </div>
           ) : (
@@ -93,7 +97,7 @@ const PostCard = ({ post, disableNavigation = false }) => {
               className="w-full rounded-lg max-h-96 object-cover group-hover:scale-105 transition-transform duration-300" 
             />
           )}
-          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-colors rounded-lg" />
+          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-colors" />
         </div>
       );
     }
@@ -158,7 +162,10 @@ const PostCard = ({ post, disableNavigation = false }) => {
       );
     }
 
-    const isValidImageUrl = profilePicture.startsWith('https://res.cloudinary.com') || profilePicture.startsWith('https://lh3.googleusercontent.com') || profilePicture.startsWith('https://avatars.githubusercontent.com') || profilePicture.startsWith('/');
+    const isValidImageUrl = profilePicture.startsWith('https://res.cloudinary.com') || 
+                           profilePicture.startsWith('https://lh3.googleusercontent.com') || 
+                           profilePicture.startsWith('https://avatars.githubusercontent.com') || 
+                           profilePicture.startsWith('/');
 
     if (isValidImageUrl) {
       return (
@@ -275,7 +282,7 @@ const PostCard = ({ post, disableNavigation = false }) => {
         
         {renderMedia()}
         
-        <div className="text-xs text-gray-500 mt-4 flex justify-end items-center pt-3 border-t border-[#333]">
+        <div className="text-xs text-gray-500 mt-4 flex justify-between items-center pt-3 border-t border-[#333]">
           <div className="flex items-center space-x-4" data-interactive="true">
             <CommentButton 
               commentsCount={commentsCount}
@@ -283,6 +290,22 @@ const PostCard = ({ post, disableNavigation = false }) => {
             />
             <LikeButton postId={post.id} initialLikes={post.likes || 0} />
             <FavoriteButton postId={post.id} />
+            
+            {/* Bouton signaler - seulement si l'utilisateur est connecté et ce n'est pas son propre post */}
+            {session?.user && session.user.id !== post.user?.id && (
+              <button
+                className="hover:text-orange-400 transition-colors flex items-center p-2 rounded-full group"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowReport(true);
+                }}
+                title="Signaler ce post"
+                data-interactive="true"
+              >
+                <FontAwesomeIcon icon={faFlag} className="mr-1 group-hover:scale-110 transition-transform" />
+                <span className="text-xs">Signaler</span>
+              </button>
+            )}
           </div>
         </div>
       </motion.div>
@@ -300,6 +323,14 @@ const PostCard = ({ post, disableNavigation = false }) => {
         onClose={() => setShowCommentsModal(false)}
         post={post}
         onCommentAdded={handleCommentAdded}
+      />
+
+      {/* Modal de signalement */}
+      <ReportModal
+        isOpen={showReport}
+        onClose={() => setShowReport(false)}
+        userId={session?.user?.id}
+        postId={post.id}
       />
     </>
   );

@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlay } from '@fortawesome/free-solid-svg-icons';
-import MediaModal from '../MediaModal';
+import MediaModal from '../../MediaModal';
 import ReplyButton from './ReplyButton';
 import ReplyLikeButton from './ReplyLikeButton';
 

@@ -7,8 +7,6 @@ import Footer from "../components/Footer";
 import ParallaxIntro from "../components/Landing/ParallaxIntro";
 import HeroSection from "../components/Landing/HeroSection";
 import FeaturesSection from "../components/Landing/FeaturesSection";
-import FeedPreview from "../components/Landing/FeedPreview";
-import TrendingSection from "../components/Landing/TrendingSection";
 import CTASection from "../components/Landing/CTASection";
 
 export default function Home() {
@@ -69,10 +67,6 @@ export default function Home() {
         <main className="flex-1 flex flex-col items-center">
           <HeroSection />
           <FeaturesSection />
-          <section className="w-full max-w-7xl px-4 py-16 grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <FeedPreview />
-            <TrendingSection />
-          </section>
           <CTASection />
         </main>
 
