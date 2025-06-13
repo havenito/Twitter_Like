@@ -57,7 +57,8 @@ export const authOptions = {
           throw new Error("Email et mot de passe requis.");
         }
         
-        const res = await fetch(`${process.env.FLASK_API_URL}/api/login`, {
+        const apiUrl = process.env.FLASK_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${apiUrl}/api/login`, {
           method: 'POST',
           body: JSON.stringify({
             email: credentials.email,

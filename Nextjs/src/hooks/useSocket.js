@@ -11,8 +11,11 @@ export function useSocket() {
       return;
     }
 
+    // Obtenir l'URL WebSocket depuis les variables d'environnement
+    const websocketUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:5000';
+
     // Créer la connexion socket
-    socketRef.current = io('http://localhost:5000', {
+    socketRef.current = io(websocketUrl, {
       transports: ['websocket', 'polling'],
       timeout: 20000,
       forceNew: true, // Forcer une nouvelle connexion

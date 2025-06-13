@@ -1,3 +1,4 @@
+import os
 from flask import request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from models import db
@@ -14,8 +15,11 @@ connected_users = {}
 
 def init_socketio(app):
     """Initialiser SocketIO avec l'application Flask"""
+    # Obtenir l'URL frontend depuis les variables d'environnement
+    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+    
     socketio.init_app(app, 
-                     cors_allowed_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8080", "null"],
+                     cors_allowed_origins=[frontend_url, "http://127.0.0.1:3000", "http://localhost:8080", "null"],
                      logger=True, 
                      engineio_logger=True)
     return socketio

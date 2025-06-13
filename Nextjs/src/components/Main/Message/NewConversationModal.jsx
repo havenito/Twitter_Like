@@ -17,7 +17,8 @@ export default function NewConversationModal({ isOpen, onClose, onCreateConversa
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/users');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/users`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

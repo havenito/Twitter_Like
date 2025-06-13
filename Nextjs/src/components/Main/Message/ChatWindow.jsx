@@ -74,8 +74,9 @@ export default function ChatWindow({
   const loadMessages = async () => {
     try {
       setLoading(true);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       const response = await fetch(
-        `http://localhost:5000/api/conversations/${conversation.conversation_id}/chats`
+        `${apiUrl}/api/conversations/${conversation.conversation_id}/chats`
       );
       
       if (!response.ok) {
@@ -258,7 +259,8 @@ export default function ChatWindow({
       console.log('❌ WebSocket not connected, using HTTP directly');
       
       try {
-        const response = await fetch('http://localhost:5000/api/chats/private', {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const response = await fetch(`${apiUrl}/api/chats/private`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

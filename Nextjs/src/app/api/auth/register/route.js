@@ -44,7 +44,8 @@ export async function POST(req) {
       flaskFormData.append('profile_picture', profilePictureFile);
     }
 
-    const flaskApiResponse = await fetch('http://localhost:5000/api/users', {
+    const apiUrl = process.env.FLASK_API_URL || 'http://localhost:5000';
+    const flaskApiResponse = await fetch(`${apiUrl}/api/users`, {
       method: 'POST',
       body: flaskFormData,
     });
