@@ -1,1 +1,4 @@
 .flaskenv
+
+/node_modules
+.env
