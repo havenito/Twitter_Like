@@ -4,10 +4,10 @@
 
 ## 🚀 Installation et Déploiement
 
-### 📥 Cloner le projet
+### 📥 Cloner le projet (attention bien cloner la branche alex
 
 ```bash
-git clone https://github.com/havenito/Twitter_Like
+git clone -b alex https://github.com/havenito/Twitter_Like
 cd Twitter_Like
 ```
 
