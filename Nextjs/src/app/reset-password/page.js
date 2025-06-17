@@ -243,7 +243,7 @@ export default function ResetPasswordPage() {
               </span>
               <input
                 id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"} // Use new state here
+                type={showConfirmPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirmez votre nouveau mot de passe"
@@ -253,7 +253,7 @@ export default function ResetPasswordPage() {
               <button
                 type="button"
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#90EE90] focus:outline-none"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)} // Toggle new state
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 tabIndex="-1"
               >
                 <FontAwesomeIcon icon={showConfirmPassword ? faEyeSlash : faEye} />
