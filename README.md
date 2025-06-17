@@ -7,7 +7,7 @@
 ### 📥 Cloner le projet (attention bien cloner la branche alex)
 
 ```bash
-git clone -b alex https://github.com/havenito/Twitter_Like
+git clone https://github.com/havenito/Twitter_Like
 cd Twitter_Like
 ```
 
