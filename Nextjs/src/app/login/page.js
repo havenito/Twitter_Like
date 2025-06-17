@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -9,9 +9,10 @@ import { faUser, faLock, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-i
 import Notification from '../../components/Notification';
 import { motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
-import { signIn } from "next-auth/react"; 
+import { signIn, useSession } from "next-auth/react"; 
 
 export default function LoginPage() {
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,6 +23,13 @@ export default function LoginPage() {
   const router = useRouter();
   const pathname = usePathname();
 
+  // Rediriger si l'utilisateur est déjà connecté
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/home");
+    }
+  }, [status, router]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -30,7 +38,7 @@ export default function LoginPage() {
     
     try {
       const result = await signIn('credentials', {
-        redirect: false, // Prevent NextAuth from redirecting automatically
+        redirect: false,
         email,
         password,
       });
@@ -40,7 +48,7 @@ export default function LoginPage() {
       if (result.error) {
         console.error("SignIn Error:", result.error);
         setError(result.error || 'Échec de la connexion. Veuillez vérifier vos identifiants.');
-        setPassword(''); // Clear password field on error
+        setPassword('');
         return;
       }
       
@@ -94,6 +102,28 @@ export default function LoginPage() {
       }
     }
   };
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#222222]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#90EE90] mb-4 mx-auto"></div>
+          <p className="text-gray-400">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "authenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#222222]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#90EE90] mb-4 mx-auto"></div>
+          <p className="text-gray-400">Redirection en cours...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#222222] px-4">

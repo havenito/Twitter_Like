@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faLock, faEnvelope, faSignature, faCamera, faGlobe, faLock as faLockSolid, faEye, faEyeSlash, faCheckCircle, faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 import Notification from '../../components/Notification';
 import { motion } from 'framer-motion';
+import { useSession } from "next-auth/react";
 
 // Pseudos réservés
 const RESERVED_PSEUDOS = [
@@ -21,6 +22,7 @@ const RESERVED_PSEUDOS = [
 ];
 
 export default function RegisterPage() {
+  const { data: session, status } = useSession();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -47,6 +49,12 @@ export default function RegisterPage() {
 
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/home");
+    }
+  }, [status, router]);
 
   const validatePseudo = (pseudoValue) => {
     if (!pseudoValue) {
@@ -296,6 +304,28 @@ export default function RegisterPage() {
     hidden: { opacity: 0, x: -20 },
     show: { opacity: 1, x: 0 }
   };
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#222222]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#90EE90] mb-4 mx-auto"></div>
+          <p className="text-gray-400">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "authenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#222222]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#90EE90] mb-4 mx-auto"></div>
+          <p className="text-gray-400">Redirection en cours...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#222222] py-12 px-4">

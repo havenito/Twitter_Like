@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, useScroll, useTransform } from 'framer-motion'; 
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import LandingHeader from "../components/Landing/LandingHeader";
 import Footer from "../components/Footer";
 import ParallaxIntro from "../components/Landing/ParallaxIntro";
@@ -10,8 +12,17 @@ import FeaturesSection from "../components/Landing/FeaturesSection";
 import CTASection from "../components/Landing/CTASection";
 
 export default function Home() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const { scrollY } = useScroll(); 
   const [windowHeight, setWindowHeight] = useState(0);
+
+  // Rediriger si l'utilisateur est connecté
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/home");
+    }
+  }, [status, router]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -43,9 +54,21 @@ export default function Home() {
     [0, 1, 1, 0] 
   );
 
-  if (windowHeight === 0) {
+  if (status === "loading" || windowHeight === 0) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#222222]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#90EE90]"></div>
+      </div>
+    );
+  }
+
+  if (status === "authenticated") {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#222222]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#90EE90] mb-4 mx-auto"></div>
+          <p className="text-gray-400">Redirection en cours...</p>
+        </div>
       </div>
     );
   }

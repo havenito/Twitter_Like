@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -8,8 +8,10 @@ import Notification from '../../components/Notification';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEnvelope } from "@fortawesome/free-solid-svg-icons";
 import { useRouter } from 'next/navigation';
+import { useSession } from "next-auth/react";
 
 export default function ForgotPasswordPage() {
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -17,6 +19,12 @@ export default function ForgotPasswordPage() {
   const [showNotification, setShowNotification] = useState(false);
   const [fieldError, setFieldError] = useState(''); 
   const router = useRouter();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/home");
+    }
+  }, [status, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,7 +44,6 @@ export default function ForgotPasswordPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        // Vérifier si l'erreur est celle spécifique aux comptes OAuth
         if (data.error && data.error.includes("fournisseur externe")) {
           setFieldError(data.error);
         } else {
@@ -68,6 +75,28 @@ export default function ForgotPasswordPage() {
     exit: { opacity: 0, y: -10, scale: 0.95, x: '-50%', transition: { duration: 0.2 } }
   };
 
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#222222]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#90EE90] mb-4 mx-auto"></div>
+          <p className="text-gray-400">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "authenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#222222]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#90EE90] mb-4 mx-auto"></div>
+          <p className="text-gray-400">Redirection en cours...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#222222] px-4">
       {showNotification && !fieldError && (
@@ -88,13 +117,15 @@ export default function ForgotPasswordPage() {
         className="w-full max-w-md bg-[#333333] p-8 rounded-lg shadow-lg"
       >
         <div className="flex justify-center mb-6">
-          <Image
-            src="/minouverselogo.png"
-            alt="Minouverse Logo"
-            width={80}
-            height={80}
-            className="object-contain"
-          />
+          <Link href="/">
+            <Image
+              src="/minouverselogo.png"
+              alt="Minouverse Logo"
+              width={80}
+              height={80}
+              className="object-contain"
+            />
+          </Link>
         </div>
 
         <h1 className="text-2xl font-bold text-center text-[#90EE90] mb-6">

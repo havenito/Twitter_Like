@@ -8,8 +8,10 @@ import Notification from '../../components/Notification';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash, faCheckCircle, faTimesCircle, faLock } from "@fortawesome/free-solid-svg-icons";
+import { useSession } from "next-auth/react";
 
 export default function ResetPasswordPage() {
+  const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get('token') || '';
@@ -20,13 +22,19 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // New state for confirm password visibility
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordCriteria, setPasswordCriteria] = useState({
     minLength: false,
     hasUppercase: false,
     hasNumber: false,
     hasSpecialChar: false,
   });
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/home");
+    }
+  }, [status, router]);
 
   useEffect(() => {
     if (!token) setError('Token manquant dans l’URL');
@@ -108,6 +116,28 @@ export default function ResetPasswordPage() {
     exit: { opacity: 0, y: -50, transition: { duration: 0.4, ease: 'easeIn' } },
   };
 
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#222222]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#90EE90] mb-4 mx-auto"></div>
+          <p className="text-gray-400">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "authenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#222222]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#90EE90] mb-4 mx-auto"></div>
+          <p className="text-gray-400">Redirection en cours...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#222222] px-4">
       {showNotification && (
@@ -127,13 +157,15 @@ export default function ResetPasswordPage() {
         className="w-full max-w-md bg-[#333333] p-8 rounded-lg shadow-lg"
       >
         <div className="flex justify-center mb-6">
-          <Image
-            src="/minouverselogo.png"
-            alt="Minouverse Logo"
-            width={80}
-            height={80}
-            className="object-contain"
-          />
+          <Link href="/">
+            <Image
+              src="/minouverselogo.png"
+              alt="Minouverse Logo"
+              width={80}
+              height={80}
+              className="object-contain"
+            />
+          </Link>
         </div>
 
         <h1 className="text-2xl font-bold text-center text-[#90EE90] mb-6">
