@@ -13,7 +13,6 @@ const Sidebar = ({ onCreatePost }) => {
   const menuItems = [
     { icon: faUser, label: "Profil", href: session?.user?.pseudo ? `/${session.user.pseudo}` : "#" },
     { icon: faSearch, label: "Recherche", href: "/search" },
-    { icon: faHistory, label: "Historique", href: "/history" },
     { icon: faStar, label: "Favoris", href: session?.user?.pseudo ? `/${session.user.pseudo}/favorites` : "#" },
     { icon: faBell, label: "Notifications", href: "/notifications" },
     { icon: faEnvelope, label: "Messages", href: "/messages" },
