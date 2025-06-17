@@ -782,3 +782,25 @@ def get_user_comments_and_replies(user_id):
         
     except Exception as e:
         return jsonify({'error': f'Erreur serveur: {str(e)}'}), 500
+    
+@auth_bp.route('/api/users/<int:user_id>/ban-status', methods=['GET'])
+def get_user_ban_status(user_id):
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Utilisateur non trouvé'}), 404
+        
+        # Vérifier si le ban temporaire est expiré
+        if user.ban_until and user.ban_until <= datetime.utcnow():
+            user.is_banned = False
+            user.ban_until = None
+            db.session.commit()
+        
+        return jsonify({
+            'is_banned': user.is_banned,
+            'ban_until': user.ban_until.isoformat() if user.ban_until else None,
+            'warn_count': user.warn_count or 0
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Erreur lors de la vérification du statut: {str(e)}'}), 500
