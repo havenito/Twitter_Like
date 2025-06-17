@@ -53,7 +53,8 @@ export default function FollowersPage() {
             );
             if (followResponse.ok) {
               const followData = await followResponse.json();
-              isUserFollowing = followData.status;
+              // Seuls les suivis acceptés comptent
+              isUserFollowing = followData.is_accepted || false;
               setIsFollowing(isUserFollowing);
             }
           } catch (followError) {
@@ -61,7 +62,7 @@ export default function FollowersPage() {
           }
         }
 
-        // Logique mise à jour : compte public OU propre profil OU on suit le compte privé
+        // Logique mise à jour : compte public OU propre profil OU on suit le compte privé (accepté)
         const canViewFollowers = !profile.private || isOwn || isUserFollowing;
 
         if (!canViewFollowers) {

@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserPen, faCalendarAlt, faLock, faGlobe, faUsers, faUserPlus, faUserMinus, faTrash, faEllipsis, faFlag } from '@fortawesome/free-solid-svg-icons';
+import { faUserPen, faCalendarAlt, faLock, faGlobe, faUsers, faUserPlus, faUserMinus, faTrash, faEllipsis, faFlag, faClock } from '@fortawesome/free-solid-svg-icons';
 import { useSession, signOut } from 'next-auth/react';
 import UnfollowPrivateConfirmModal from './UnfollowPrivateConfirmModal';
 import DeleteAccountModal from './DeleteAccountModal';
@@ -12,6 +12,7 @@ import Signalement from '../Signalement/Signalement';
 const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing }) => {
   const { data: session } = useSession();
   const [followLoading, setFollowLoading] = useState(false);
+  const [followStatus, setFollowStatus] = useState(null);
   const [showUnfollowModal, setShowUnfollowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -67,22 +68,58 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
     return null;
   };
 
+  useEffect(() => {
+    const checkFollowStatus = async () => {
+      if (!session?.user?.id || !profileData?.id || isOwnProfile) {
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/${session.user.id}/follows/${profileData.id}`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status) {
+            setFollowStatus(data.follow_status);
+            setIsFollowing(data.is_accepted);
+          } else {
+            setFollowStatus(null);
+            setIsFollowing(false);
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors de la vérification du statut de suivi:', error);
+      }
+    };
+
+    checkFollowStatus();
+  }, [session?.user?.id, profileData?.id, isOwnProfile, setIsFollowing]);
+
   const handleFollowToggle = async () => {
     if (!session?.user?.id || !profileData?.id || followLoading) return;
     
-    if (isFollowing && !profileData.isPublic) {
+    if (followStatus === 'pending') {
+      // Si en attente, on peut annuler la demande
+      await performUnfollow();
+    } else if (isFollowing && !profileData.isPublic) {
       setShowUnfollowModal(true);
       return;
+    } else if (isFollowing) {
+      // Pour les comptes publics, unfollow direct
+      await performUnfollow();
+    } else {
+      // Si on ne suit pas, envoyer une demande de suivi
+      await performFollow();
     }
-    
-    await performFollowToggle();
   };
 
-  const performFollowToggle = async () => {
+  const performFollow = async () => {
     setFollowLoading(true);
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/follows`, {
-        method: isFollowing ? 'DELETE' : 'POST',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -93,21 +130,56 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
       });
 
       if (response.ok) {
-        setIsFollowing(!isFollowing);
+        const data = await response.json();
+        setFollowStatus(data.follow.status);
+        
+        if (data.follow.status === 'accepted') {
+          setIsFollowing(true);
+        } else if (data.follow.status === 'pending') {
+          setIsFollowing(false);
+        }
+      } else {
+        const errorData = await response.json();
+        console.error('Erreur lors de la demande de suivi:', errorData.error || 'Erreur inconnue');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la demande de suivi:', error);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const performUnfollow = async () => {
+    setFollowLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/follows`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          follower_id: session.user.id,
+          followed_id: profileData.id,
+        }),
+      });
+
+      if (response.ok) {
+        setIsFollowing(false);
+        setFollowStatus(null);
         setShowUnfollowModal(false);
       } else {
         const errorData = await response.json();
-        console.error('Erreur lors du changement de statut de suivi:', errorData.error || 'Erreur inconnue');
+        console.error('Erreur lors du désabonnement:', errorData.error || 'Erreur inconnue');
       }
     } catch (error) {
-      console.error('Erreur lors du changement de statut de suivi:', error);
+      console.error('Erreur lors du désabonnement:', error);
     } finally {
       setFollowLoading(false);
     }
   };
 
   const handleUnfollowConfirm = async () => {
-    await performFollowToggle();
+    await performUnfollow();
   };
 
   const handleUnfollowCancel = () => {
@@ -137,7 +209,6 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
       });
 
       if (response.ok) {
-        // Déconnecter l'utilisateur et rediriger vers la page d'accueil
         await signOut({ callbackUrl: '/' });
       } else {
         const errorData = await response.json();
@@ -156,7 +227,38 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
     setShowDeleteModal(false);
   };
 
-  // CORRECTION : Vérification plus robuste pour savoir si c'est le profil de l'utilisateur
+  const getFollowButtonContent = () => {
+    if (followLoading) {
+      return {
+        icon: faClock,
+        text: 'Chargement...',
+        className: 'bg-[#222222] text-white'
+      };
+    }
+
+    if (followStatus === 'pending') {
+      return {
+        icon: faClock,
+        text: 'En attente',
+        className: 'bg-yellow-600 hover:bg-yellow-700 text-white'
+      };
+    }
+
+    if (isFollowing) {
+      return {
+        icon: faUserMinus,
+        text: 'Se désabonner',
+        className: 'bg-[#222222] text-white hover:bg-red-600 hover:text-white'
+      };
+    }
+
+    return {
+      icon: faUserPlus,
+      text: 'Suivre',
+      className: 'bg-[#90EE90] text-black hover:bg-[#7CD37C]'
+    };
+  };
+
   const isUserOwnProfile = isOwnProfile || 
     (session?.user?.id && profileData?.id && session.user.id === profileData.id) ||
     (session?.user?.pseudo && profileData?.pseudo && session.user.pseudo === profileData.pseudo) ||
@@ -218,7 +320,6 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
                     </motion.button>
                   </Link>
                   
-                  {/* Menu existant */}
                   <div className="relative">
                     <motion.button
                       onClick={handleMenuToggle}
@@ -256,11 +357,7 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
                     disabled={followLoading}
                     whileHover={{ scale: followLoading ? 1 : 1.05 }}
                     whileTap={{ scale: followLoading ? 1 : 0.95 }}
-                    className={`px-6 py-2 rounded-full font-semibold text-sm flex items-center transition-all duration-200 min-w-[140px] justify-center ${
-                      isFollowing
-                        ? 'bg-[#222222] text-white hover:bg-red-600 hover:text-white'
-                        : 'bg-[#90EE90] text-black hover:bg-[#7CD37C]'
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    className={`px-6 py-2 rounded-full font-semibold text-sm flex items-center transition-all duration-200 min-w-[140px] justify-center ${getFollowButtonContent().className} disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     {followLoading ? (
                       <>
@@ -270,14 +367,13 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
                     ) : (
                       <>
                         <FontAwesomeIcon 
-                          icon={isFollowing ? faUserMinus : faUserPlus} 
+                          icon={getFollowButtonContent().icon} 
                           className="mr-2" 
                         />
-                        {isFollowing ? 'Se désabonner' : 'Suivre'}
+                        {getFollowButtonContent().text}
                       </>
                     )}
                   </motion.button>
-                  {/* Menu trois points avec signalement */}
                   <div className="relative">
                     <motion.button
                       onClick={handleMenuToggle}
@@ -298,7 +394,7 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
                           <button
                             onClick={() => {
                               setShowReportModal(true);
-                              setShowProfileMenu(false); // Fermer le menu après avoir cliqué
+                              setShowProfileMenu(false);
                             }}
                             className="w-full text-left px-4 py-3 text-red-400 hover:bg-[#333] transition-colors flex items-center rounded-lg"
                           >
@@ -397,7 +493,6 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
         </div>
       </div>
 
-      {/* Fermer le menu si on clique ailleurs */}
       {showProfileMenu && (
         <div 
           className="fixed inset-0 z-5" 
@@ -405,7 +500,6 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
         />
       )}
 
-      {/* Modal de confirmation pour le désabonnement des comptes privés */}
       <UnfollowPrivateConfirmModal
         isOpen={showUnfollowModal}
         onClose={handleUnfollowCancel}
@@ -415,7 +509,6 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
         isPrivateAccount={!profileData.isPublic}
       />
 
-      {/* Modal de confirmation pour la suppression du compte */}
       <DeleteAccountModal
         isOpen={showDeleteModal}
         onClose={cancelDeleteAccount}
@@ -424,12 +517,11 @@ const ProfileHeader = ({ profileData, isOwnProfile, isFollowing, setIsFollowing 
         userEmail={session?.user?.email || ''}
       />
       
-      {/* Modal de signalement utilisateur */}
       <Signalement
         isOpen={showReportModal}
         onClose={() => setShowReportModal(false)}
-        userId={session?.user?.id} // L'ID de l'utilisateur qui signale
-        reportedUserId={profileData?.id} // L'ID de l'utilisateur signalé
+        userId={session?.user?.id}
+        reportedUserId={profileData?.id}
       />
     </>
   );

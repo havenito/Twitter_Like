@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlay } from '@fortawesome/free-solid-svg-icons';
 import CommentLikeButton from './CommentLikeButton';
 import ReplyButton from './ReplyButton';
-import MediaModal from '../MediaModal';
+import MediaModal from '../../MediaModal';
 
 const CommentCardDetail = ({ comment }) => {
   const [imageError, setImageError] = useState(false);

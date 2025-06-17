@@ -8,9 +8,9 @@ from models.follow import Follow
 from models.reply import Reply  
 from models.signalement import Signalement  
 
-notifications_bp = Blueprint('notifications_api', __name__)
+notifications_api = Blueprint('notifications_api', __name__)
 
-@notifications_bp.route('/api/user_notifications/<int:user_id>', methods=['GET'])
+@notifications_api.route('/api/user_notifications/<int:user_id>', methods=['GET'])
 def get_user_notifications(user_id):
     try:
         notifications = Notification.query.filter_by(user_id=user_id).order_by(Notification.date.desc()).all()
@@ -25,43 +25,58 @@ def get_user_notifications(user_id):
                 'follow_id': notification.follow_id,
                 'user_id': notification.user_id,
                 'type': notification.type,
-                'date': notification.date.isoformat() if notification.date else None
+                'date': notification.date.isoformat() if notification.date else None,
+                'actor_user': None  # Initialiser à None
             }
 
-            # Récupérer les informations selon le type de notification
-            if notification.type == "post" and notification.post_id:
-                post = Post.query.get(notification.post_id)
-                if post:
-                    notification_data['post_title'] = post.title
-                    notification_data['post_content'] = post.content
-
-            if notification.type == "comment" and notification.comments_id:
-                comment = Comment.query.get(notification.comments_id)
-                if comment:
-                    notification_data['comment_content'] = comment.content
-                    notification_data['post_id'] = comment.post_id  
-
-            if notification.type == "reply" and notification.replie_id:
-                reply = Reply.query.get(notification.replie_id)
-                if reply:
-                    notification_data['replie_content'] = reply.content
-                    notification_data['comment_id'] = reply.comment_id  
-
-            if notification.type in ["follow", "follow_request","follow_request_accepted"] and notification.follow_id:
+            # Récupérer les informations de l'utilisateur acteur selon le type
+            if notification.type in ["follow", "follow_request", "follow_request_accepted"] and notification.follow_id:
                 follow = Follow.query.get(notification.follow_id)
                 if follow:
                     follower_user = User.query.get(follow.follower_id)
                     if follower_user:
-                        notification_data.update({
-                            'follower_user': follower_user.pseudo,
-                            'follower_id': follower_user.id
-                        })
-            if notification.type == "signalement" and notification.signalement_id:
-                signalement = Signalement.query.get(notification.signalement_id)
-                if signalement:
-                    notification_data['signalement_content'] = signalement.content
-                    notification_data['signalement_id'] = signalement.id
-                    notification_data['report_type'] = signalement.report_type
+                        notification_data['actor_user'] = {
+                            'id': follower_user.id,
+                            'pseudo': follower_user.pseudo,
+                            'first_name': follower_user.first_name,
+                            'last_name': follower_user.last_name,
+                            'profile_picture': follower_user.profile_picture,
+                            'subscription': follower_user.subscription,
+                            'email': follower_user.email  # Ajout de l'email comme fallback
+                        }
+
+            elif notification.type == "comment" and notification.comments_id:
+                comment = Comment.query.get(notification.comments_id)
+                if comment:
+                    comment_user = User.query.get(comment.user_id)
+                    if comment_user:
+                        notification_data['actor_user'] = {
+                            'id': comment_user.id,
+                            'pseudo': comment_user.pseudo,
+                            'first_name': comment_user.first_name,
+                            'last_name': comment_user.last_name,
+                            'profile_picture': comment_user.profile_picture,
+                            'subscription': comment_user.subscription,
+                            'email': comment_user.email
+                        }
+                        notification_data['comment_data'] = {
+                            'content': comment.content
+                        }
+
+            elif notification.type in ["reply", "reply_to_reply"] and notification.replie_id:
+                reply = Reply.query.get(notification.replie_id)
+                if reply:
+                    reply_user = User.query.get(reply.user_id)
+                    if reply_user:
+                        notification_data['actor_user'] = {
+                            'id': reply_user.id,
+                            'pseudo': reply_user.pseudo,
+                            'first_name': reply_user.first_name,
+                            'last_name': reply_user.last_name,
+                            'profile_picture': reply_user.profile_picture,
+                            'subscription': reply_user.subscription,
+                            'email': reply_user.email
+                        }
 
             result.append(notification_data)
 
@@ -71,7 +86,7 @@ def get_user_notifications(user_id):
         print(f"Erreur lors de la récupération des notifications: {e}")  
         return jsonify({'error': f'Failed to fetch notifications: {str(e)}'}), 500    
 
-@notifications_bp.route('/api/user_notifications/<int:user_id>', methods=['DELETE'])
+@notifications_api.route('/api/user_notifications/<int:user_id>', methods=['DELETE'])
 def delete_all_user_notifications(user_id):
     try:
         notifications = Notification.query.filter(
@@ -92,7 +107,7 @@ def delete_all_user_notifications(user_id):
         db.session.rollback()
         return jsonify({'error': f'Failed to delete notifications: {str(e)}'}), 500
 
-@notifications_bp.route('/api/user_notifications/<int:user_id>/<int:notification_id>', methods=['DELETE'])
+@notifications_api.route('/api/user_notifications/<int:user_id>/<int:notification_id>', methods=['DELETE'])
 def delete_user_notification(user_id, notification_id):
     try:
         notification = Notification.query.filter_by(id=notification_id, user_id=user_id).first()
@@ -105,7 +120,7 @@ def delete_user_notification(user_id, notification_id):
     except Exception as e:
         return jsonify({'error': f'Failed to delete notification: {str(e)}'}), 500
 
-@notifications_bp.route('/api/notifications', methods=['GET'])
+@notifications_api.route('/api/notifications', methods=['GET'])
 def get_all_notifications():
     try:
         notifications = Notification.query.order_by(Notification.date.desc()).all()
@@ -123,11 +138,7 @@ def get_all_notifications():
                 'date': notification.date.isoformat() if notification.date else None
             }
 
-            if notification.type == "post" and notification.post_id:
-                post = Post.query.get(notification.post_id)
-                if post:
-                    notification_data['post_title'] = post.title
-                    notification_data['post_content'] = post.content
+            # Gestion des types de notifications
 
             if notification.type == "comment" and notification.comments_id:
                 comment = Comment.query.get(notification.comments_id)
@@ -150,18 +161,6 @@ def get_all_notifications():
                             'follower_user': follower_user.pseudo,
                             'follower_id': follower_user.id
                         })
-
-            if notification.type == "signalement" and notification.signalement_id:
-                signalement = Signalement.query.get(notification.signalement_id)
-                if signalement:
-                    notification_data['signalement_content'] = signalement.content
-                    notification_data['signalement_id'] = signalement.id
-                    notification_data['report_type'] = signalement.report_type
-                    post = Post.query.get(signalement.post_id)
-                    if post:
-                        notification_data['post_title'] = post.title
-            result.append(notification_data)
-
         return jsonify(result)
 
     except Exception as e:

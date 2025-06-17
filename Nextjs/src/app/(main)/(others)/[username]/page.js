@@ -46,6 +46,9 @@ export default function UserProfilePage() {
           
           fetchedData = await response.json();
           
+          // Variable pour déterminer si on peut voir le contenu privé
+          let canViewPrivateContent = false;
+          
           if (session?.user?.id && fetchedData.id && !isOwnProfile) {
             setFollowingLoading(true);
             try {
@@ -54,7 +57,10 @@ export default function UserProfilePage() {
               );
               if (followResponse.ok) {
                 const followData = await followResponse.json();
-                setIsFollowing(followData.status);
+                // Mise à jour : seuls les suivis acceptés permettent de voir le contenu
+                const isAcceptedFollower = followData.is_accepted || false;
+                setIsFollowing(isAcceptedFollower);
+                canViewPrivateContent = isAcceptedFollower;
               }
             } catch (followError) {
               console.error('Erreur lors de la vérification du statut de suivi:', followError);
@@ -92,7 +98,13 @@ export default function UserProfilePage() {
                 
                 userMedia = userPosts.reduce((allMedia, post) => {
                   if (post.media && Array.isArray(post.media)) {
-                    return [...allMedia, ...post.media];
+                    return allMedia.concat(post.media.map(media => ({
+                      ...media,
+                      postId: post.id,
+                      postTitle: post.title,
+                      postContent: post.content,
+                      createdAt: post.createdAt
+                    })));
                   }
                   return allMedia;
                 }, []);
@@ -103,7 +115,8 @@ export default function UserProfilePage() {
               console.error('Erreur lors de la récupération des posts:', postsError);
             }
 
-            if (isOwnProfile || (!fetchedData.private || isFollowing)) {
+            // Charger les données privées seulement si on peut les voir
+            if (isOwnProfile || (!fetchedData.private || canViewPrivateContent)) {
               try {
                 const commentsResponse = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/${fetchedData.id}/comments-replies`);
                 

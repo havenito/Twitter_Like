@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faArrowDown } from '@fortawesome/free-solid-svg-icons';
 import PostCardDetail from '@/components/Main/Post/PostCardDetail';
-import CommentCardDetail from '@/components/Post/CommentCardDetail';
+import CommentCardDetail from '@/components/Main/Post/CommentCardDetail';
 import ReplyCardDetail from '@/components/Main/Post/ReplyCardDetail';
 import SubReplyForm from '@/components/Main/Post/SubReplyForm';
 import SubRepliesList from '@/components/Main/Post/SubRepliesList';

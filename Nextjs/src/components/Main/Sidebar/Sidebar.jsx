@@ -4,19 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from "next-auth/react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { 
-  faUser, 
-  faSearch, 
-  faHistory, 
-  faStar, 
-  faBell, 
-  faEnvelope, 
-  faChartBar, 
-  faCalendarAlt, 
-  faPlusCircle,
-  faBars,
-  faTimes 
-} from "@fortawesome/free-solid-svg-icons";
+import { faUser, faSearch, faHistory, faStar, faBell, faEnvelope, faChartBar, faTrophy, faPlusCircle, faBars, faTimes } from "@fortawesome/free-solid-svg-icons";
 
 const Sidebar = ({ onCreatePost }) => {
   const { data: session } = useSession();
@@ -25,10 +13,12 @@ const Sidebar = ({ onCreatePost }) => {
   const menuItems = [
     { icon: faUser, label: "Profil", href: session?.user?.pseudo ? `/${session.user.pseudo}` : "#" },
     { icon: faSearch, label: "Recherche", href: "/search" },
+    { icon: faHistory, label: "Historique", href: "/history" },
     { icon: faStar, label: "Favoris", href: session?.user?.pseudo ? `/${session.user.pseudo}/favorites` : "#" },
     { icon: faBell, label: "Notifications", href: "/notifications" },
-    { icon: faEnvelope, label: "Messages", href: "/message" },
+    { icon: faEnvelope, label: "Messages", href: "/messages" },
     { icon: faChartBar, label: "Sondages", href: "/polls" },
+    { icon: faTrophy, label: "Classement", href: "/classement" },
   ];
 
   const handleLinkClick = () => {
