@@ -19,10 +19,10 @@
     "@supabase/supabase-js": "^2.49.4",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.4.10",
-    "next": "^15.2.5",
+    "next": "^15.3.3",
     "next-auth": "^4.24.11",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "socket.io-client": "^4.8.1",
     "stripe": "^18.2.1",
     "uuid": "^11.1.0"
