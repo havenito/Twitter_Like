@@ -12,7 +12,7 @@ import {
   faBell, 
   faEnvelope, 
   faChartBar, 
-  faCalendarAlt, 
+  faTrophy, // Remplace faCalendarAlt par faTrophy
   faPlusCircle,
   faBars,
   faTimes 
@@ -30,7 +30,7 @@ const Sidebar = ({ onCreatePost }) => {
     { icon: faBell, label: "Notifications", href: "/notifications" },
     { icon: faEnvelope, label: "Messages", href: "/messages" },
     { icon: faChartBar, label: "Sondages", href: "/polls" },
-    { icon: faCalendarAlt, label: "Événements", href: "/events" },
+    { icon: faTrophy, label: "Classement", href: "/classement" }, // Onglet Classement ici
   ];
 
   const handleLinkClick = () => {

@@ -6,6 +6,7 @@ from models.category import Category
 from models.comment import Comment
 from services.file_upload import upload_file, determine_media_type
 from models.like import Like
+from models.history import History
 
 posts_bp = Blueprint('posts', __name__)
 
@@ -31,42 +32,52 @@ def create_post():
         post_id = request.form.get('post_id')
         user_id = request.form['user_id']
         category_id = request.form['category_id']
-        
+
         post = Post(
-            title=title, 
-            content=content, 
+            title=title,
+            content=content,
             published_at=published_at,
-            user_id=user_id, 
-            category_id=category_id, 
+            user_id=user_id,
+            category_id=category_id,
             post_id=post_id
         )
-        
+
         db.session.add(post)
         db.session.commit()
-        
+
+        from models.history import History
+        history = History(
+            user_id=user_id,
+            action="create_post",
+            target_type="post",
+            target_id=post.id
+        )
+        db.session.add(history)
+        db.session.commit()
+
         media_files = []
-        
+
         if 'file' in request.files:
             file = request.files['file']
             if file.filename:
                 media_files.append(file)
-                
+
         if 'files[]' in request.files:
             files = request.files.getlist('files[]')
             for file in files:
                 if file.filename:
                     media_files.append(file)
-        
+
         for file in media_files:
             url, file_type = upload_file(file)
-            
+
             if not url:
-                continue 
-                
+                continue
+
             media_type = determine_media_type(file_type)
             if not media_type:
-                continue 
-                
+                continue
+
             from models.post_media import PostMedia
             post_media = PostMedia(
                 post_id=post.id,
@@ -74,15 +85,15 @@ def create_post():
                 media_type=media_type
             )
             db.session.add(post_media)
-        
+
         db.session.commit()
-        
+
         return jsonify({
-            'message': 'Post created successfully', 
+            'message': 'Post created successfully',
             'post_id': post.id,
             'media_count': len(media_files)
         })
-    
+
     except KeyError as e:
         return jsonify({'error': f'Missing required field: {str(e)}'}), 400
     except Exception as e:
