@@ -22,7 +22,7 @@ const SubscriptionNotification = ({
       const timer = setTimeout(() => {
         setShow(false);
         if (onClose) {
-          setTimeout(onClose, 300); // Délai pour l'animation de sortie
+          setTimeout(onClose, 300);
         }
       }, duration);
 

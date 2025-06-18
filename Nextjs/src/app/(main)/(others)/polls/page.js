@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChartBar, faPlus, faSpinner, faExclamationTriangle, faFilter, faTag } from '@fortawesome/free-solid-svg-icons';
+import { faChartBar, faPlus, faExclamationTriangle, faFilter } from '@fortawesome/free-solid-svg-icons';
 import PollCard from '@/components/Main/Poll/PollCard';
 import CreatePollModal from '@/components/Main/Poll/CreatePollModal';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';

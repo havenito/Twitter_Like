@@ -57,7 +57,7 @@ export default function UserProfilePage() {
               );
               if (followResponse.ok) {
                 const followData = await followResponse.json();
-                // Mise à jour : seuls les suivis acceptés permettent de voir le contenu
+                //Seuls les suivis acceptés permettent de voir le contenu
                 const isAcceptedFollower = followData.is_accepted || false;
                 setIsFollowing(isAcceptedFollower);
                 canViewPrivateContent = isAcceptedFollower;

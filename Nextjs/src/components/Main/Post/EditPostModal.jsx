@@ -38,7 +38,6 @@ const EditPostModal = ({ isOpen, onClose, onPostUpdated, post }) => {
       setContent(post.content || '');
       setCategoryId(post.categoryId?.toString() || '1');
       
-      // Charger les médias existants
       const existingMediaList = [];
       if (post.mediaUrl) {
         existingMediaList.push({
@@ -73,7 +72,6 @@ const EditPostModal = ({ isOpen, onClose, onPostUpdated, post }) => {
     }
   }, [post, isOpen]);
 
-  // Chargement des catégories
   useEffect(() => {
     const fetchCategories = async () => {
       if (!isOpen) return;
@@ -167,9 +165,7 @@ const EditPostModal = ({ isOpen, onClose, onPostUpdated, post }) => {
   };
 
   const removeExistingMedia = (mediaId) => {
-    // on se base toujours sur la valeur précédente
     setMediaToDelete(prev => [...prev, mediaId]);
-    // on retire le média de l’affichage
     setExistingMedia(prev => prev.filter(m => m.id !== mediaId));
   };
 
@@ -217,10 +213,8 @@ const EditPostModal = ({ isOpen, onClose, onPostUpdated, post }) => {
 
       const result = await response.json();
       
-      // Afficher la notification de succès
       setShowNotification(true);
       
-      // Fermer le modal immédiatement
       handleClose();
       
       if (onPostUpdated) {
@@ -247,7 +241,6 @@ const EditPostModal = ({ isOpen, onClose, onPostUpdated, post }) => {
 
   return (
     <>
-      {/* Notification */}
       {showNotification && (
         <Notification 
           message="Post modifié avec succès !" 
@@ -273,7 +266,6 @@ const EditPostModal = ({ isOpen, onClose, onPostUpdated, post }) => {
               className="bg-[#1b1b1b] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[#333]"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-[#333]">
                 <h2 className="text-xl font-bold text-white">Modifier la publication</h2>
                 <button
@@ -285,9 +277,7 @@ const EditPostModal = ({ isOpen, onClose, onPostUpdated, post }) => {
                 </button>
               </div>
 
-              {/* Form */}
               <form onSubmit={handleSubmit} className="p-4 space-y-4">
-                {/* User Info */}
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="w-10 h-10 rounded-full overflow-hidden">
                     <Image
@@ -306,7 +296,6 @@ const EditPostModal = ({ isOpen, onClose, onPostUpdated, post }) => {
                   </div>
                 </div>
 
-                {/* Title */}
                 <div>
                   <label className="block text-[#90EE90] text-sm font-medium mb-2">
                     <FontAwesomeIcon icon={faHeading} className="text-[#90EE90] mr-2" />
@@ -324,7 +313,6 @@ const EditPostModal = ({ isOpen, onClose, onPostUpdated, post }) => {
                   <p className="text-xs text-gray-400 mt-1">{title.length}/100 caractères</p>
                 </div>
 
-                {/* Category */}
                 <div>
                   <label className="block text-[#90EE90] text-sm font-medium mb-2">
                     <FontAwesomeIcon icon={faTag} className="mr-2" />
@@ -351,7 +339,6 @@ const EditPostModal = ({ isOpen, onClose, onPostUpdated, post }) => {
                   )}
                 </div>
 
-                {/* Content */}
                 <div className="relative">
                   <label className="block text-[#90EE90] text-sm font-medium mb-2">
                     <FontAwesomeIcon icon={faSignature} className="text-[#90EE90] mr-2" />
@@ -372,7 +359,6 @@ const EditPostModal = ({ isOpen, onClose, onPostUpdated, post }) => {
                   </div>
                 </div>
 
-                {/* Existing Media */}
                 {existingMedia.length > 0 && (
                   <div>
                     <label className="block text-[#90EE90] text-sm font-medium mb-2">
@@ -407,7 +393,6 @@ const EditPostModal = ({ isOpen, onClose, onPostUpdated, post }) => {
                   </div>
                 )}
 
-                {/* New Media Previews */}
                 {mediaPreviews.length > 0 && (
                   <div>
                     <label className="block text-[#90EE90] text-sm font-medium mb-2">
@@ -442,22 +427,18 @@ const EditPostModal = ({ isOpen, onClose, onPostUpdated, post }) => {
                   </div>
                 )}
 
-                {/* Media count info */}
                 <div className="text-sm text-gray-400">
                   Total médias : {totalMediaCount}/4
                 </div>
 
-                {/* Error Message */}
                 {error && (
                   <div className="bg-red-500/20 border border-red-500/50 text-red-300 p-3 rounded-lg text-sm">
                     {error}
                   </div>
                 )}
 
-                {/* Actions */}
                 <div className="flex items-center justify-between pt-4 border-t border-[#333]">
                   <div className="flex items-center space-x-4">
-                    {/* Media Upload */}
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
@@ -478,7 +459,6 @@ const EditPostModal = ({ isOpen, onClose, onPostUpdated, post }) => {
                     />
                   </div>
 
-                  {/* Submit Button */}
                   <button
                     type="submit"
                     disabled={loading || !title.trim() || !content.trim() || remainingChars < 0 || categoriesLoading}

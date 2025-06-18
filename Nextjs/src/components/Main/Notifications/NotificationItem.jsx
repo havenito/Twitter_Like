@@ -1,17 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faUserPlus, 
-  faComment, 
-  faReply,
-  faCheck,
-  faTimes,
-  faTrash,
-  faUserCheck
-} from '@fortawesome/free-solid-svg-icons';
+import { faUserPlus, faComment, faReply, faCheck, faTimes, faTrash, faUserCheck } from '@fortawesome/free-solid-svg-icons';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -178,18 +169,15 @@ const NotificationItem = ({ notification, currentUser, onDelete, onFollowRequest
   const content = (
     <div className="bg-[#1e1e1e] p-4 rounded-lg border border-[#333] hover:bg-[#252525] transition-all duration-200 group">
       <div className="flex items-start space-x-3">
-        {/* Icône de type de notification */}
         <div className={`w-10 h-10 ${iconData.bg} rounded-full flex items-center justify-center flex-shrink-0`}>
           <FontAwesomeIcon icon={iconData.icon} className={`${iconData.color}`} />
         </div>
 
-        {/* Photo de profil de l'acteur */}
         <div className="relative flex-shrink-0">
           {renderProfilePicture(notification.actor_user)}
           {renderSubscriptionBadge(notification.actor_user)}
         </div>
 
-        {/* Contenu de la notification */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
@@ -217,7 +205,6 @@ const NotificationItem = ({ notification, currentUser, onDelete, onFollowRequest
             </button>
           </div>
 
-          {/* Actions pour les demandes de suivi */}
           {notification.type === 'follow_request' && (
             <div className="flex space-x-2 mt-3">
               <button
@@ -243,7 +230,6 @@ const NotificationItem = ({ notification, currentUser, onDelete, onFollowRequest
     </div>
   );
 
-  // Si il y a un lien, on wrap dans un Link
   if (notificationLink && notification.type !== 'follow_request') {
     return (
       <Link href={notificationLink}>

@@ -13,7 +13,6 @@ export default function AdminCategoriesPanel() {
   const [alert, setAlert] = useState({ message: "", type: "info", isConfirm: false, onConfirm: null });
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-  // Inject animation CSS
   if (typeof window !== "undefined" && !document.getElementById("fade-in-keyframes")) {
     const style = document.createElement("style");
     style.id = "fade-in-keyframes";
@@ -87,7 +86,6 @@ export default function AdminCategoriesPanel() {
     fetchCategories();
   };
 
-  // Fermeture auto de l'alerte après 3s si ce n'est pas une confirmation
   useEffect(() => {
     if (
       alert.message &&
@@ -101,7 +99,6 @@ export default function AdminCategoriesPanel() {
 
   return (
     <div className="max-w-3xl mx-auto bg-[#23272f] p-6 rounded-2xl shadow-2xl border border-[#23272f]/60">
-      {/* Modal moderne centré */}
       {alert.message && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div

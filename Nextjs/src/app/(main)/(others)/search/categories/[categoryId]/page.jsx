@@ -5,17 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { 
-  faArrowLeft, 
-  faTag, 
-  faUser, 
-  faCalendarAlt, 
-  faSpinner,
-  faFileText,
-  faExclamationTriangle,
-  faComment,
-  faHeart
-} from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faTag, faCalendarAlt, faFileText, faExclamationTriangle, faComment } from "@fortawesome/free-solid-svg-icons";
 import Image from "next/image";
 import LikeButton from "../../../../../../components/Main/Post/LikeButton";
 
@@ -35,7 +25,6 @@ export default function CategoryPostsPage() {
       setLoading(true);
       setError(null);
       try {
-        // Vérifier que categoryId existe et est un nombre valide (y compris 0)
         if (categoryId === undefined || categoryId === null || categoryId === '' || isNaN(Number(categoryId))) {
           throw new Error('ID de catégorie invalide');
         }
@@ -82,7 +71,6 @@ export default function CategoryPostsPage() {
         await Promise.all(
           postsArray.map(async (post) => {
             try {
-              // Récupérer le nombre de likes
               const likesRes = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/posts/${post.id}/likes`);
               let likesCount = 0;
               if (likesRes.ok) {
@@ -90,7 +78,6 @@ export default function CategoryPostsPage() {
                 likesCount = likesData.likes_count || 0;
               }
 
-              // Récupérer le nombre de commentaires
               const commentsRes = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/posts/${post.id}/comments`);
               let commentsCount = 0;
               if (commentsRes.ok) {
@@ -230,7 +217,6 @@ export default function CategoryPostsPage() {
     return (
       <div className="min-h-screen bg-[#111] text-white">
         <div className="max-w-5xl mx-auto px-2 sm:px-4 lg:px-6">
-          {/* Header skeleton */}
           <div className="flex items-center justify-between py-6 sm:py-8">
             <div className="w-24 h-10 bg-[#333] rounded-full animate-pulse"></div>
             <div className="flex-1 text-center">
@@ -240,7 +226,6 @@ export default function CategoryPostsPage() {
             <div className="w-24"></div>
           </div>
 
-          {/* Content skeleton */}
           <div className="space-y-4 sm:space-y-6">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="bg-[#1e1e1e] p-4 sm:p-6 rounded-xl border border-[#333] animate-pulse">
@@ -294,7 +279,6 @@ export default function CategoryPostsPage() {
   return (
     <div className="min-h-screen bg-[#111] text-white">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Header avec bouton retour */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -312,7 +296,6 @@ export default function CategoryPostsPage() {
           </motion.button>
         </motion.div>
 
-        {/* Informations de la catégorie */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -348,7 +331,6 @@ export default function CategoryPostsPage() {
           </div>
         </motion.div>
 
-        {/* Liste des posts */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -410,7 +392,6 @@ export default function CategoryPostsPage() {
                           @{post.user_pseudo || post.user?.pseudo || "utilisateur"}
                         </Link>
                         
-                        {/* Badge d'abonnement entre le pseudo et la date */}
                         {(() => {
                           const userPseudo = post.user_pseudo || post.user?.pseudo;
                           const userData = usersData[userPseudo];
@@ -447,17 +428,14 @@ export default function CategoryPostsPage() {
                         </p>
                       </Link>
 
-                      {/* Section des statistiques et actions */}
                       <div className="flex items-center justify-between pt-3 border-t border-[#333]">
                         <div className="flex items-center space-x-4">
-                          {/* Bouton Like interactif */}
                           <LikeButton 
                             postId={post.id}
                             initialLikes={postsStats[post.id]?.likes || 0}
                             className="text-sm"
                           />
                           
-                          {/* Bouton Commentaires (non-interactif avec hover) */}
                           <button 
                             type="button"
                             className="flex items-center space-x-1 text-gray-400 hover:text-[#90EE90] transition-colors cursor-pointer disabled:cursor-default"

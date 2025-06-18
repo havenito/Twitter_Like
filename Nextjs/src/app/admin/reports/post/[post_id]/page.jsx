@@ -54,7 +54,7 @@ export default function PostSignalementPage() {
   }
 
   if (!session || session.user?.roles !== 'admin') {
-    return null; // Le layout s'occupe de la redirection
+    return null;
   }
 
   if (loading) return <div className="p-8 text-center text-white">Chargement du post...</div>;

@@ -4,9 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faStar, faExclamationTriangle, faLock, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faStar, faExclamationTriangle, faLock } from '@fortawesome/free-solid-svg-icons';
 import FavoritesList from '@/components/Profile/FavoritesList';
 
 export default function FavoritesPage() {
@@ -78,7 +77,6 @@ export default function FavoritesPage() {
     return (
       <div className="min-h-screen bg-[#111] text-white">
         <div className="max-w-5xl mx-auto px-2 sm:px-4 lg:px-6">
-          {/* Header skeleton */}
           <div className="flex items-center justify-between py-6 sm:py-8">
             <div className="w-24 h-10 bg-[#333] rounded-full animate-pulse"></div>
             <div className="flex-1 text-center">
@@ -88,7 +86,6 @@ export default function FavoritesPage() {
             <div className="w-24"></div>
           </div>
 
-          {/* Content skeleton */}
           <div className="space-y-4 sm:space-y-6">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="bg-[#1e1e1e] p-4 sm:p-6 rounded-xl border border-[#333] animate-pulse">
@@ -112,7 +109,6 @@ export default function FavoritesPage() {
     return (
       <div className="min-h-screen bg-[#111] text-white">
         <div className="max-w-5xl mx-auto px-2 sm:px-4 lg:px-6 py-6 sm:py-8">
-          {/* Header avec bouton retour */}
           <div className="flex items-center mb-8">
             <motion.button
               onClick={handleBackClick}
@@ -127,7 +123,6 @@ export default function FavoritesPage() {
             <h1 className="text-xl sm:text-2xl font-bold text-white">Favoris</h1>
           </div>
 
-          {/* Message d'erreur stylisé */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -172,7 +167,6 @@ export default function FavoritesPage() {
   return (
     <div className="min-h-screen bg-[#111] text-white">
       <div className="max-w-5xl mx-auto px-2 sm:px-4 lg:px-6">
-        {/* Header amélioré */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -211,7 +205,6 @@ export default function FavoritesPage() {
           <div className="w-[80px] sm:w-[120px]"></div>
         </motion.div>
 
-        {/* Statistiques rapides */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -242,7 +235,6 @@ export default function FavoritesPage() {
           </div>
         </motion.div>
 
-        {/* Liste des favoris */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

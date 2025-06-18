@@ -75,7 +75,6 @@ const CommentCardDetail = ({ comment }) => {
       );
     }
 
-    // Grille pour plusieurs médias
     const gridClass = allMedia.length === 2 
       ? 'grid-cols-2' 
       : allMedia.length === 3 

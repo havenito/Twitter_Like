@@ -27,7 +27,7 @@ export default function AdminReportsPage() {
   const [banModalOpen, setBanModalOpen] = useState(false);
   const [banUserId, setBanUserId] = useState(null);
 
-  // Pour le modal moderne d'alerte
+  // Pour le modal  d'alerte
   const [alert, setAlert] = useState({ message: "", type: "info", isConfirm: false, onConfirm: null });
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -47,7 +47,6 @@ export default function AdminReportsPage() {
     }
   }, [session, status, router]);
 
-  // Inject animation CSS (une seule fois)
   if (typeof window !== "undefined" && !document.getElementById("fade-in-keyframes")) {
     const style = document.createElement("style");
     style.id = "fade-in-keyframes";
@@ -118,7 +117,6 @@ export default function AdminReportsPage() {
   const totalPages = Math.ceil(filteredReports.length / ITEMS_PER_PAGE);
   const paginatedReports = filteredReports.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  // Ajout du nom de l'utilisateur signalé dans une propriété dédiée pour l'affichage
   const reportsWithUserName = paginatedReports.map(report => {
     let reportedUserName = "";
     if (report.reported_user && report.reported_user.pseudo) {
@@ -154,7 +152,6 @@ export default function AdminReportsPage() {
     }
   };
 
-  // MODAL MODERNE
   const ModernModal = () => (
     alert.message && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -198,7 +195,7 @@ export default function AdminReportsPage() {
     )
   );
 
-  // WARN avec confirmation moderne
+  // WARN avec confirmation 
   const handleWarnUser = async (userId) => {
     setAlert({
       message: "Êtes-vous sûr de vouloir donner un avertissement à cet utilisateur ?",
@@ -225,13 +222,12 @@ export default function AdminReportsPage() {
     });
   };
 
-  // Ouvre le modal de ban avec l'id utilisateur
   const openBanModal = (userId) => {
     setBanUserId(userId);
     setBanModalOpen(true);
   };
 
-  // Ban avec confirmation moderne
+  // Ban avec confirmation 
   const handleBanUser = async (userId, duration) => {
     setBanModalOpen(false);
     try {
@@ -255,7 +251,7 @@ export default function AdminReportsPage() {
     }
   };
 
-  // Déban avec confirmation moderne
+  // Déban avec confirmation
   const handleUnbanUser = async (userId) => {
     setAlert({
       message: "Êtes-vous sûr de vouloir débannir cet utilisateur ?",
@@ -277,7 +273,6 @@ export default function AdminReportsPage() {
     });
   };
 
-  // Fermeture auto de l'alerte après 3s si ce n'est pas une confirmation
   useEffect(() => {
     if (alert.message && !alert.isConfirm) {
       const timer = setTimeout(() => {
@@ -287,7 +282,6 @@ export default function AdminReportsPage() {
     }
   }, [alert]);
 
-  // Ne pas afficher le contenu si l'utilisateur n'est pas admin
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-[#181c24] flex items-center justify-center">
@@ -300,7 +294,7 @@ export default function AdminReportsPage() {
   }
 
   if (!session || session.user?.roles !== 'admin') {
-    return null; // Le layout s'occupe de la redirection
+    return null;
   }
 
   if (loading) return <div className="min-h-screen bg-[#181c24] flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-400 mb-4 mx-auto"></div><p className="text-gray-400 text-lg">Chargement des signalements...</p></div></div>;

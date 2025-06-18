@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faUsers, faSpinner, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faUsers, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import UserCard from '../../../../../components/Profile/UserCard';
 
 export default function FollowersPage() {
@@ -29,7 +29,6 @@ export default function FollowersPage() {
       setError(null);
 
       try {
-        // Récupérer les infos du profil
         const profileResponse = await fetch(
           `${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/profile/${username}`
         );
@@ -53,7 +52,6 @@ export default function FollowersPage() {
             );
             if (followResponse.ok) {
               const followData = await followResponse.json();
-              // Seuls les suivis acceptés comptent
               isUserFollowing = followData.is_accepted || false;
               setIsFollowing(isUserFollowing);
             }
@@ -62,7 +60,6 @@ export default function FollowersPage() {
           }
         }
 
-        // Logique mise à jour : compte public OU propre profil OU on suit le compte privé (accepté)
         const canViewFollowers = !profile.private || isOwn || isUserFollowing;
 
         if (!canViewFollowers) {

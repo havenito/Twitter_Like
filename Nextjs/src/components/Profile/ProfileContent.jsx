@@ -9,7 +9,7 @@ import CommentsRepliesList from './CommentsRepliesList';
 const ProfileContent = ({ profileData, isOwnProfile }) => {
   const [activeTab, setActiveTab] = useState('posts');
   
-  // Si le profil est privé et que ce n'est pas le nôtre, le contenu principal de la pagegère déjà cela. Ce composant ne sera pas rendu ou sera rendu avec des données limitées.On peut donc supposer ici que si ce composant est affiché, l'accès est autorisé.
+  // Si le profil est privé et que ce n'est pas le nôtre, le contenu principal de la pagegère déjà cela. Ce composant ne sera pas rendu ou sera rendu avec des données limitées.
 
   const tabs = [
     { id: 'posts', label: 'Publications', shortLabel: 'Posts' },

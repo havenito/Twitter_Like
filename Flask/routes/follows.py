@@ -9,11 +9,9 @@ from models.notification import Notification
 
 follows_api = Blueprint('follows_api', __name__)
 
-# Route pour récupérer les utilisateurs qu'une personne suit (following)
 @follows_api.route('/api/users/<int:user_id>/following', methods=['GET'])
 def get_following(user_id):
     try:
-        # Vérifier si l'utilisateur existe
         user = User.query.get(user_id)
         if not user:
             return jsonify({
@@ -53,11 +51,9 @@ def get_following(user_id):
     except Exception as e:
         return jsonify({'error': f'Erreur lors de la récupération des abonnements: {str(e)}'}), 500
 
-# Route pour récupérer les utilisateurs qui suivent une personne (followers)
 @follows_api.route('/api/users/<int:user_id>/followers', methods=['GET'])
 def get_followers(user_id):
     try:
-        # Vérifier si l'utilisateur existe
         user = User.query.get(user_id)
         if not user:
             return jsonify({
@@ -97,18 +93,15 @@ def get_followers(user_id):
     except Exception as e:
         return jsonify({'error': f'Erreur lors de la récupération des abonnés: {str(e)}'}), 500
 
-# Fonction pour vérifier si un utilisateur en suit un autre
 @follows_api.route('/api/users/<int:follower_id>/follows/<int:followed_id>', methods=['GET'])
 def check_follow_status(follower_id, followed_id):
     try:
-        # Vérifier si les deux utilisateurs existent
         follower = User.query.get(follower_id)
         followed = User.query.get(followed_id)
         
         if not follower or not followed:
             return jsonify({'error': 'Un ou plusieurs utilisateurs non trouvés'}), 404
         
-        # Vérifier si la relation de suivi existe
         relationship = Follow.query.filter_by(
             follower_id=follower_id,
             followed_id=followed_id
@@ -134,7 +127,6 @@ def check_follow_status(follower_id, followed_id):
     except Exception as e:
         return jsonify({'error': f'Une erreur est survenue: {str(e)}'}), 500
 
-# Route pour suivre un utilisateur
 @follows_api.route('/api/follows', methods=['POST'])
 def follow_user():
     try:
@@ -142,7 +134,6 @@ def follow_user():
         follower_id = data.get('follower_id')
         followed_id = data.get('followed_id')
         
-        # Vérifier que les IDs sont fournis
         if not follower_id or not followed_id:
             return jsonify({'error': 'Les IDs follower_id et followed_id sont requis'}), 400
             
@@ -150,14 +141,12 @@ def follow_user():
         if follower_id == followed_id:
             return jsonify({'error': 'Vous ne pouvez pas vous suivre vous-même'}), 400
             
-        # Vérifier si les utilisateurs existent
         follower = User.query.get(follower_id)
         followed = User.query.get(followed_id)
         
         if not follower or not followed:
             return jsonify({'error': 'Un ou plusieurs utilisateurs non trouvés'}), 404
             
-        # Vérifier si la relation existe déjà
         existing_follow = Follow.query.filter_by(
             follower_id=follower_id,
             followed_id=followed_id
@@ -225,7 +214,6 @@ def follow_user():
         db.session.rollback()
         return jsonify({'error': f'Une erreur est survenue: {str(e)}'}), 500
 
-# Route pour arrêter de suivre un utilisateur
 @follows_api.route('/api/follows', methods=['DELETE'])
 def unfollow_user():
     try:
@@ -233,11 +221,9 @@ def unfollow_user():
         follower_id = data.get('follower_id')
         followed_id = data.get('followed_id')
         
-        # Vérifier que les IDs sont fournis
         if not follower_id or not followed_id:
             return jsonify({'error': 'Les IDs follower_id et followed_id sont requis'}), 400
             
-        # Rechercher la relation de suivi
         follow = Follow.query.filter_by(
             follower_id=follower_id,
             followed_id=followed_id
@@ -251,7 +237,6 @@ def unfollow_user():
         for notification in notifications:
             db.session.delete(notification)
             
-        # Supprimer la relation de suivi
         db.session.delete(follow)
         db.session.commit()
         
@@ -267,7 +252,6 @@ def unfollow_user():
         db.session.rollback()
         return jsonify({'error': f'Une erreur est survenue: {str(e)}'}), 500
 
-# Route pour accepter ou rejeter une demande de suivi
 @follows_api.route('/api/follows/<int:follow_id>/<action>', methods=['PUT'])
 def handle_follow_request(follow_id, action):
     try:
@@ -309,7 +293,7 @@ def handle_follow_request(follow_id, action):
                 }
             }), 200
 
-        else:  # action == 'reject'
+        else:
             # Supprimer la notification de demande de suivi
             notification = Notification.query.filter_by(
                 follow_id=follow_id, 
@@ -330,7 +314,6 @@ def handle_follow_request(follow_id, action):
         db.session.rollback()
         return jsonify({'error': f'Une erreur est survenue: {str(e)}'}), 500
 
-# Fonctions de notification
 def notify_user_on_accept_follow_request(follow):
     try:
         followed_user = User.query.get(follow.followed_id)

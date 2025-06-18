@@ -13,9 +13,7 @@ export async function POST(req) {
     const password = clientFormData.get('password');
     const isPublic = clientFormData.get('isPublic'); 
     const profilePictureFile = clientFormData.get('profile_picture');
-    
-    // Récupérer la biographie si elle existe (mais ne pas l'ajouter si vide)
-    const biography = clientFormData.get('biography');
+        const biography = clientFormData.get('biography');
 
     if (!firstName || !email || !pseudo || !password) {
       return NextResponse.json({
@@ -35,7 +33,6 @@ export async function POST(req) {
     flaskFormData.append('isPublic', isPublic); 
     flaskFormData.append('roles', 'user');
 
-    // Ajouter la biographie seulement si elle existe et n'est pas vide
     if (biography && biography.trim()) {
       flaskFormData.append('biography', biography);
     }
@@ -80,7 +77,7 @@ export async function POST(req) {
         success: true,
         message: flaskApiData.message || 'Inscription réussie. Veuillez vous connecter.',
         profile_picture: flaskApiData.profile_picture,
-        subscription: flaskApiData.subscription || 'free' // Ajout de l'abonnement dans la réponse
+        subscription: flaskApiData.subscription || 'free'
       },
       { status: flaskApiResponse.status }
     );

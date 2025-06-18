@@ -50,7 +50,6 @@ const ProfileForm = ({ initialData, onSubmit, loading, error: submissionError, s
     }
   }, [initialData]);
 
-  // Fonction pour valider le type de fichier
   const validateFileType = (file, type) => {
     const isGif = file.type === 'image/gif';
     const isValidImage = file.type.startsWith('image/');
@@ -167,7 +166,6 @@ const ProfileForm = ({ initialData, onSubmit, loading, error: submissionError, s
     show: { opacity: 1, x: 0, transition: { duration: 0.3 } }
   };
 
-  // Fonction pour obtenir les types de fichiers acceptés
   const getAcceptedFileTypes = () => {
     if (hasGifAccess) {
       return "image/*";

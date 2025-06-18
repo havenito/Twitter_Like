@@ -11,7 +11,6 @@ class Chat(db.Model):
     send_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     reply_to_id = db.Column(db.Integer, db.ForeignKey('chats.id'), nullable=True)
     
-    # Relations
     sender = db.relationship('User', backref=db.backref('sent_chats', lazy=True))
     reply_to = db.relationship('Chat', remote_side=[id], backref='replies')
     
@@ -20,7 +19,7 @@ class Chat(db.Model):
         self.sender_id = int(sender_id) if sender_id else None
         self.content = content
         self.reply_to_id = reply_to_id
-        self.send_at = datetime.now(timezone.utc)  # Forcer UTC
+        self.send_at = datetime.now(timezone.utc)
     
     def to_dict(self):
         return {

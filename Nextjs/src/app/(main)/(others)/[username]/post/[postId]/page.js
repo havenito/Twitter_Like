@@ -87,7 +87,7 @@ export default function PostDetailPage() {
           publishedAt: postData.published_at,
           media: postData.media || [],
           likes: likesCount,
-          comments: commentsCount, // ← Maintenant la bonne valeur dès le début
+          comments: commentsCount,
           user: userData ? {
             id: userData.id,
             pseudo: userData.pseudo,

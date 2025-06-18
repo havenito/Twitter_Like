@@ -17,7 +17,7 @@ export default function ForYouPage() {
 
   // Fonction pour réorganiser les posts en ordre ligne par ligne
   const getReorderedPosts = () => {
-    const cols = 3; // On considère toujours 3 colonnes pour la logique
+    const cols = 3; 
     const reordered = [];
     
     // Regrouper par lignes de 3
@@ -26,7 +26,6 @@ export default function ForYouPage() {
       
       // Distribuer chaque post de la ligne dans l'ordre des colonnes
       row.forEach((post, colIndex) => {
-        // Calculer la position finale dans le tableau réorganisé
         const targetIndex = colIndex * Math.ceil(posts.length / cols) + Math.floor(i / cols);
         if (!reordered[targetIndex]) {
           reordered[targetIndex] = post;
@@ -34,7 +33,6 @@ export default function ForYouPage() {
       });
     }
     
-    // Supprimer les éléments undefined et retourner
     return reordered.filter(post => post !== undefined);
   };
 

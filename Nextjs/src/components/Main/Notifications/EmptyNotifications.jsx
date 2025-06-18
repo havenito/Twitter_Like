@@ -51,7 +51,6 @@ const EmptyNotifications = ({ activeFilter }) => {
       className="text-center py-16"
     >
       <div className="max-w-md mx-auto">
-        {/* Icône avec animation */}
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
@@ -68,7 +67,6 @@ const EmptyNotifications = ({ activeFilter }) => {
             className="text-3xl text-[#90EE90]" 
           />
           
-          {/* Effet de brillance */}
           <motion.div
             animate={{ 
               scale: [1, 1.2, 1],
@@ -83,7 +81,6 @@ const EmptyNotifications = ({ activeFilter }) => {
           />
         </motion.div>
 
-        {/* Titre */}
         <motion.h3
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -93,7 +90,6 @@ const EmptyNotifications = ({ activeFilter }) => {
           {content.title}
         </motion.h3>
 
-        {/* Description */}
         <motion.p
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -103,7 +99,6 @@ const EmptyNotifications = ({ activeFilter }) => {
           {content.description}
         </motion.p>
 
-        {/* Bouton d'action */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -118,7 +113,6 @@ const EmptyNotifications = ({ activeFilter }) => {
           </Link>
         </motion.div>
 
-        {/* Éléments décoratifs */}
         <div className="mt-12 flex justify-center space-x-4 opacity-30">
           <motion.div
             animate={{ y: [0, -10, 0] }}

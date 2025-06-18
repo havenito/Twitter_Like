@@ -1,27 +1,35 @@
+"use client";
+
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faComment, faReply, faPlay, faTimes, faFilter } from '@fortawesome/free-solid-svg-icons';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFilter, faComment, faReply, faHeart, faPlay, faTrash, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import CommentLikeButton from '../Main/Post/CommentLikeButton';
 import ReplyLikeButton from '../Main/Post/ReplyLikeButton';
 
 const CommentsRepliesList = ({ commentsAndReplies, userPseudo, isOwnProfile }) => {
   const router = useRouter();
+  const { data: session } = useSession();
   const [activeFilter, setActiveFilter] = useState('all');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const filteredItems = useMemo(() => {
-    if (!commentsAndReplies) return [];
+    if (!commentsAndReplies) {
+      return [];
+    }
     
-    switch (activeFilter) {
-      case 'comments':
-        return commentsAndReplies.filter(item => item.type === 'comment');
-      case 'replies':
-        return commentsAndReplies.filter(item => item.type === 'reply');
-      default:
-        return commentsAndReplies;
+    if (activeFilter === 'comments') {
+      return commentsAndReplies.filter(item => item.type === 'comment');
+    } else if (activeFilter === 'replies') {
+      return commentsAndReplies.filter(item => item.type === 'reply');
+    } else {
+      return commentsAndReplies;
     }
   }, [commentsAndReplies, activeFilter]);
 
@@ -64,11 +72,11 @@ const CommentsRepliesList = ({ commentsAndReplies, userPseudo, isOwnProfile }) =
   };
 
   const handleItemClick = (item) => {
-    sessionStorage.setItem('previousPageType', 'profile');
-    
     if (item.type === 'comment') {
+      sessionStorage.setItem('previousPageType', 'profile');
       router.push(`/${userPseudo}/comment/${item.id}`);
     } else if (item.type === 'reply') {
+      sessionStorage.setItem('previousPageType', 'profile');
       router.push(`/${userPseudo}/reply/${item.id}`);
     }
   };
@@ -81,37 +89,76 @@ const CommentsRepliesList = ({ commentsAndReplies, userPseudo, isOwnProfile }) =
     e.stopPropagation();
   };
 
+  const handleDeleteClick = (item, e) => {
+    e.stopPropagation();
+    setItemToDelete(item);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete || !session?.user?.id) return;
+
+    setDeleteLoading(true);
+    try {
+      const endpoint = itemToDelete.type === 'comment' 
+        ? `${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/comments/${itemToDelete.id}`
+        : `${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/replies/${itemToDelete.id}`;
+
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Recharger la page pour mettre à jour la liste
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        const errorData = await response.json();
+        console.error('Erreur lors de la suppression:', errorData);
+        alert(`Erreur lors de la suppression du ${itemToDelete.type === 'comment' ? 'commentaire' : 'réponse'}`);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      alert(`Erreur lors de la suppression du ${itemToDelete.type === 'comment' ? 'commentaire' : 'réponse'}`);
+    } finally {
+      setDeleteLoading(false);
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+    }
+  };
+
   const renderMedia = (media) => {
     if (!media || media.length === 0) return null;
 
-    const gridCols = media.length === 1 ? 'grid-cols-1' : 'grid-cols-2';
-
     return (
-      <div className={`mt-3 grid ${gridCols} gap-2`}>
+      <div className="mt-3 grid grid-cols-2 gap-2">
         {media.slice(0, 4).map((mediaItem, index) => {
-          const src = mediaItem.url.startsWith('http') ? mediaItem.url : `/${mediaItem.url}`;
           const isVideo = mediaItem.type === 'video';
+          const src = mediaItem.url.startsWith('http') ? mediaItem.url : `/${mediaItem.url}`;
           
           return (
-            <div key={index} className="relative rounded-lg overflow-hidden group">
+            <div key={index} className="relative group">
               {isVideo ? (
                 <div className="relative">
                   <video 
                     src={src} 
-                    className="w-full h-16 sm:h-20 md:h-24 object-cover" 
+                    className="w-full h-20 object-cover rounded" 
                     muted
                     preload="metadata"
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
-                    <FontAwesomeIcon icon={faPlay} className="text-white text-sm sm:text-base md:text-lg" />
+                    <FontAwesomeIcon icon={faPlay} className="text-white text-lg" />
                   </div>
                 </div>
               ) : (
-                <img
-                  src={src}
-                  alt={`Média ${index + 1}`}
-                  className="w-full h-16 sm:h-20 md:h-24 object-cover"
-                  onError={e => e.currentTarget.style.display = 'none'}
+                <img 
+                  src={src} 
+                  alt="Média" 
+                  className="w-full h-20 object-cover rounded" 
                 />
               )}
             </div>
@@ -139,16 +186,16 @@ const CommentsRepliesList = ({ commentsAndReplies, userPseudo, isOwnProfile }) =
             <button
               key={option.id}
               onClick={() => setActiveFilter(option.id)}
-              className={`relative whitespace-nowrap px-3 py-2 sm:px-4 sm:py-2.5 font-medium text-xs sm:text-sm rounded-lg transition-all duration-200 flex items-center space-x-1.5 sm:space-x-2 flex-shrink-0
-                ${activeFilter === option.id 
-                  ? 'bg-[#90EE90] bg-opacity-20 text-[#90EE90] border border-[#90EE90] border-opacity-50' 
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-[#2a2a2a] border border-transparent'
-                }`}
+              className={`flex items-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                activeFilter === option.id
+                  ? 'bg-[#90EE90] text-black'
+                  : 'bg-[#333] text-gray-300 hover:bg-[#444] hover:text-white'
+              }`}
             >
-              <FontAwesomeIcon icon={option.icon} className="text-xs" />
-              <span className="block sm:hidden">{option.shortLabel}</span>
-              <span className="hidden sm:block">{option.label}</span>
-              <span className="bg-gray-600 text-white rounded-full px-1.5 py-0.5 text-xs">
+              <FontAwesomeIcon icon={option.icon} className="mr-1 sm:mr-2 text-xs" />
+              <span className="hidden sm:inline">{option.label}</span>
+              <span className="sm:hidden">{option.shortLabel}</span>
+              <span className="ml-1 sm:ml-2 px-1.5 py-0.5 bg-black bg-opacity-20 rounded-full text-xs">
                 {option.count}
               </span>
             </button>
@@ -197,14 +244,17 @@ const CommentsRepliesList = ({ commentsAndReplies, userPseudo, isOwnProfile }) =
           {filteredItems.map((item) => (
             <motion.div
               key={`${item.type}-${item.id}`}
-              variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-              className="bg-[#1e1e1e] p-3 sm:p-4 md:p-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 border border-[#333] cursor-pointer hover:bg-[#252525]"
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0 }
+              }}
               onClick={() => handleItemClick(item)}
+              className="bg-[#1e1e1e] p-3 sm:p-4 md:p-6 rounded-lg border border-[#333] cursor-pointer hover:bg-[#252525] transition-colors"
             >
-              <div className="flex items-start space-x-2 sm:space-x-3">
+              <div className="flex items-start space-x-3 sm:space-x-4">
                 <div className="flex-shrink-0">
                   <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${
-                    item.type === 'comment' ? 'bg-blue-500 bg-opacity-20' : 'bg-green-500 bg-opacity-20'
+                    item.type === 'comment' ? 'bg-blue-500/20' : 'bg-green-500/20'
                   }`}>
                     <FontAwesomeIcon 
                       icon={item.type === 'comment' ? faComment : faReply} 
@@ -231,9 +281,25 @@ const CommentsRepliesList = ({ commentsAndReplies, userPseudo, isOwnProfile }) =
                       )}
                     </div>
                     
-                    <span className="text-xs text-gray-500 flex-shrink-0">
-                      {formatDate(item.created_at)}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-500 flex-shrink-0">
+                        {formatDate(item.created_at)}
+                      </span>
+                      
+                      {isOwnProfile && session?.user?.id && (
+                        <button
+                          onClick={(e) => handleDeleteClick(item, e)}
+                          className="p-1 rounded-full hover:bg-red-500/20 transition-colors group"
+                          title={`Supprimer ce ${item.type === 'comment' ? 'commentaire' : 'réponse'}`}
+                          data-interactive="true"
+                        >
+                          <FontAwesomeIcon 
+                            icon={faTrash} 
+                            className="text-red-400 text-xs group-hover:text-red-300" 
+                          />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <p className="text-white text-sm sm:text-base leading-relaxed mb-3 line-clamp-3 break-words">
@@ -248,10 +314,10 @@ const CommentsRepliesList = ({ commentsAndReplies, userPseudo, isOwnProfile }) =
                         onClick={handleCommentButtonClick}
                         className="flex items-center space-x-1 text-gray-400 hover:text-[#90EE90] transition-colors text-xs sm:text-sm"
                       >
-                        <FontAwesomeIcon icon={faComment} className="text-xs sm:text-sm" />
+                        <FontAwesomeIcon icon={faComment} />
                         <span>{item.replies_count || 0}</span>
                       </button>
-                      
+
                       <div onClick={handleLikeButtonClick}>
                         {item.type === 'comment' ? (
                           <CommentLikeButton 
@@ -269,9 +335,9 @@ const CommentsRepliesList = ({ commentsAndReplies, userPseudo, isOwnProfile }) =
                       </div>
                     </div>
 
-                    {item.originalPost && (
+                    {item.originalPost && item.originalPost.user_pseudo && (
                       <Link 
-                        href={`/${item.originalPost.user?.pseudo}/post/${item.originalPost.id}`}
+                        href={`/${item.originalPost.user_pseudo}/post/${item.originalPost.id}`}
                         className="text-xs text-[#90EE90] hover:text-[#7CD37C] transition-colors text-center sm:text-right"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -287,6 +353,81 @@ const CommentsRepliesList = ({ commentsAndReplies, userPseudo, isOwnProfile }) =
               </div>
             </motion.div>
           ))}
+        </motion.div>
+      )}
+
+      {showDeleteModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
+          onClick={() => !deleteLoading && setShowDeleteModal(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="bg-[#222] rounded-2xl p-6 w-full max-w-md mx-auto shadow-2xl border border-gray-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-600 mb-4">
+                <FontAwesomeIcon 
+                  icon={faExclamationTriangle} 
+                  className="h-6 w-6 text-white" 
+                />
+              </div>
+              
+              <h3 className="text-xl font-semibold mb-4 text-white">
+                Supprimer ce {itemToDelete?.type === 'comment' ? 'commentaire' : 'réponse'} ?
+              </h3>
+              
+              <div className="text-gray-300 mb-6 space-y-3">
+                <p>
+                  Êtes-vous sûr de vouloir supprimer ce {itemToDelete?.type === 'comment' ? 'commentaire' : 'réponse'} ?
+                </p>
+                <div className="bg-red-900/20 border border-red-600/30 rounded-lg p-3 text-red-200">
+                  <p className="text-sm flex items-start">
+                    <FontAwesomeIcon icon={faTrash} className="mr-2 mt-0.5 flex-shrink-0" />
+                    <span>
+                      <strong>Attention :</strong> Cette action est irréversible. 
+                      {itemToDelete?.type === 'comment' 
+                        ? 'Le commentaire et toutes ses réponses seront définitivement supprimés.'
+                        : 'La réponse sera définitivement supprimée.'
+                      }
+                    </span>
+                  </p>
+                </div>
+              </div>
+              
+              {deleteLoading ? (
+                <div className="flex justify-center items-center py-3">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-500"></div>
+                  <span className="ml-3 text-gray-300">Suppression en cours...</span>
+                </div>
+              ) : (
+                <div className="flex gap-3 justify-end">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setShowDeleteModal(false)}
+                    className="px-6 py-2 rounded-full text-gray-300 hover:bg-[#444] transition-colors"
+                  >
+                    Annuler
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleDeleteConfirm}
+                    className="px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors font-semibold"
+                  >
+                    Supprimer
+                  </motion.button>
+                </div>
+              )}
+            </div>
+          </motion.div>
         </motion.div>
       )}
     </div>

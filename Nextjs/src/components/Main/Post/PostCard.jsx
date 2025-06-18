@@ -325,7 +325,6 @@ const PostCard = ({ post, disableNavigation = false }) => {
         onCommentAdded={handleCommentAdded}
       />
 
-      {/* Modal de signalement */}
       <ReportModal
         isOpen={showReport}
         onClose={() => setShowReport(false)}

@@ -65,7 +65,6 @@ export default function ConversationList({
     console.log('📱 Objet conversation complet:', conversation);
     console.groupEnd();
     
-    // Appeler la fonction originale
     onConversationSelect(conversation);
   };
 
@@ -172,15 +171,12 @@ export default function ConversationList({
           }`}
         >
           <div className="flex items-start space-x-3">
-            {/* Avatar avec photo de profil */}
             <div className="flex-shrink-0">
               {renderProfilePicture(conversation.other_user)}
             </div>
 
-            {/* Contenu de la conversation */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
-                {/* Nom avec badge */}
                 <div className="flex items-center min-w-0">
                   <h3 className="text-sm font-medium text-white truncate">
                     {conversation.other_user?.first_name && conversation.other_user?.last_name
@@ -213,7 +209,6 @@ export default function ConversationList({
                   )}
                 </div>
 
-                {/* Indicateurs */}
                 <div className="flex items-center space-x-2 ml-2">
                   {conversation.unread_count > 0 && (
                     <motion.span 
@@ -227,7 +222,6 @@ export default function ConversationList({
                 </div>
               </div>
 
-              {/* Statistiques de la conversation */}
               <div className="flex items-center justify-between mt-2">
                 <span className="text-xs text-gray-600">
                   {formatMessageCount(conversation.total_messages)} message{(conversation.total_messages || 0) > 1 ? 's' : ''}

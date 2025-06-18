@@ -4,12 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import HomeCard from "@/components/Main/Home/HomeCard";
-import {
-  faUser,
-  faStar,
-  faChartBar,
-  faSearch,
-} from "@fortawesome/free-solid-svg-icons";
+import { faUser, faStar, faChartBar, faSearch } from "@fortawesome/free-solid-svg-icons";
 
 export default function HomePage() {
   const { data: session, status } = useSession();
@@ -29,7 +24,6 @@ export default function HomePage() {
     );
   }
 
-  // Générer les cartes avec l'URL du profil dynamique
   const cards = [
     {
       icon: faUser,

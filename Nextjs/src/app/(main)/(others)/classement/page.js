@@ -69,7 +69,7 @@ export default function ClassementPage() {
                 )}
                 <div className="relative mb-2">
                   <img
-                    src={podium[1].profile_picture || "/default-avatar.png"}
+                    src={podium[1].profile_picture || "/defaultuserpfp.png"}
                     alt={podium[1].pseudo}
                     className="w-14 sm:w-20 h-14 sm:h-20 rounded-full object-cover border-4"
                     style={{ borderColor: silver, background: "#23272f" }}
@@ -103,7 +103,7 @@ export default function ClassementPage() {
                 <FontAwesomeIcon icon={faCrown} className="mb-2" style={{ color: gold, fontSize: "2rem" }} />
                 <div className="relative mb-2">
                   <img
-                    src={podium[0].profile_picture || "/default-avatar.png"}
+                    src={podium[0].profile_picture || "/defaultuserpfp.png"}
                     alt={podium[0].pseudo}
                     className="w-20 sm:w-28 h-20 sm:h-28 rounded-full object-cover border-4"
                     style={{ borderColor: gold, background: "#23272f" }}
@@ -136,7 +136,7 @@ export default function ClassementPage() {
                 )}
                 <div className="relative mb-2">
                   <img
-                    src={podium[2].profile_picture || "/default-avatar.png"}
+                    src={podium[2].profile_picture || "/defaultuserpfp.png"}
                     alt={podium[2].pseudo}
                     className="w-12 sm:w-16 h-12 sm:h-16 rounded-full object-cover border-4"
                     style={{ borderColor: bronze, background: "#23272f" }}
@@ -176,7 +176,7 @@ export default function ClassementPage() {
                 <div className="flex items-center gap-2 sm:gap-3">
                   <span className="text-lg sm:text-2xl font-bold text-[#90EE90] w-6 sm:w-8 text-center">{idx + 4}</span>
                   <img
-                    src={user.profile_picture || "/default-avatar.png"}
+                    src={user.profile_picture || "/defaultuserpfp.png"}
                     alt={user.pseudo}
                     className="w-8 sm:w-10 h-8 sm:h-10 rounded-full object-cover border border-[#90EE90]"
                   />
@@ -201,7 +201,7 @@ export default function ClassementPage() {
             <div className="flex items-center gap-2 sm:gap-3">
               <span className="text-lg sm:text-2xl font-bold text-[#90EE90]">{userRank.rank}</span>
               <img
-                src={userRank.profile_picture || "/default-avatar.png"}
+                src={userRank.profile_picture || "/defaultuserpfp.png"}
                 alt={userRank.pseudo}
                 className="w-8 sm:w-10 h-8 sm:h-10 rounded-full object-cover border border-[#90EE90]"
               />

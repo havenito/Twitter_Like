@@ -30,7 +30,6 @@ export default function MessageInput({ onSendMessage, onTypingStart, onTypingSto
       onTypingStart();
     }
 
-    // Réinitialiser le timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
@@ -56,7 +55,6 @@ export default function MessageInput({ onSendMessage, onTypingStart, onTypingSto
         onTypingStop();
       }
       
-      // Clear le timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
@@ -77,7 +75,6 @@ export default function MessageInput({ onSendMessage, onTypingStart, onTypingSto
       className="border-t border-[#333] bg-[#1b1b1b] p-4"
     >
       <form onSubmit={handleSubmit} className="flex items-end space-x-3">
-        {/* Zone de texte */}
         <div className="flex-1 relative">
           <motion.div
             animate={{
@@ -100,7 +97,6 @@ export default function MessageInput({ onSendMessage, onTypingStart, onTypingSto
               style={{ minHeight: '48px', maxHeight: '120px' }}
             />
             
-            {/* Indicateur de caractères (optionnel) */}
             <AnimatePresence>
               {message.length > 100 && (
                 <motion.div
@@ -116,7 +112,6 @@ export default function MessageInput({ onSendMessage, onTypingStart, onTypingSto
           </motion.div>
         </div>
         
-        {/* Bouton d'envoi */}
         <motion.button
           type="submit"
           disabled={!message.trim()}
@@ -145,7 +140,6 @@ export default function MessageInput({ onSendMessage, onTypingStart, onTypingSto
         </motion.button>
       </form>
       
-      {/* Actions supplémentaires simplifiées */}
       <div className="flex items-center justify-end mt-2">
         {message.trim() && (
           <motion.span

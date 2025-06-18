@@ -26,7 +26,7 @@ def get_user_notifications(user_id):
                 'user_id': notification.user_id,
                 'type': notification.type,
                 'date': notification.date.isoformat() if notification.date else None,
-                'actor_user': None  # Initialiser à None
+                'actor_user': None
             }
 
             # Récupérer les informations de l'utilisateur acteur selon le type
@@ -42,7 +42,7 @@ def get_user_notifications(user_id):
                             'last_name': follower_user.last_name,
                             'profile_picture': follower_user.profile_picture,
                             'subscription': follower_user.subscription,
-                            'email': follower_user.email  # Ajout de l'email comme fallback
+                            'email': follower_user.email
                         }
 
             elif notification.type == "comment" and notification.comments_id:

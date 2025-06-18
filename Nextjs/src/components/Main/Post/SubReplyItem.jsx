@@ -180,7 +180,6 @@ const SubReplyItem = ({ subReply, parentReplyId }) => {
       );
     }
 
-    // Grille pour plusieurs médias
     const cols = allMedia.length === 2 ? 'grid-cols-2' : allMedia.length === 3 ? 'grid-cols-3' : 'grid-cols-2';
     
     return (
@@ -223,7 +222,7 @@ const SubReplyItem = ({ subReply, parentReplyId }) => {
     );
   };
 
-  // Trier les sous-sous-réponses par likes puis par date (CORRIGÉ)
+  // Trier les sous-sous-réponses par likes puis par date
   const sortSubSubReplies = (subSubRepliesArray) => {
     return [...subSubRepliesArray].sort((a, b) => {
       const aLikes = a.likes_count || 0;
@@ -313,7 +312,6 @@ const SubReplyItem = ({ subReply, parentReplyId }) => {
               />
             </div>
 
-            {/* Affichage des réponses aux sous-réponses - AVEC TRI CORRIGÉ */}
             {subSubReplies && subSubReplies.length > 0 && (
               <div className="mt-4 pt-4 border-t border-[#333]">
                 <div className="pl-3 border-l-2 border-[#444] space-y-3">

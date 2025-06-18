@@ -21,7 +21,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
   const { data: session } = useSession();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [categoryId, setCategoryId] = useState('0');
+  const [categoryId, setCategoryId] = useState('1');
   const [mediaFiles, setMediaFiles] = useState([]);
   const [mediaPreviews, setMediaPreviews] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -162,10 +162,8 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
       
       resetForm();
       
-      // Afficher la notification de succès
       setShowNotification(true);
       
-      // Fermer le modal après un délai pour laisser le temps de voir la notification
       setTimeout(() => {
         onClose();
       }, 1500);
@@ -193,7 +191,6 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
 
   return (
     <>
-      {/* Notification */}
       {showNotification && (
         <Notification 
           message="Miaou posté !" 
@@ -219,7 +216,6 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
               className="bg-[#1b1b1b] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[#333]"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-[#333]">
                 <h2 className="text-xl font-bold text-white">Créer une publication</h2>
                 <button
@@ -231,9 +227,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
                 </button>
               </div>
 
-              {/* Form */}
               <form onSubmit={handleSubmit} className="p-4 space-y-4">
-                {/* User Info */}
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="w-10 h-10 rounded-full overflow-hidden">
                     <Image
@@ -252,7 +246,6 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
                   </div>
                 </div>
 
-                {/* Title */}
                 <div>
                   <label className="block text-[#90EE90] text-sm font-medium mb-2">
                     <FontAwesomeIcon icon={faHeading} className="text-[#90EE90] mr-2" />
@@ -270,7 +263,6 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
                   <p className="text-xs text-gray-400 mt-1">{title.length}/100 caractères</p>
                 </div>
 
-                {/* Category */}
                 <div>
                   <label className="block text-[#90EE90] text-sm font-medium mb-2">
                     <FontAwesomeIcon icon={faTag} className="mr-2" />
@@ -297,7 +289,6 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
                   )}
                 </div>
 
-                {/* Content */}
                 <div className="relative">
                   <label className="block text-[#90EE90] text-sm font-medium mb-2">
                     <FontAwesomeIcon icon={faSignature} className="text-[#90EE90] mr-2" />
@@ -318,7 +309,6 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
                   </div>
                 </div>
 
-                {/* Media Previews */}
                 {mediaPreviews.length > 0 && (
                   <div>
                     <label className="block text-[#90EE90] text-sm font-medium mb-2">
@@ -353,17 +343,14 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
                   </div>
                 )}
 
-                {/* Error Message */}
                 {error && (
                   <div className="bg-red-500/20 border border-red-500/50 text-red-300 p-3 rounded-lg text-sm">
                     {error}
                   </div>
                 )}
 
-                {/* Actions */}
                 <div className="flex items-center justify-between pt-4 border-t border-[#333]">
                   <div className="flex items-center space-x-4">
-                    {/* Media Upload */}
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
@@ -384,7 +371,6 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
                     />
                   </div>
 
-                  {/* Submit Button */}
                   <button
                     type="submit"
                     disabled={loading || !title.trim() || !content.trim() || remainingChars < 0 || categoriesLoading}

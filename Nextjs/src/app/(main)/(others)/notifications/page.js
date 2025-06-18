@@ -38,9 +38,7 @@ export default function NotificationsPage() {
       }
       
       const data = await response.json();
-      
-      // Plus besoin d'enrichir les notifications car les données utilisateur sont déjà fournies par le backend
-      
+            
       // Filtrer pour ne garder que les types autorisés
       const allowedTypes = ['follow', 'follow_request', 'follow_request_accepted', 'comment', 'reply', 'reply_to_reply'];
       const filteredData = data.filter(notification => 
@@ -181,7 +179,6 @@ export default function NotificationsPage() {
   return (
     <div className="min-h-screen bg-[#111] text-white">
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -213,7 +210,6 @@ export default function NotificationsPage() {
           )}
         </motion.div>
 
-        {/* Filtres */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -226,7 +222,6 @@ export default function NotificationsPage() {
           />
         </motion.div>
 
-        {/* Contenu */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -274,7 +269,6 @@ export default function NotificationsPage() {
         </motion.div>
       </div>
 
-      {/* Notification toast */}
       {showNotification && (
         <div className="fixed inset-0 pointer-events-none z-[60]">
           <Notification 

@@ -3,7 +3,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { motion, AnimatePresence } from 'framer-motion'; 
 
-// Accepter une nouvelle prop 'variants' (renommée propVariants pour éviter conflit de nom)
 export default function Notification({ message, type = 'success', duration = 3000, onClose, variants: propVariants }) {
   const [isVisible, setIsVisible] = useState(true);
 
@@ -35,7 +34,6 @@ export default function Notification({ message, type = 'success', duration = 300
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          // Utiliser les variantes déterminées ci-dessus
           variants={notificationVariants}
           initial="initial"
           animate="animate"

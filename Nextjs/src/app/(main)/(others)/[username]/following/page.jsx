@@ -52,7 +52,6 @@ export default function FollowingPage() {
             );
             if (followResponse.ok) {
               const followData = await followResponse.json();
-              // Seuls les suivis acceptés comptent
               isUserFollowing = followData.is_accepted || false;
               setIsFollowing(isUserFollowing);
             }
@@ -61,7 +60,6 @@ export default function FollowingPage() {
           }
         }
 
-        // Logique mise à jour : compte public OU propre profil OU on suit le compte privé (accepté)
         const canViewFollowing = !profile.private || isOwn || isUserFollowing;
 
         if (!canViewFollowing) {

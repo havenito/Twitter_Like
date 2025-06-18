@@ -25,7 +25,6 @@ export default function ReportRow({ report, handleUpdateStatus, handleWarnUser, 
           </a>
         )}
       </td>
-      {/* Nouvelle colonne : Utilisateur signalé */}
       <td className="px-6 py-4 font-medium">
         {report.reported_user_display ? report.reported_user_display : "-"}
       </td>

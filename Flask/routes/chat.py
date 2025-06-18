@@ -2,12 +2,11 @@ from flask import Blueprint, request, jsonify
 from models import db
 from models.user import User
 from models.chat import Chat
-from datetime import datetime, timedelta, timezone  # Ajouter timezone ici
+from datetime import datetime, timedelta, timezone
 import traceback
 
 chats_bp = Blueprint('chats_api', __name__)
 
-# Créer un nouveau message
 @chats_bp.route('/api/chats', methods=['POST'])
 def create_chat():
     try:
@@ -24,12 +23,10 @@ def create_chat():
         if not conversation_id or not sender_id or not content:
             return jsonify({'error': 'conversation_id, sender_id et content sont requis'}), 400
 
-        # Vérifier que l'utilisateur existe
         sender = User.query.get(sender_id)
         if not sender:
             return jsonify({'error': 'Utilisateur expéditeur non trouvé'}), 404
 
-        # Créer le nouveau chat
         new_chat = Chat(
             conversation_id=conversation_id,
             sender_id=sender_id,
@@ -37,7 +34,6 @@ def create_chat():
             reply_to_id=reply_to_id
         )
         
-        # Forcer la date UTC
         new_chat.send_at = datetime.now(timezone.utc)
         
         db.session.add(new_chat)
@@ -55,7 +51,6 @@ def create_chat():
         print(traceback.format_exc())
         return jsonify({'error': f'Erreur interne du serveur: {str(e)}'}), 500
 
-# Récupérer tous les messages
 @chats_bp.route('/api/chats', methods=['GET'])
 def get_chats():
     try:
@@ -71,7 +66,6 @@ def get_chats():
         print(f"Erreur lors de la récupération des chats: {str(e)}")
         return jsonify({'error': f'Erreur interne du serveur: {str(e)}'}), 500
 
-# Récupérer un message spécifique
 @chats_bp.route('/api/chats/<int:chat_id>', methods=['GET'])
 def get_chat(chat_id):
     try:
@@ -85,7 +79,6 @@ def get_chat(chat_id):
         print(f"Erreur lors de la récupération du chat {chat_id}: {str(e)}")
         return jsonify({'error': f'Erreur interne du serveur: {str(e)}'}), 500
 
-# Mettre à jour un message
 @chats_bp.route('/api/chats/<int:chat_id>', methods=['PUT'])
 def update_chat(chat_id):
     try:
@@ -97,7 +90,6 @@ def update_chat(chat_id):
         if not data:
             return jsonify({'error': 'Aucune donnée fournie'}), 400
 
-        # Mettre à jour les champs fournis
         if 'content' in data:
             chat.content = data['content']
         if 'reply_to_id' in data:
@@ -115,7 +107,6 @@ def update_chat(chat_id):
         print(f"Erreur lors de la mise à jour du chat {chat_id}: {str(e)}")
         return jsonify({'error': f'Erreur interne du serveur: {str(e)}'}), 500
 
-# Supprimer un message
 @chats_bp.route('/api/chats/<int:chat_id>', methods=['DELETE'])
 def delete_chat(chat_id):
     try:
@@ -133,16 +124,13 @@ def delete_chat(chat_id):
         print(f"Erreur lors de la suppression du chat {chat_id}: {str(e)}")
         return jsonify({'error': f'Erreur interne du serveur: {str(e)}'}), 500
 
-# Récupérer les réponses d'un message
 @chats_bp.route('/api/chats/<int:chat_id>/replies', methods=['GET'])
 def get_replies(chat_id):
     try:
-        # Vérifier que le message parent existe
         parent_chat = Chat.query.get(chat_id)
         if not parent_chat:
             return jsonify({'error': 'Message parent non trouvé'}), 404
 
-        # Récupérer toutes les réponses
         replies = Chat.query.filter_by(reply_to_id=chat_id).order_by(Chat.send_at.asc()).all()
         replies_list = [reply.to_dict() for reply in replies]
 
@@ -156,7 +144,6 @@ def get_replies(chat_id):
         print(f"Erreur lors de la récupération des réponses pour le chat {chat_id}: {str(e)}")
         return jsonify({'error': f'Erreur interne du serveur: {str(e)}'}), 500
 
-# Récupérer les informations de l'expéditeur d'un message
 @chats_bp.route('/api/chats/<int:chat_id>/sender', methods=['GET'])
 def get_chat_sender(chat_id):
     try:
@@ -182,14 +169,12 @@ def get_chat_sender(chat_id):
         print(f"Erreur lors de la récupération de l'expéditeur pour le chat {chat_id}: {str(e)}")
         return jsonify({'error': f'Erreur interne du serveur: {str(e)}'}), 500
 
-# Récupérer les messages d'une conversation spécifique
 @chats_bp.route('/api/conversations/<int:conversation_id>/chats', methods=['GET'])
 def get_conversation_chats(conversation_id):
     try:
         chats = Chat.query.filter_by(conversation_id=conversation_id).order_by(Chat.send_at.asc()).all()
         chats_list = [chat.to_dict() for chat in chats]
         
-        # Récupérer les informations des participants
         participants_ids = set(chat.sender_id for chat in chats)
         participants = []
         
@@ -203,7 +188,7 @@ def get_conversation_chats(conversation_id):
                     'first_name': user.first_name,
                     'last_name': user.last_name,
                     'profile_picture': user.profile_picture,
-                    'subscription': user.subscription  # AJOUTER CETTE LIGNE
+                    'subscription': user.subscription
                 })
 
         return jsonify({
@@ -217,13 +202,11 @@ def get_conversation_chats(conversation_id):
         print(f"Erreur lors de la récupération des chats de la conversation {conversation_id}: {str(e)}")
         return jsonify({'error': f'Erreur interne du serveur: {str(e)}'}), 500
 
-# Récupérer toutes les conversations d'un utilisateur
 @chats_bp.route('/api/chats/conversations/<int:user_id>', methods=['GET'])
 def get_user_conversations(user_id):
     try:
         print(f"=== Getting conversations for user_id: {user_id} ===")
         
-        # Vérifier que l'utilisateur existe
         user = User.query.get(user_id)
         if not user:
             print(f"❌ User {user_id} not found")
@@ -268,14 +251,12 @@ def get_user_conversations(user_id):
             print(f"  → ❌ Could not extract participants from {conv_str}")
             return []
 
-        # Récupérer toutes les conversations uniques
         all_conversations = db.session.query(Chat.conversation_id).distinct().all()
         print(f"📊 Total conversations in database: {len(all_conversations)}")
         
         user_conversations = []
         conversation_ids = set()
         
-        # Analyser chaque conversation pour voir si l'utilisateur y participe
         for (conv_id,) in all_conversations:
             participants = extract_participants_from_conversation_id(conv_id)
             
@@ -283,14 +264,12 @@ def get_user_conversations(user_id):
                 conversation_ids.add(conv_id)
                 print(f"  ✅ User {user_id} participates in conversation {conv_id}")
         
-        # Double vérification: ajouter les conversations où l'utilisateur a envoyé des messages
         sent_conversations = db.session.query(Chat.conversation_id).filter_by(sender_id=user_id).distinct().all()
         for conv in sent_conversations:
             conversation_ids.add(conv[0])
         
         print(f"🎯 Final conversation_ids for user {user_id}: {conversation_ids}")
         
-        # Construire les détails de chaque conversation
         for conv_id in conversation_ids:
             try:
                 # Récupérer tous les messages de cette conversation
@@ -317,12 +296,11 @@ def get_user_conversations(user_id):
                     'first_name': other_user.first_name,
                     'last_name': other_user.last_name,
                     'profile_picture': other_user.profile_picture,
-                    'subscription': other_user.subscription  # AJOUTER CETTE LIGNE CRUCIALE
+                    'subscription': other_user.subscription
                 }
                 
                 print(f"  🔍 Other user details: {other_user_details}")  # Debug log
                 
-                # Dernier message
                 last_message_details = None
                 if conversation_chats:
                     last_chat = conversation_chats[0]
@@ -333,7 +311,6 @@ def get_user_conversations(user_id):
                         'send_at': last_chat.send_at.isoformat().replace('+00:00', 'Z') if last_chat.send_at else None
                     }
                 
-                # Compter les messages non lus (simplification)
                 unread_count = 0
                 
                 conversation_data = {
@@ -359,7 +336,6 @@ def get_user_conversations(user_id):
         
         print(f"🎉 Returning {len(user_conversations)} conversations for user {user_id}")
         
-        # Debug: afficher le résultat final
         for conv in user_conversations:
             print(f"  - Conv {conv['conversation_id']}: {conv['other_user']['email']} (subscription: {conv['other_user'].get('subscription', 'NOT_SET')}) ({conv['total_messages']} messages)")
         
@@ -380,7 +356,6 @@ def get_user_conversations(user_id):
             'total_conversations': 0
         }), 500
 
-# Récupérer les messages d'une conversation spécifique (nouvelle route)
 @chats_bp.route('/api/chats/conversation/<int:conversation_id>', methods=['GET'])
 def get_conversation_messages(conversation_id):
     since_timestamp = request.args.get('since')
@@ -388,7 +363,6 @@ def get_conversation_messages(conversation_id):
     query = Chat.query.filter_by(conversation_id=conversation_id)
     
     if since_timestamp:
-        # Seulement les messages après ce timestamp
         query = query.filter(Chat.send_at > since_timestamp)
     
     messages = query.order_by(Chat.send_at.asc()).all()
@@ -397,7 +371,6 @@ def get_conversation_messages(conversation_id):
         'messages': [message.to_dict() for message in messages]
     })
 
-# Créer une nouvelle conversation privée
 @chats_bp.route('/api/chats/private', methods=['POST'])
 def create_private_message():
     try:
@@ -418,7 +391,6 @@ def create_private_message():
         if not sender or not recipient:
             return jsonify({'error': 'Utilisateur non trouvé'}), 404
 
-        # Générer l'ID de conversation
         sorted_ids = sorted([sender_id, recipient_id])
         conversation_id = int(f"{sorted_ids[0]}{sorted_ids[1]:03d}")
 
@@ -449,7 +421,6 @@ def create_private_message():
             
             return jsonify(response_data), 200
 
-        # Créer le nouveau message
         new_chat = Chat(
             conversation_id=conversation_id,
             sender_id=sender_id,
@@ -463,7 +434,6 @@ def create_private_message():
 
         print(f"✅ HTTP: NEW message saved with ID: {new_chat.id}")
 
-        # Retourner les données du message
         response_data = {
             'success': True,
             'message': 'Message envoyé avec succès',
@@ -486,8 +456,6 @@ def create_private_message():
         traceback.print_exc()
         return jsonify({'error': f'Erreur lors de la création du message: {str(e)}'}), 500
 
-# Remplacez la route message_stream par celle-ci
-
 @chats_bp.route('/api/chats/new/<int:user_id>')
 def get_new_messages_simple(user_id):
     """
@@ -497,7 +465,6 @@ def get_new_messages_simple(user_id):
         since_param = request.args.get('since')
         
         if since_param:
-            # Convertir le timestamp ISO en datetime
             try:
                 since_timestamp = datetime.fromisoformat(since_param.replace('Z', '+00:00'))
             except:
@@ -509,7 +476,6 @@ def get_new_messages_simple(user_id):
         user_chats = Chat.query.filter_by(sender_id=user_id).all()
         conversation_ids = set(chat.conversation_id for chat in user_chats)
         
-        # Ajouter les conversations où l'utilisateur pourrait avoir reçu des messages
         all_chats = Chat.query.all()
         for chat in all_chats:
             conv_id_str = str(chat.conversation_id)
@@ -523,7 +489,7 @@ def get_new_messages_simple(user_id):
             messages = Chat.query.filter(
                 Chat.conversation_id == conv_id,
                 Chat.send_at > since_timestamp,
-                Chat.sender_id != user_id  # Exclure les messages de l'utilisateur lui-même
+                Chat.sender_id != user_id
             ).order_by(Chat.send_at.asc()).all()
             
             for message in messages:
@@ -542,7 +508,6 @@ def get_new_messages_simple(user_id):
         print(f"Erreur lors de la récupération des nouveaux messages: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-# Dans routes/chat.py, ajoutez cette route
 @chats_bp.route('/api/chats/conversation/<int:conversation_id>', methods=['OPTIONS'])
 def handle_conversation_options(conversation_id):
     """Gérer les requêtes preflight CORS"""

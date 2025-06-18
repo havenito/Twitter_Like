@@ -17,13 +17,11 @@ export default function MessagePage() {
   const [loading, setLoading] = useState(true);
   const [showNewConversationModal, setShowNewConversationModal] = useState(false);
 
-  // Utiliser NextAuth session comme fallback
   const { data: session, status } = useSession();
 
   const { socket, sendMessage, joinConversation, leaveConversation } = useSocket();
 
   useEffect(() => {
-    // n'agir qu'une fois NextAuth a fini de charger
     if (status === 'loading') return;
 
     if (session?.user) {
@@ -35,17 +33,15 @@ export default function MessagePage() {
         last_name: session.user.last_name  || session.user.name?.split(' ')[1],
         pseudo: session.user.pseudo       || session.user.username,
         profile_picture: session.user.image || session.user.profile_picture,
-        subscription: session.user.subscription || 'free' // S'assurer que subscription est inclus
+        subscription: session.user.subscription || 'free'
       };
 
       console.log('Current user session:', sessionUser); // Debug
       setCurrentUser(sessionUser);
       loadConversations(sessionUser.id);
 
-      // Optionnel : remettre à jour le localStorage
       localStorage.setItem('user', JSON.stringify(sessionUser));
     } else {
-      // pas de session => plus de chargement
       setLoading(false);
     }
   }, [session, status]);
@@ -110,7 +106,6 @@ export default function MessagePage() {
     }
   };
 
-  // Écran de chargement
   if (loading || status === 'loading') {
     return (
       <div className="flex justify-center items-center h-screen bg-[#1b1b1b]">
@@ -122,7 +117,6 @@ export default function MessagePage() {
     );
   }
 
-  // Écran de connexion requis
   if (!currentUser && status !== 'loading') {
     return (
       <div className="flex justify-center items-center h-screen bg-[#1b1b1b]">
@@ -155,7 +149,6 @@ export default function MessagePage() {
             </motion.button>
           </div>
 
-          {/* Debug info en développement */}
           {process.env.NODE_ENV === 'development' && (
             <div className="mt-8 p-4 bg-[#2a2a2a] rounded-xl text-left">
               <h4 className="text-xs font-semibold text-[#90EE90] mb-2">Debug Info:</h4>
@@ -177,7 +170,6 @@ export default function MessagePage() {
       <div className={`w-full md:w-1/3 border-r border-[#333] bg-[#1b1b1b] flex flex-col ${
         selectedConversation ? 'hidden md:flex' : 'flex'
       }`}>
-        {/* En-tête avec bouton nouvelle conversation */}
         <div className="p-4 border-b border-[#333] bg-[#1b1b1b] flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-xl font-semibold text-white">Messages</h1>
@@ -213,7 +205,6 @@ export default function MessagePage() {
         </div>
       </div>
 
-      {/* Fenêtre de chat - Affichée sur toute la largeur sur mobile quand une conversation est sélectionnée */}
       <div className={`flex-1 flex flex-col ${
         selectedConversation ? 'flex' : 'hidden md:flex'
       }`}>
@@ -241,7 +232,6 @@ export default function MessagePage() {
               </div>
             </div>
             
-            {/* Fenêtre de chat avec hauteur contrainte */}
             <div className="flex-1 overflow-hidden">
               <ChatWindow
                 conversation={selectedConversation}
@@ -249,7 +239,7 @@ export default function MessagePage() {
                 socket={socket}
                 sendMessage={sendMessage}
                 onNewMessage={handleNewMessage}
-                showMobileHeader={false} // Désactiver l'en-tête dans ChatWindow sur mobile
+                showMobileHeader={false}
               />
             </div>
           </>
@@ -278,7 +268,6 @@ export default function MessagePage() {
         )}
       </div>
 
-      {/* Modal nouvelle conversation */}
       <NewConversationModal
         isOpen={showNewConversationModal}
         onClose={() => setShowNewConversationModal(false)}

@@ -19,7 +19,7 @@ export default function ReportsTable({
               'Type',
               'Contenu',
               'Contenu signalé',
-              'Utilisateur signalé', // Nouvelle colonne ici
+              'Utilisateur signalé',
               'Date',
               'Statut',
               'Warns',

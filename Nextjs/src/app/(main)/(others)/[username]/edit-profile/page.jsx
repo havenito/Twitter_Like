@@ -1,17 +1,17 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useSession }       from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
-import Link                from 'next/link';
-import ProfileForm         from '@/components/Profile/ProfileForm';
+import Link from 'next/link';
+import ProfileForm from '@/components/Profile/ProfileForm';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSpinner, faLock, faExclamationTriangle, faCheckCircle, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
-import { motion }          from 'framer-motion';
+import { faLock, faExclamationTriangle, faCheckCircle, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { motion } from 'framer-motion';
 
 export default function UserEditProfilePage() {
   const { data: session, status, update: updateSession } = useSession();
-  const router    = useRouter();
+  const router = useRouter();
   const { username } = useParams();
 
   const [pageError, setPageError] = useState(null);
@@ -21,14 +21,12 @@ export default function UserEditProfilePage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [operationLoading, setOperationLoading] = useState(false);
 
-  // 1) contrôle d'accès
   useEffect(() => {
     if (userData && session.user.id !== userData.id) {
       setPageError("Vous n'êtes pas autorisé·e à modifier ce profil.");
     }
   }, [status, session, userData]);
 
-  // 2) fetch des données fraîchement modifiées
   useEffect(() => {
     if (status !== 'authenticated' || pageError) return;
 
@@ -41,7 +39,6 @@ export default function UserEditProfilePage() {
         );
         if (!res.ok) throw new Error("Impossible de charger votre profil.");
         const data = await res.json();
-        // normaliser le format vers initialData
         setUserData({
           id: data.id,
           firstName: data.first_name,
@@ -51,7 +48,7 @@ export default function UserEditProfilePage() {
           isPrivate: data.private,
           profilePicture: data.profile_picture,
           banner: data.banner,
-          updatedAt: data.updated_at  // si vous stockez la date d'update
+          updatedAt: data.updated_at
         });
       } catch (err) {
         setPageError(err.message);
@@ -62,11 +59,10 @@ export default function UserEditProfilePage() {
     fetchProfile();
   }, [status, username, pageError]);
 
-  // 3) handle submit identique sauf qu'on passe userData.id
   const handleUpdate = async (formData) => {
     setOperationLoading(true);
     setFormError(null);
-    setSuccessMessage(''); // Effacer les messages précédents
+    setSuccessMessage('');
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/users/${userData.id}`,
@@ -81,24 +77,18 @@ export default function UserEditProfilePage() {
       await updateSession({
         ...session.user,
         firstName: json.user.first_name,
-        lastName:  json.user.last_name,
-        pseudo:    json.user.pseudo, // Important : utiliser le nouveau pseudo de la réponse
+        lastName: json.user.last_name,
+        pseudo: json.user.pseudo,
         biography: json.user.biography,
         profilePicture: json.user.profile_picture,
-        banner:    json.user.banner,
+        banner: json.user.banner,
         isPrivate: json.user.private
       });
       
-      // Rediriger vers la page de profil de l'utilisateur (avec le pseudo potentiellement mis à jour)
       router.push(`/${json.user.pseudo}`);
-      // Pas besoin de définir setSuccessMessage si on redirige immédiatement
-      // Pas besoin de router.replace(router.asPath) si on redirige vers une nouvelle page
-
     } catch (err) {
       setFormError(err.message);
     } finally {
-      // S'assurer que l'état de chargement est réinitialisé si l'utilisateur reste sur la page (par exemple, en cas d'erreur)
-      // Si la redirection réussit, ce composant sera démonté.
       setOperationLoading(false);
     }
   };

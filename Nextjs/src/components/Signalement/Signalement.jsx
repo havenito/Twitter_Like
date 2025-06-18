@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckCircle, faFlag, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faFlag, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-icons';
 import Notification from '../Notification';
 
 const motifs = [
@@ -70,7 +70,6 @@ export default function Signalement({ isOpen, onClose, userId, postId, reportedU
         // Afficher la notification de succès
         setShowNotification(true);
         
-        // Fermer le modal après un délai pour laisser le temps de voir la notification
         setTimeout(() => {
           onClose();
         }, 1500);
@@ -84,11 +83,10 @@ export default function Signalement({ isOpen, onClose, userId, postId, reportedU
     }
   };
 
-  // Variantes pour centrer parfaitement la notification
   const centeredNotificationVariants = {
-    initial: { opacity: 0, x: -100, y: -50, scale: 0.3 },
-    animate: { opacity: 1, x: -100, y: 0, scale: 1 },
-    exit: { opacity: 0, x: -100, y: -20, scale: 0.5, transition: { duration: 0.4 } }
+    initial: { opacity: 0, x: -150, y: -50, scale: 0.3 },
+    animate: { opacity: 1, x: -150, y: 0, scale: 1 },
+    exit: { opacity: 0, x: -150, y: -20, scale: 0.5, transition: { duration: 0.4 } }
   };
 
   const maxChars = 500;
@@ -96,7 +94,6 @@ export default function Signalement({ isOpen, onClose, userId, postId, reportedU
 
   return (
     <>
-      {/* Notification */}
       {showNotification && (
         <Notification 
           message="Signalement envoyé !" 
@@ -122,7 +119,6 @@ export default function Signalement({ isOpen, onClose, userId, postId, reportedU
               className="bg-[#1b1b1b] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[#333]"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-[#333]">
                 <h2 className="text-xl font-bold text-white flex items-center">
                   <FontAwesomeIcon icon={faFlag} className="mr-2 text-[#90EE90]" />
@@ -137,13 +133,11 @@ export default function Signalement({ isOpen, onClose, userId, postId, reportedU
                 </button>
               </div>
 
-              {/* Form */}
               <form onSubmit={handleSubmit} className="p-4 space-y-4">
                 <p className="text-gray-400 text-sm mb-6">
                   Merci de contribuer à la sécurité de la plateforme en signalant ce contenu inapproprié.
                 </p>
 
-                {/* Type de signalement */}
                 <div>
                   <label className="block text-[#90EE90] text-sm font-medium mb-2">
                     <FontAwesomeIcon icon={faFlag} className="mr-2" />
@@ -186,7 +180,6 @@ export default function Signalement({ isOpen, onClose, userId, postId, reportedU
                   </div>
                 </div>
 
-                {/* Détails */}
                 <div className="relative">
                   <label className="block text-[#90EE90] text-sm font-medium mb-2">
                     Détails du signalement
@@ -207,7 +200,6 @@ export default function Signalement({ isOpen, onClose, userId, postId, reportedU
                   </div>
                 </div>
 
-                {/* Error message */}
                 {error && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -218,13 +210,11 @@ export default function Signalement({ isOpen, onClose, userId, postId, reportedU
                   </motion.div>
                 )}
 
-                {/* Footer avec boutons */}
                 <div className="flex items-center justify-between pt-4 border-t border-[#333]">
                   <p className="text-xs text-gray-500">
                     Votre signalement sera examiné par notre équipe de modération.
                   </p>
 
-                  {/* Submit Button */}
                   <div className="flex space-x-3">
                     <button
                       type="button"

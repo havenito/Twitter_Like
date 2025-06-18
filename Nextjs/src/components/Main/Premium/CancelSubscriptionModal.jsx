@@ -30,7 +30,6 @@ const CancelSubscriptionModal = ({
             onClick={(e) => e.stopPropagation()}
             className="bg-[#2a2a2a] rounded-lg p-6 max-w-md w-full mx-4"
           >
-            {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center">
                 <FontAwesomeIcon icon={faExclamationTriangle} className="text-red-500 text-2xl mr-3" />
@@ -46,7 +45,6 @@ const CancelSubscriptionModal = ({
               )}
             </div>
             
-            {/* Warning */}
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
               <p className="text-red-400 font-semibold mb-2">Attention !</p>
               <p className="text-gray-300 text-sm">
@@ -57,7 +55,6 @@ const CancelSubscriptionModal = ({
               </p>
             </div>
 
-            {/* Current plan info */}
             <div className="space-y-3 mb-6">
               <p className="text-white font-medium">
                 Êtes-vous sûr de vouloir résilier votre abonnement{' '}
@@ -85,7 +82,6 @@ const CancelSubscriptionModal = ({
               </div>
             </div>
 
-            {/* Actions */}
             {isLoading ? (
               <div className="flex justify-center items-center py-3">
                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-500"></div>

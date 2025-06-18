@@ -368,7 +368,6 @@ export default function ReplyDetailPage() {
 
         {parentReplies.length > 0 && parentReplies.map((parentReply, index) => (
           <React.Fragment key={`parent-reply-fragment-${index}`}>
-            {/* Flèche de transition */}
             <motion.div
               key={`arrow-parent-${index}`}
               initial={{ opacity: 0, scale: 0.8 }}

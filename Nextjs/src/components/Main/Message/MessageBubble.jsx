@@ -1,5 +1,3 @@
-import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 
@@ -17,16 +15,12 @@ export default function MessageBubble({
     if (!timestamp) return '';
     
     try {
-      // Gérer différents formats de date
       let date;
       if (timestamp.endsWith('Z')) {
-        // Format UTC avec Z
         date = new Date(timestamp);
       } else if (timestamp.includes('+')) {
-        // Format avec timezone
         date = new Date(timestamp);
       } else {
-        // Format ISO sans timezone, ajouter Z pour UTC
         date = new Date(timestamp + (timestamp.includes('T') ? 'Z' : ''));
       }
       
@@ -89,7 +83,6 @@ export default function MessageBubble({
       transition={{ delay: index * 0.05 }}
       className={`flex ${isOwn ? 'justify-end' : 'justify-start'} items-end space-x-2 group`}
     >
-      {/* Avatar pour les autres utilisateurs */}
       {!isOwn && showAvatar && (
         <motion.div 
           initial={{ scale: 0 }}
@@ -101,7 +94,6 @@ export default function MessageBubble({
         </motion.div>
       )}
       
-      {/* Espace pour maintenir l'alignement */}
       {!isOwn && !showAvatar && <div className="w-8" />}
 
       <div className={`max-w-xs lg:max-w-md ${isOwn ? 'order-1' : 'order-2'}`}>
@@ -121,7 +113,6 @@ export default function MessageBubble({
             {message.content}
           </p>
           
-          {/* Triangle de bulle */}
           <div className={`absolute bottom-0 ${
             isOwn 
               ? 'right-0 translate-x-1 translate-y-1' 
@@ -138,7 +129,6 @@ export default function MessageBubble({
             }`}></div>
           </div>
 
-          {/* Indicateur d'état pour les messages de l'utilisateur */}
           {isOwn && (
             <div className="absolute -bottom-1 -right-1">
               {isPending ? (
@@ -164,7 +154,6 @@ export default function MessageBubble({
           )}
         </motion.div>
         
-        {/* Timestamp avec animation */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

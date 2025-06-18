@@ -7,7 +7,6 @@ classement_bp = Blueprint('classement', __name__)
 
 @classement_bp.route('/api/classement/top10', methods=['GET'])
 def classement_top10():
-    # Top 10 users with most followers
     users = (
         db.session.query(User, db.func.count(Follow.follower_id).label('followers_count'))
         .outerjoin(Follow, User.id == Follow.followed_id)
@@ -28,7 +27,6 @@ def classement_top10():
 
 @classement_bp.route('/api/classement/user/<int:user_id>', methods=['GET'])
 def classement_user(user_id):
-    # Classement de l'utilisateur
     users = (
         db.session.query(User.id, User.pseudo, User.profile_picture, db.func.count(Follow.follower_id).label('followers_count'))
         .outerjoin(Follow, User.id == Follow.followed_id)

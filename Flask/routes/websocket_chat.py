@@ -15,7 +15,6 @@ connected_users = {}
 
 def init_socketio(app):
     """Initialiser SocketIO avec l'application Flask"""
-    # Obtenir l'URL frontend depuis les variables d'environnement
     frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
     
     socketio.init_app(app, 
@@ -24,7 +23,6 @@ def init_socketio(app):
                      engineio_logger=True)
     return socketio
 
-# Événements WebSocket pour le chat
 @socketio.on('connect')
 def handle_connect():
     print(f'Client connecté: {request.sid}')
@@ -89,7 +87,6 @@ def handle_send_message(data):
             emit('error', {'message': 'Données manquantes'})
             return
 
-        # Vérifier que les utilisateurs existent
         sender = User.query.get(sender_id)
         recipient = User.query.get(recipient_id)
         
@@ -150,7 +147,6 @@ def handle_send_message(data):
             
             return
 
-        # Créer le nouveau message
         new_chat = Chat(
             conversation_id=conversation_id,
             sender_id=sender_id,
@@ -165,7 +161,6 @@ def handle_send_message(data):
         
         print(f"💾 NEW message saved to DB with ID: {new_chat.id}")
 
-        # Préparer les données du message
         message_data = {
             'id': new_chat.id,
             'conversation_id': conversation_id,
@@ -222,7 +217,6 @@ def handle_typing(data):
     is_typing = data.get('is_typing', False)
     
     if conversation_id and user_id:
-        # Envoyer à tous les autres participants de la conversation
         emit('user_typing', {
             'user_id': user_id,
             'is_typing': is_typing,

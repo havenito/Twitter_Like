@@ -7,7 +7,7 @@ import SubscriptionNotification from '../../../components/Main/Premium/Subscript
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link'; 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; 
-import { faArrowLeft, faTrash, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'; 
+import { faArrowLeft, faTrash } from '@fortawesome/free-solid-svg-icons'; 
 import { useSession } from 'next-auth/react';
 
 const subscriptionPlans = [

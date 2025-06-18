@@ -1,4 +1,3 @@
-// Nouveau composant BanModal.jsx
 import React, { useState } from "react";
 
 const DURATIONS = [

@@ -25,9 +25,8 @@ export default function NewConversationModal({ isOpen, onClose, onCreateConversa
       }
       
       const data = await response.json();
-      // Filtrer l'utilisateur actuel (vérification plus robuste)
       const filteredUsers = data.filter(user => {
-        if (!currentUser) return true; // Si pas d'utilisateur actuel, montrer tous
+        if (!currentUser) return true;
         return user.id !== currentUser.id;
       });
       setUsers(filteredUsers);
@@ -123,7 +122,6 @@ export default function NewConversationModal({ isOpen, onClose, onCreateConversa
   };
 
   const handleCreateConversation = async () => {
-    // Vérifications de sécurité
     if (!selectedUser) {
       console.error('Aucun utilisateur sélectionné');
       return;
@@ -136,11 +134,9 @@ export default function NewConversationModal({ isOpen, onClose, onCreateConversa
     }
 
     try {
-      // Créer un ID de conversation unique basé sur les IDs des utilisateurs
       const sorted_ids = [currentUser.id, selectedUser.id].sort((a, b) => a - b);
       const conversation_id = parseInt(`${sorted_ids[0]}${sorted_ids[1].toString().padStart(3, '0')}`);
 
-      // Créer une nouvelle conversation
       const newConversation = {
         conversation_id: conversation_id,
         other_user: {
@@ -172,7 +168,6 @@ export default function NewConversationModal({ isOpen, onClose, onCreateConversa
     setSearchTerm('');
   };
 
-  // Ne pas afficher le modal si pas d'utilisateur connecté
   if (!isOpen || !currentUser) return null;
 
   return (
@@ -191,7 +186,6 @@ export default function NewConversationModal({ isOpen, onClose, onCreateConversa
           className="bg-[#1b1b1b] rounded-2xl shadow-2xl w-full max-w-md border border-[#333]"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* En-tête */}
           <div className="flex items-center justify-between p-6 border-b border-[#333]">
             <h2 className="text-xl font-semibold text-white">Nouvelle conversation</h2>
             <button
@@ -204,7 +198,6 @@ export default function NewConversationModal({ isOpen, onClose, onCreateConversa
             </button>
           </div>
 
-          {/* Barre de recherche */}
           <div className="p-6 border-b border-[#333]">
             <div className="relative">
               <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,7 +213,6 @@ export default function NewConversationModal({ isOpen, onClose, onCreateConversa
             </div>
           </div>
 
-          {/* Liste des utilisateurs */}
           <div className="max-h-96 overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center py-8">
@@ -258,12 +250,10 @@ export default function NewConversationModal({ isOpen, onClose, onCreateConversa
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      {/* Avatar avec badge */}
                       <div className="flex-shrink-0">
                         {renderProfilePicture(user)}
                       </div>
 
-                      {/* Informations utilisateur */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
                           <h3 className="text-sm font-medium text-white truncate">
@@ -287,7 +277,6 @@ export default function NewConversationModal({ isOpen, onClose, onCreateConversa
                         )}
                       </div>
 
-                      {/* Indicateur de sélection */}
                       {selectedUser?.id === user.id && (
                         <motion.div
                           initial={{ scale: 0 }}
@@ -306,7 +295,6 @@ export default function NewConversationModal({ isOpen, onClose, onCreateConversa
             )}
           </div>
 
-          {/* Actions */}
           <div className="flex items-center justify-between p-6 border-t border-[#333]">
             <button
               onClick={handleClose}

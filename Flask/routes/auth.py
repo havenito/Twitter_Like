@@ -56,7 +56,7 @@ def validate_pseudo(pseudo):
     
     return None
 
-# --- Password verification ---
+# --- Password vérification ---
 def validate_password(password):
     if len(password) < 8:
         return "Le mot de passe doit contenir au moins 8 caractères."
@@ -81,7 +81,6 @@ def validate_image_file(file, user_subscription, file_type='image'):
     if not file.content_type or not file.content_type.startswith('image/'):
         return None, f"Le fichier doit être une image pour {file_type}."
     
-    # Vérifier si c'est un GIF
     is_gif = file.content_type == 'image/gif'
     
     # Si c'est un GIF et que l'utilisateur n'a pas d'abonnement premium/plus
@@ -248,7 +247,6 @@ def login():
     if not user:
         return jsonify({'error': "Aucun compte n'existe avec cet email."}), 401 
 
-    # Vérification du ban temporaire
     if user.is_banned and user.ban_until:
         if datetime.utcnow() > user.ban_until:
             user.is_banned = False
@@ -256,7 +254,6 @@ def login():
             db.session.commit()
 
     if user.is_banned:
-        # Message plus précis si ban temporaire
         if user.ban_until:
             return jsonify({'error': f'Votre compte est banni jusqu\'au {user.ban_until.strftime("%d/%m/%Y %H:%M:%S")}.'}), 403
         return jsonify({'error': 'Votre compte a été banni.'}), 403
@@ -411,6 +408,7 @@ def delete_user(user_id):
         if not user_to_delete:
             return jsonify({'error': 'Utilisateur non trouvé'}), 404
         
+        # 1. Annuler les abonnements Stripe
         from models.subscription import Subscription
         subscriptions = Subscription.query.filter_by(user_id=user_id).all()
         for subscription in subscriptions:
@@ -425,40 +423,82 @@ def delete_user(user_id):
             
             db.session.delete(subscription)
         
+        # 2. Supprimer les likes de l'utilisateur
         from models.like import Like
         likes = Like.query.filter_by(user_id=user_id).all()
         for like in likes:
             db.session.delete(like)
         
+        # 3. Supprimer les relations de suivi
         from models.follow import Follow
         follows_as_follower = Follow.query.filter_by(follower_id=user_id).all()
-        follows_as_followed = Follow.query.filter_by(followed_id=user_id).all()
-        
-        for follow in follows_as_follower + follows_as_followed:
+        for follow in follows_as_follower:
             db.session.delete(follow)
         
-        from models.comment import Comment
-        comments = Comment.query.filter_by(user_id=user_id).all()
-        for comment in comments:
-            db.session.delete(comment)
+        follows_as_followed = Follow.query.filter_by(followed_id=user_id).all()
+        for follow in follows_as_followed:
+            db.session.delete(follow)
         
+        # 4. Supprimer les favoris
+        from models.favorite import Favorite
+        favorites = Favorite.query.filter_by(user_id=user_id).all()
+        for favorite in favorites:
+            db.session.delete(favorite)
+        
+        # 5. Supprimer les notifications
+        from models.notification import Notification
+        notifications = Notification.query.filter_by(user_id=user_id).all()
+        for notification in notifications:
+            db.session.delete(notification)
+        
+        # 6. Supprimer les signalements
+        from models.signalement import Signalement
+        signalements_by_user = Signalement.query.filter_by(user_id=user_id).all()
+        for signalement in signalements_by_user:
+            db.session.delete(signalement)
+        
+        signalements_against_user = Signalement.query.filter_by(reported_user_id=user_id).all()
+        for signalement in signalements_against_user:
+            db.session.delete(signalement)
+        
+        # 7. Supprimer les chats
+        from models.chat import Chat
+        chats = Chat.query.filter_by(sender_id=user_id).all()
+        for chat in chats:
+            db.session.delete(chat)
+        
+        # 8. Supprimer les réponses
         from models.reply import Reply
         replies = Reply.query.filter_by(user_id=user_id).all()
         for reply in replies:
             db.session.delete(reply)
         
+        # 9. Supprimer les commentaires
+        from models.comment import Comment
+        comments = Comment.query.filter_by(user_id=user_id).all()
+        for comment in comments:
+            # Supprimer d'abord les réponses aux commentaires
+            comment_replies = Reply.query.filter_by(comment_id=comment.id).all()
+            for reply in comment_replies:
+                db.session.delete(reply)
+            db.session.delete(comment)
+        
+        # 10. Supprimer les posts et leurs dépendances
         from models.post import Post
         from models.post_media import PostMedia
         posts = Post.query.filter_by(user_id=user_id).all()
         for post in posts:
+            # Supprimer les médias du post
             post_media = PostMedia.query.filter_by(post_id=post.id).all()
             for media in post_media:
                 db.session.delete(media)
             
+            # Supprimer les likes du post
             post_likes = Like.query.filter_by(post_id=post.id).all()
             for like in post_likes:
                 db.session.delete(like)
             
+            # Supprimer les commentaires du post
             post_comments = Comment.query.filter_by(post_id=post.id).all()
             for comment in post_comments:
                 comment_replies = Reply.query.filter_by(comment_id=comment.id).all()
@@ -466,8 +506,35 @@ def delete_user(user_id):
                     db.session.delete(reply)
                 db.session.delete(comment)
             
+            # Supprimer les favoris du post
+            post_favorites = Favorite.query.filter_by(post_id=post.id).all()
+            for favorite in post_favorites:
+                db.session.delete(favorite)
+            
+            # Supprimer les signalements du post
+            post_signalements = Signalement.query.filter_by(post_id=post.id).all()
+            for signalement in post_signalements:
+                db.session.delete(signalement)
+            
             db.session.delete(post)
         
+        # 11. Supprimer les sondages et leurs votes
+        from models.poll import Poll
+        from models.pollvote import PollVote
+        polls = Poll.query.filter_by(user_id=user_id).all()
+        for poll in polls:
+            # Supprimer les votes du sondage
+            poll_votes = PollVote.query.filter_by(poll_id=poll.id).all()
+            for vote in poll_votes:
+                db.session.delete(vote)
+            db.session.delete(poll)
+        
+        # Supprimer les votes de l'utilisateur sur d'autres sondages
+        user_votes = PollVote.query.filter_by(user_id=user_id).all()
+        for vote in user_votes:
+            db.session.delete(vote)
+        
+        # 12. Enfin, supprimer l'utilisateur
         db.session.delete(user_to_delete)
         db.session.commit()
         

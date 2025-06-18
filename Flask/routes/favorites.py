@@ -1,4 +1,3 @@
-# filepath: c:\Users\alexd\Bureau\Deuxième année - B2\Projet de Groupe\Code\Twitter_Like\Flask\routes\favorites.py
 from flask import Blueprint, request, jsonify
 from models import db
 from models.favorite import Favorite

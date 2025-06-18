@@ -128,7 +128,6 @@ export default function PollDetailPage() {
   return (
     <div className="min-h-screen bg-[#111] text-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Header avec navigation */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
