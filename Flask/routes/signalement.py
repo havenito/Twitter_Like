@@ -44,18 +44,21 @@ def get_signalements():
     signalements = Signalement.query.all()
     result = []
     for s in signalements:
-        user = User.query.get(s.user_id)
+        reported_user = User.query.get(s.reported_user_id)
+        reporter = User.query.get(s.user_id)
         result.append({
             'id': s.id,
-            'reported_user_id': s.user_id,
-            'reported_user_pseudo': getattr(user, 'pseudo', None),
+            'reported_user_id': s.reported_user_id,
+            'reported_user_pseudo': getattr(reported_user, 'pseudo', None),
+            'reporter_id': s.user_id,
+            'reporter_pseudo': getattr(reporter, 'pseudo', None),
             'post_id': s.post_id,
             'report_type': s.report_type,
             'content': s.content,
             'statut': s.statut,
             'date_signalement': s.date_signalement.strftime('%Y-%m-%d %H:%M:%S') if hasattr(s, 'date_signalement') else '',
-            'reported_user_warns': getattr(user, 'warn_count', 0) if user else 0,
-            'reported_user_is_banned': getattr(user, 'is_banned', False) if user else False,
+            'reported_user_warns': getattr(reported_user, 'warn_count', 0) if reported_user else 0,
+            'reported_user_is_banned': getattr(reported_user, 'is_banned', False) if reported_user else False,
         })
     return jsonify(result)
 

@@ -6,7 +6,7 @@ export default function ReportRow({ report, handleUpdateStatus, handleWarnUser, 
   return (
     <tr className="border-b border-[#333] hover:bg-[#1a1d22]/60 transition-colors">
       <td className="px-6 py-4">{report.id}</td>
-      <td className="px-6 py-4 font-medium">{report.reported_user_pseudo || 'N/A'}</td>
+      <td className="px-6 py-4 font-medium">{report.reporter_display || 'N/A'}</td>
       <td className="px-6 py-4">
         <TypePill type={report.report_type} />
       </td>
@@ -44,7 +44,6 @@ export default function ReportRow({ report, handleUpdateStatus, handleWarnUser, 
             <ArrowPathIcon className="w-4 h-4 mr-1" /> En attente
           </button>
         )}
-        {/* Affiche le bouton Warn seulement si on n'est PAS dans la catégorie "Bannis" */}
         {filter !== "Bannis" && (
           <button
             onClick={() => handleWarnUser(report.reported_user_id)}

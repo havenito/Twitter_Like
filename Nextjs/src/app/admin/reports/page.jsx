@@ -20,19 +20,15 @@ export default function AdminReportsPage() {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
 
-  // Onglet actif : "reports" ou "categories"
   const [adminTab, setAdminTab] = useState("reports");
 
-  // Pour le ban modal
   const [banModalOpen, setBanModalOpen] = useState(false);
   const [banUserId, setBanUserId] = useState(null);
 
-  // Pour le modal  d'alerte
   const [alert, setAlert] = useState({ message: "", type: "info", isConfirm: false, onConfirm: null });
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-  // Vérification des autorisations admin
   useEffect(() => {
     if (status === 'loading') return;
 
@@ -127,9 +123,20 @@ export default function AdminReportsPage() {
     if (report.reported_user_id && !report.post_id) {
       reportedUserName = reportedUserName || `Utilisateur ID: ${report.reported_user_id}`;
     }
+
+    let reporterUserName = "";
+    if (report.reporter_pseudo) {
+      reporterUserName = `@${report.reporter_pseudo}`;
+    } else if (report.reporter_id) {
+      reporterUserName = `Utilisateur ID: ${report.reporter_id}`;
+    } else {
+      reporterUserName = "N/A";
+    }
+
     return {
       ...report,
-      reported_user_display: reportedUserName
+      reported_user_display: reportedUserName,
+      reporter_display: reporterUserName, 
     };
   });
 
@@ -195,7 +202,6 @@ export default function AdminReportsPage() {
     )
   );
 
-  // WARN avec confirmation 
   const handleWarnUser = async (userId) => {
     setAlert({
       message: "Êtes-vous sûr de vouloir donner un avertissement à cet utilisateur ?",
@@ -227,7 +233,6 @@ export default function AdminReportsPage() {
     setBanModalOpen(true);
   };
 
-  // Ban avec confirmation 
   const handleBanUser = async (userId, duration) => {
     setBanModalOpen(false);
     try {
@@ -251,7 +256,6 @@ export default function AdminReportsPage() {
     }
   };
 
-  // Déban avec confirmation
   const handleUnbanUser = async (userId) => {
     setAlert({
       message: "Êtes-vous sûr de vouloir débannir cet utilisateur ?",

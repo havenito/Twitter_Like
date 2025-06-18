@@ -330,6 +330,7 @@ const PostCard = ({ post, disableNavigation = false }) => {
         onClose={() => setShowReport(false)}
         userId={session?.user?.id}
         postId={post.id}
+        reportedUserId={post.user?.id}
       />
     </>
   );
